@@ -1,0 +1,1124 @@
+import React, { useState, useMemo } from 'react';
+import {
+  Folder,
+  Layers,
+  Plus,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  CheckSquare,
+  Square,
+  Globe,
+  DollarSign,
+  ShoppingCart,
+  Trash2,
+  X,
+  FileText,
+  Clock,
+  Sparkles,
+  Search,
+} from 'lucide-react';
+import { useStock } from '../../context/StockContext';
+import {
+  PurchaseGroup,
+  PurchaseList,
+  PurchaseSource,
+  PurchaseListStatus,
+  SourceAvailability,
+} from '../../types/stock';
+import {
+  formatKwanza,
+  formatDate,
+  convertToKwanza,
+  formatUSD,
+  USD_TO_KZ_RATE,
+} from '../../utils/formatters';
+
+export const PurchaseListView: React.FC = () => {
+  const {
+    purchaseGroups,
+    purchaseLists,
+    purchaseSources,
+    categories,
+    addPurchaseGroup,
+    addPurchaseList,
+    addPurchaseSource,
+    toggleSourceAccounted,
+    deletePurchaseSource,
+  } = useStock();
+
+  // Navigation Level State
+  // 'main' -> Shows either Groups grid or Lists rows based on toggle
+  // 'group_detail' -> Shows a specific group with its lists
+  // 'list_detail' -> Shows a specific list with its sources
+  const [viewLevel, setViewLevel] = useState<'main' | 'group_detail' | 'list_detail'>('main');
+  const [mainViewMode, setMainViewMode] = useState<'grupos' | 'listas'>('grupos');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+
+  // Modals for creation
+  const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+
+  const [showNewListModal, setShowNewListModal] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [newListCategory, setNewListCategory] = useState(categories[0] || 'Geral');
+  const [newListGroupId, setNewListGroupId] = useState<string | ''>('');
+  const [newListNotes, setNewListNotes] = useState('');
+  const [newListImage, setNewListImage] = useState(
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'
+  );
+
+  const [showNewSourceModal, setShowNewSourceModal] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('Alibaba');
+  const [newStoreLink, setNewStoreLink] = useState('');
+  const [newUnitPrice, setNewUnitPrice] = useState<number | ''>('');
+  const [newCurrency, setNewCurrency] = useState<'USD' | 'EUR' | 'CNY' | 'KZ'>('USD');
+  const [newQuantity, setNewQuantity] = useState<number | ''>(100);
+  const [newShippingCost, setNewShippingCost] = useState<number | ''>(0);
+  const [newOtherCosts, setNewOtherCosts] = useState<number | ''>(0);
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [newAvailability, setNewAvailability] = useState<SourceAvailability>('em_estoque');
+  const [newSourceNotes, setNewSourceNotes] = useState('');
+  const [newSourceAccounted, setNewSourceAccounted] = useState(true);
+
+  // Collapsed states for Source cards in list_detail
+  const [expandedSourceIds, setExpandedSourceIds] = useState<Record<string, boolean>>({});
+
+  // Calculations for Lists (Researched total vs Accounted total in Kz)
+  const getListTotals = (listId: string) => {
+    const sources = purchaseSources.filter((s) => s.listId === listId);
+    let totalResearchedKz = 0;
+    let totalAccountedKz = 0;
+    let accountedSourcesCount = 0;
+
+    sources.forEach((s) => {
+      const totalInKz = convertToKwanza(s.totalPrice, s.originalCurrency, s.approxKzRate);
+      totalResearchedKz += totalInKz;
+      if (s.isAccounted) {
+        totalAccountedKz += totalInKz;
+        accountedSourcesCount++;
+      }
+    });
+
+    return {
+      sourcesCount: sources.length,
+      accountedSourcesCount,
+      totalResearchedKz,
+      totalAccountedKz,
+    };
+  };
+
+  // Calculations for Groups (sums of list totals)
+  const getGroupTotals = (groupId: string) => {
+    const listsInGroup = purchaseLists.filter((l) => l.groupId === groupId);
+    let totalListsCount = listsInGroup.length;
+    let totalGroupResearchedKz = 0;
+    let totalGroupAccountedKz = 0;
+
+    listsInGroup.forEach((l) => {
+      const listTotals = getListTotals(l.id);
+      totalGroupResearchedKz += listTotals.totalResearchedKz;
+      totalGroupAccountedKz += listTotals.totalAccountedKz;
+    });
+
+    return {
+      totalListsCount,
+      totalGroupResearchedKz,
+      totalGroupAccountedKz,
+    };
+  };
+
+  // Handlers for Navigation
+  const handleOpenGroupDetail = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setViewLevel('group_detail');
+  };
+
+  const handleOpenListDetail = (listId: string) => {
+    setSelectedListId(listId);
+    setViewLevel('list_detail');
+  };
+
+  const handleBackToMain = () => {
+    setViewLevel('main');
+    setSelectedGroupId(null);
+    setSelectedListId(null);
+  };
+
+  const handleBackToGroup = () => {
+    if (selectedGroupId) {
+      setViewLevel('group_detail');
+      setSelectedListId(null);
+    } else {
+      handleBackToMain();
+    }
+  };
+
+  // Handle Create Group
+  const handleSaveGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newGroupName.trim()) {
+      addPurchaseGroup(newGroupName.trim(), newGroupDescription.trim() || undefined);
+      setNewGroupName('');
+      setNewGroupDescription('');
+      setShowNewGroupModal(false);
+    }
+  };
+
+  // Handle Create List
+  const handleSaveList = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newListName.trim()) {
+      const created = addPurchaseList({
+        name: newListName.trim(),
+        category: newListCategory,
+        groupId: newListGroupId || selectedGroupId || null,
+        status: 'cotando',
+        mainImage: newListImage,
+        gallery: [newListImage],
+        notes: newListNotes.trim() || undefined,
+      });
+
+      setNewListName('');
+      setNewListNotes('');
+      setShowNewListModal(false);
+
+      // Open newly created list
+      setSelectedListId(created.id);
+      setViewLevel('list_detail');
+    }
+  };
+
+  // Handle Create Source
+  const handleSaveSource = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedListId) return;
+
+    const unit = Number(newUnitPrice) || 0;
+    const qty = Number(newQuantity) || 1;
+    const ship = Number(newShippingCost) || 0;
+    const other = Number(newOtherCosts) || 0;
+
+    let rate = 1;
+    if (newCurrency === 'USD') rate = USD_TO_KZ_RATE;
+    if (newCurrency === 'EUR') rate = 1010;
+    if (newCurrency === 'CNY') rate = 128;
+
+    addPurchaseSource({
+      listId: selectedListId,
+      storeName: newStoreName.trim() || 'Loja / Fornecedor',
+      link: newStoreLink.trim() || undefined,
+      unitPrice: unit,
+      originalCurrency: newCurrency,
+      approxKzRate: rate,
+      quantity: qty,
+      shippingCost: ship,
+      otherCosts: other,
+      supplierName: newSupplierName.trim() || undefined,
+      availability: newAvailability,
+      notes: newSourceNotes.trim() || undefined,
+      isAccounted: newSourceAccounted,
+    });
+
+    setNewUnitPrice('');
+    setNewStoreLink('');
+    setNewSourceNotes('');
+    setShowNewSourceModal(false);
+  };
+
+  const toggleSourceCard = (id: string) => {
+    setExpandedSourceIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  // Selected Group and List objects
+  const currentGroup = purchaseGroups.find((g) => g.id === selectedGroupId);
+  const currentList = purchaseLists.find((l) => l.id === selectedListId);
+  const currentListSources = purchaseSources.filter((s) => s.listId === selectedListId);
+
+  return (
+    <div className="space-y-6">
+      {/* ---------------- LEVEL 1: MAIN (Toggle Grupos / Listas) ---------------- */}
+      {viewLevel === 'main' && (
+        <div className="space-y-6">
+          {/* Top Bar with Mode Toggle */}
+          <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-100 p-1 rounded-lg flex items-center gap-1">
+                <button
+                  type="button"
+                  id="toggle-btn-grupos"
+                  onClick={() => setMainViewMode('grupos')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    mainViewMode === 'grupos'
+                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Grupos de Compra ({purchaseGroups.length})
+                </button>
+                <button
+                  type="button"
+                  id="toggle-btn-listas"
+                  onClick={() => setMainViewMode('listas')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    mainViewMode === 'listas'
+                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Todas as Listas ({purchaseLists.length})
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {mainViewMode === 'grupos' ? (
+                <button
+                  type="button"
+                  id="btn-new-purchase-group"
+                  onClick={() => setShowNewGroupModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Novo Grupo</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  id="btn-new-purchase-list"
+                  onClick={() => setShowNewListModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Nova Lista</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* VISTA 1: GRUPOS (Cards em Grid) */}
+          {mainViewMode === 'grupos' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {purchaseGroups.map((group) => {
+                const totals = getGroupTotals(group.id);
+
+                return (
+                  <div
+                    key={group.id}
+                    onClick={() => handleOpenGroupDetail(group.id)}
+                    className="p-5 bg-white border border-slate-200/80 rounded-xl hover:border-slate-400 hover:shadow-xs cursor-pointer transition-all flex flex-col justify-between group space-y-4"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider font-mono">
+                          Grupo de Cotações
+                        </span>
+                        <span className="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                          {totals.totalListsCount} {totals.totalListsCount === 1 ? 'lista' : 'listas'}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-semibold text-slate-900 group-hover:text-slate-950">
+                        {group.name}
+                      </h4>
+                      {group.description && (
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {group.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Selecionado p/ Compra:</span>
+                        <span className="font-bold font-mono text-emerald-700">
+                          {formatKwanza(totals.totalGroupAccountedKz)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Total Pesquisado:</span>
+                        <span className="font-mono">
+                          {formatKwanza(totals.totalGroupResearchedKz)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* VISTA 2: LISTAS (Formato de Linhas) */}
+          {mainViewMode === 'listas' && (
+            <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                      <th className="py-3 px-4">Item / Cotação</th>
+                      <th className="py-3 px-4">Grupo Vinculado</th>
+                      <th className="py-3 px-4">Fontes / Lojas</th>
+                      <th className="py-3 px-4 text-right">Valor Pesquisado</th>
+                      <th className="py-3 px-4 text-right">Valor Contabilizado</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {purchaseLists.map((list) => {
+                      const group = purchaseGroups.find((g) => g.id === list.groupId);
+                      const totals = getListTotals(list.id);
+
+                      return (
+                        <tr
+                          key={list.id}
+                          onClick={() => handleOpenListDetail(list.id)}
+                          className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              {list.mainImage && (
+                                <img
+                                  src={list.mainImage}
+                                  alt=""
+                                  className="w-8 h-8 rounded object-cover border border-slate-200 shrink-0"
+                                />
+                              )}
+                              <div>
+                                <span className="font-semibold text-slate-900 block">
+                                  {list.name}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {list.category}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {group ? (
+                              <span className="text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                                {group.name}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 italic">
+                                Sem grupo
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 whitespace-nowrap text-slate-600">
+                            {totals.accountedSourcesCount} de {totals.sourcesCount} ativas
+                          </td>
+
+                          <td className="py-3 px-4 text-right font-mono text-slate-500">
+                            {formatKwanza(totals.totalResearchedKz)}
+                          </td>
+
+                          <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+                            {formatKwanza(totals.totalAccountedKz)}
+                          </td>
+
+                          <td className="py-3 px-4 text-center whitespace-nowrap">
+                            <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              {list.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ---------------- LEVEL 2: DETALHE DO GRUPO ---------------- */}
+      {viewLevel === 'group_detail' && currentGroup && (
+        <div className="space-y-6">
+          {/* Breadcrumb Header */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleBackToMain}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Voltar para Grupos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setNewListGroupId(currentGroup.id);
+                setShowNewListModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Adicionar Lista a este Grupo</span>
+            </button>
+          </div>
+
+          {/* Group Card Header */}
+          <div className="p-5 bg-white border border-slate-200/80 rounded-xl shadow-xs space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Grupo de Cotações Selecionado
+                </span>
+                <h3 className="text-base font-semibold text-slate-900 mt-0.5">
+                  {currentGroup.name}
+                </h3>
+                {currentGroup.description && (
+                  <p className="text-xs text-slate-500 mt-1">{currentGroup.description}</p>
+                )}
+              </div>
+
+              {/* Group summary numbers */}
+              <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                    Total Selecionado (Kz)
+                  </span>
+                  <span className="text-base font-bold font-mono text-emerald-700">
+                    {formatKwanza(getGroupTotals(currentGroup.id).totalGroupAccountedKz)}
+                  </span>
+                </div>
+                <div className="h-8 w-px bg-slate-200" />
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                    Total Pesquisado
+                  </span>
+                  <span className="text-xs font-mono text-slate-600">
+                    {formatKwanza(getGroupTotals(currentGroup.id).totalGroupResearchedKz)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Group Lists Table */}
+          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h4 className="text-xs font-semibold text-slate-800">
+                Listas de Cotação pertencentes a este Grupo
+              </h4>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                    <th className="py-3 px-4">Item / Produto</th>
+                    <th className="py-3 px-4">Categoria</th>
+                    <th className="py-3 px-4 text-center">Fontes Registradas</th>
+                    <th className="py-3 px-4 text-right">Total Pesquisado</th>
+                    <th className="py-3 px-4 text-right">Total Contabilizado</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {purchaseLists
+                    .filter((l) => l.groupId === currentGroup.id)
+                    .map((list) => {
+                      const totals = getListTotals(list.id);
+
+                      return (
+                        <tr
+                          key={list.id}
+                          onClick={() => handleOpenListDetail(list.id)}
+                          className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <td className="py-3 px-4 font-semibold text-slate-900">
+                            <div className="flex items-center gap-2.5">
+                              {list.mainImage && (
+                                <img
+                                  src={list.mainImage}
+                                  alt=""
+                                  className="w-7 h-7 rounded object-cover border border-slate-200"
+                                />
+                              )}
+                              <span>{list.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-slate-500">{list.category}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="font-mono">
+                              {totals.accountedSourcesCount} / {totals.sourcesCount}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-slate-500">
+                            {formatKwanza(totals.totalResearchedKz)}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+                            {formatKwanza(totals.totalAccountedKz)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              {list.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- LEVEL 3: DETALHE DA LISTA & FONTES ---------------- */}
+      {viewLevel === 'list_detail' && currentList && (
+        <div className="space-y-6">
+          {/* Breadcrumb Back Button */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleBackToGroup}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>
+                {selectedGroupId ? 'Voltar para o Grupo' : 'Voltar para Lista Geral'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-add-source"
+              onClick={() => setShowNewSourceModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Adicionar Fonte / Loja</span>
+            </button>
+          </div>
+
+          {/* List Header Card */}
+          <div className="p-5 bg-white border border-slate-200/80 rounded-xl shadow-xs">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                {currentList.mainImage && (
+                  <div className="w-16 h-16 rounded-xl border border-slate-200 overflow-hidden shrink-0 bg-slate-50">
+                    <img
+                      src={currentList.mainImage}
+                      alt={currentList.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      {currentList.category}
+                    </span>
+                    <span className="text-[10px] uppercase font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                      {currentList.status}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-900 mt-1">
+                    {currentList.name}
+                  </h3>
+                  {currentList.notes && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Observações: {currentList.notes}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* List Totals */}
+              <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                    Total Selecionado (Kz)
+                  </span>
+                  <span className="text-base font-bold font-mono text-emerald-700">
+                    {formatKwanza(getListTotals(currentList.id).totalAccountedKz)}
+                  </span>
+                </div>
+                <div className="h-8 w-px bg-slate-200" />
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                    Total Pesquisado
+                  </span>
+                  <span className="text-xs font-mono text-slate-600">
+                    {formatKwanza(getListTotals(currentList.id).totalResearchedKz)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Rule Notice */}
+          <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-600 flex items-center justify-between">
+            <span>
+              <strong>Regra de Cálculo:</strong> Apenas as Fontes marcadas com <strong>"Contabilizar"</strong> somam ao valor final da Lista e do Grupo. O total atualiza imediatamente.
+            </span>
+          </div>
+
+          {/* Sources Collapsible Cards Section */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">
+              Fontes & Cotações Encontradas ({currentListSources.length})
+            </h4>
+
+            {currentListSources.length === 0 ? (
+              <div className="p-8 text-center bg-white border border-slate-200/80 rounded-xl">
+                <p className="text-xs text-slate-400">Nenhuma fonte cadastrada para este item.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowNewSourceModal(true)}
+                  className="text-xs text-slate-900 font-semibold underline mt-2 inline-block"
+                >
+                  + Adicionar cotação (Alibaba, Amazon, Temu...)
+                </button>
+              </div>
+            ) : (
+              currentListSources.map((src) => {
+                const isExpanded = expandedSourceIds[src.id] !== false; // expanded by default
+                const approxTotalKz = convertToKwanza(
+                  src.totalPrice,
+                  src.originalCurrency,
+                  src.approxKzRate
+                );
+
+                return (
+                  <div
+                    key={src.id}
+                    className={`bg-white border rounded-xl shadow-xs transition-colors overflow-hidden ${
+                      src.isAccounted ? 'border-emerald-300 ring-1 ring-emerald-100' : 'border-slate-200'
+                    }`}
+                  >
+                    {/* Collapsible Card Header */}
+                    <div className="p-4 flex items-center justify-between gap-3 bg-white">
+                      <div className="flex items-center gap-3">
+                        {/* Checkbox "Contabilizar" */}
+                        <button
+                          type="button"
+                          onClick={() => toggleSourceAccounted(src.id)}
+                          className="text-slate-700 hover:text-slate-950 p-1"
+                          title="Marcar para contabilizar no total"
+                        >
+                          {src.isAccounted ? (
+                            <CheckSquare className="w-5 h-5 text-emerald-600" />
+                          ) : (
+                            <Square className="w-5 h-5 text-slate-300" />
+                          )}
+                        </button>
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-900">
+                              {src.storeName}
+                            </span>
+                            {src.link && (
+                              <a
+                                href={src.link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-slate-400 hover:text-slate-700"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                                src.isAccounted
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {src.isAccounted ? 'Contabilizado' : 'Não contabilizado'}
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] text-slate-400 mt-0.5">
+                            Qtd: <strong>{src.quantity} un</strong> • Unitário: {src.unitPrice} {src.originalCurrency}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <span className="text-xs font-mono font-bold text-slate-900 block">
+                            {src.totalPrice.toLocaleString()} {src.originalCurrency}
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400 block">
+                            ≈ {formatKwanza(approxTotalKz)}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleSourceCard(src.id)}
+                          className="p-1 text-slate-400 hover:text-slate-700 rounded"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Card Details */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-2 border-t border-slate-100 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                            Frete Estimado
+                          </span>
+                          <span className="font-mono text-slate-700">
+                            {src.shippingCost} {src.originalCurrency}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                            Outros Custos / Taxas
+                          </span>
+                          <span className="font-mono text-slate-700">
+                            {src.otherCosts} {src.originalCurrency}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                            Fornecedor / Loja
+                          </span>
+                          <span className="text-slate-700">
+                            {src.supplierName || 'Vendedor Padrão'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                              Disponibilidade
+                            </span>
+                            <span className="text-slate-700 capitalize">
+                              {src.availability.replace('_', ' ')}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => deletePurchaseSource(src.id)}
+                            className="text-slate-400 hover:text-rose-600 p-1"
+                            title="Excluir fonte"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {src.notes && (
+                          <div className="col-span-full pt-1 text-[11px] text-slate-500 italic">
+                            Observações: {src.notes}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Novo Grupo */}
+      {showNewGroupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-md w-full space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">Criar Novo Grupo de Compra</h4>
+            <form onSubmit={handleSaveGroup} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Nome do Grupo
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="Ex: Campanha de Páscoa 2026"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Descrição (Opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={newGroupDescription}
+                  onChange={(e) => setNewGroupDescription(e.target.value)}
+                  placeholder="Objetivo da cotação, prazos..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNewGroupModal(false)}
+                  className="px-3 py-1.5 text-slate-600 hover:text-slate-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
+                >
+                  Salvar Grupo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Nova Lista */}
+      {showNewListModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-md w-full space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">Criar Nova Lista de Produto</h4>
+            <form onSubmit={handleSaveList} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Nome do Produto a Cotar
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="Ex: Fones de Ouvido Sem Fio TWS"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Categoria
+                </label>
+                <select
+                  value={newListCategory}
+                  onChange={(e) => setNewListCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                >
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Pertence ao Grupo
+                </label>
+                <select
+                  value={newListGroupId}
+                  onChange={(e) => setNewListGroupId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                >
+                  <option value="">Sem grupo (Lista Avulsa)</option>
+                  {purchaseGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Observações
+                </label>
+                <input
+                  type="text"
+                  value={newListNotes}
+                  onChange={(e) => setNewListNotes(e.target.value)}
+                  placeholder="Critérios de qualidade, certificação..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNewListModal(false)}
+                  className="px-3 py-1.5 text-slate-600 hover:text-slate-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
+                >
+                  Criar e Abrir Lista
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Nova Fonte / Cotação */}
+      {showNewSourceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-lg w-full space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">
+              Adicionar Nova Fonte / Loja de Cotação
+            </h4>
+            <form onSubmit={handleSaveSource} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    Nome da Loja / Plataforma
+                  </label>
+                  <input
+                    type="text"
+                    value={newStoreName}
+                    onChange={(e) => setNewStoreName(e.target.value)}
+                    placeholder="Ex: Alibaba, Amazon, 1688..."
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    Moeda Original
+                  </label>
+                  <select
+                    value={newCurrency}
+                    onChange={(e) => setNewCurrency(e.target.value as any)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white font-mono"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="CNY">CNY (¥)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="KZ">Kwanza (Kz)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Link / URL do Produto
+                </label>
+                <input
+                  type="url"
+                  value={newStoreLink}
+                  onChange={(e) => setNewStoreLink(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Preço Unitário ({newCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newUnitPrice}
+                    onChange={(e) => setNewUnitPrice(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="0.00"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Quantidade
+                  </label>
+                  <input
+                    type="number"
+                    value={newQuantity}
+                    onChange={(e) => setNewQuantity(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="100"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Frete ({newCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newShippingCost}
+                    onChange={(e) => setNewShippingCost(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="0.00"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Outros Custos ({newCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newOtherCosts}
+                    onChange={(e) => setNewOtherCosts(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="0.00"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="chk-contabilizar-new"
+                  checked={newSourceAccounted}
+                  onChange={(e) => setNewSourceAccounted(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                <label htmlFor="chk-contabilizar-new" className="text-slate-700 font-medium cursor-pointer">
+                  Marcar como "Contabilizar" (somar ao valor selecionado)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNewSourceModal(false)}
+                  className="px-3 py-1.5 text-slate-600 hover:text-slate-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
+                >
+                  Salvar Fonte
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
