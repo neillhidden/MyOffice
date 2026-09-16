@@ -1,6 +1,6 @@
 {
   "name": "MyOffice",
-  "description": "Sistema de gestão empresarial multi-empresa com módulo de Estoque completo para o mercado angolano.",
+  "description": "Sistema de gestão empresarial multi-empresa com módulos de Dashboard comparativo, Estoque, Caixa (Vendas e Transporte), Contactos (Funcionários, Clientes, Fornecedores, Afiliados), Calendário e Notificações centrais.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

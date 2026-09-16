@@ -1,44 +1,208 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Search,
   Filter,
   AlertTriangle,
   Package,
   Building,
-  ArrowRight,
+  Building2,
   TrendingDown,
   TrendingUp,
   Boxes,
-  Plus,
   ArrowUpDown,
   CheckCircle2,
+  Edit3,
+  Trash2,
+  FileEdit,
+  RotateCcw,
+  Warehouse as WarehouseIcon,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
-import { useStock } from '../../context/StockContext';
+import { useStock, ProductStockInfo } from '../../context/StockContext';
 import { formatKwanza } from '../../utils/formatters';
+import { Product } from '../../types/stock';
+import { FilterCheckboxDropdown, FilterOption } from './FilterCheckboxDropdown';
 
 interface WarehouseStockViewProps {
   onOpenAddProduct: () => void;
+  onEditProduct?: (product: Product) => void;
+  onOpenDrafts?: () => void;
   onSelectProduct: (productId: string) => void;
   searchQuery: string;
 }
 
 export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
   onOpenAddProduct,
+  onEditProduct,
+  onOpenDrafts,
   onSelectProduct,
   searchQuery,
 }) => {
   const {
     products,
     warehouses,
+    companies,
+    stockConfigs,
     categories,
+    productDrafts,
     getProductStockInfo,
+    getProductStockInfoForCompany,
     getCurrentStock,
+    getProductWarehouses,
+    getProductCompanies,
+    deleteProduct,
   } = useStock();
 
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [stockLevelFilter, setStockLevelFilter] = useState<'all' | 'baixo' | 'normal' | 'excesso' | 'zerado'>('all');
+  // Multi-select filter states (caixas de seleção)
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(() =>
+    companies.map((c) => c.id)
+  );
+  const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<string[]>(() =>
+    warehouses.map((w) => w.id)
+  );
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => categories);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
+    'ativo',
+    'inativo',
+    'descontinuado',
+  ]);
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([
+    'novo',
+    'novo_usado',
+    'usado',
+    'troca',
+  ]);
+  // Opção Mostrar / Ocultar produtos com estoque 0 (false = mostrar produtos com estoque 0, true = ocultar)
+  const [hideZeroStock, setHideZeroStock] = useState<boolean>(false);
+  const [stockLevelFilter, setStockLevelFilter] = useState<
+    'all' | 'baixo' | 'normal' | 'excesso' | 'zerado'
+  >('all');
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  // Synchronize company list when companies update
+  useEffect(() => {
+    if (companies.length > 0) {
+      setSelectedCompanyIds((prev) => {
+        // If all were previously selected, keep all selected
+        if (prev.length === 0) return prev;
+        const validIds = companies.map((c) => c.id);
+        const filtered = prev.filter((id) => validIds.includes(id));
+        return filtered.length > 0 ? filtered : validIds;
+      });
+    }
+  }, [companies]);
+
+  // Synchronize categories list
+  useEffect(() => {
+    setSelectedCategories((prev) => {
+      const valid = prev.filter((c) => categories.includes(c));
+      return valid.length > 0 ? valid : categories;
+    });
+  }, [categories]);
+
+  // Warehouses filtered by selected companies
+  const visibleWarehouses = useMemo(() => {
+    if (selectedCompanyIds.length === 0) return [];
+    if (selectedCompanyIds.length === companies.length) return warehouses;
+    return warehouses.filter((w) => selectedCompanyIds.includes(w.companyId));
+  }, [warehouses, selectedCompanyIds, companies.length]);
+
+  // Handle company filter change: sync selected warehouses smoothly
+  const handleCompanyChange = (newCompanyIds: string[]) => {
+    setSelectedCompanyIds(newCompanyIds);
+    if (newCompanyIds.length === 0 || newCompanyIds.length === companies.length) {
+      // Se todas (ou nenhuma) selecionadas, seleciona todos os armazéns
+      setSelectedWarehouseIds(warehouses.map((w) => w.id));
+    } else {
+      // Auto-seleciona todos os armazéns pertencentes às empresas escolhidas
+      const matchingWarehouses = warehouses.filter((w) => newCompanyIds.includes(w.companyId));
+      setSelectedWarehouseIds(matchingWarehouses.map((w) => w.id));
+    }
+  };
+
+  // Keep selectedWarehouseIds in sync with visibleWarehouses
+  useEffect(() => {
+    const visibleIds = new Set(visibleWarehouses.map((w) => w.id));
+    setSelectedWarehouseIds((prev) => {
+      const valid = prev.filter((id) => visibleIds.has(id));
+      return valid.length > 0 ? valid : visibleWarehouses.map((w) => w.id);
+    });
+  }, [visibleWarehouses]);
+
+  // Helper to compute stock info based on active warehouse/company multi-filter
+  const getFilterStockInfo = useCallback(
+    (productId: string): ProductStockInfo => {
+      // Case 1: Specific warehouses filtered
+      if (selectedWarehouseIds.length < warehouses.length) {
+        if (selectedWarehouseIds.length === 0) {
+          return { currentStock: 0, minLimit: 0, maxLimit: 0, status: 'zerado' };
+        }
+        if (selectedWarehouseIds.length === 1) {
+          return getProductStockInfo(productId, selectedWarehouseIds[0]);
+        }
+        const current = selectedWarehouseIds.reduce((sum, whId) => {
+          return sum + Math.max(0, getCurrentStock(productId, whId));
+        }, 0);
+        const relevantConfigs = stockConfigs.filter(
+          (c) => c.productId === productId && selectedWarehouseIds.includes(c.warehouseId)
+        );
+        const minLimit = relevantConfigs.reduce((sum, c) => sum + c.minLimit, 0);
+        const maxLimit = relevantConfigs.reduce((sum, c) => sum + c.maxLimit, 0);
+
+        let status: ProductStockInfo['status'] = 'normal';
+        if (current === 0) {
+          status = 'zerado';
+        } else if (minLimit > 0 && current < minLimit) {
+          status = 'critico_baixo';
+        } else if (maxLimit > 0 && current > maxLimit) {
+          status = 'excesso';
+        }
+        return { currentStock: current, minLimit, maxLimit, status };
+      }
+
+      // Case 2: Specific companies filtered
+      if (selectedCompanyIds.length < companies.length) {
+        if (selectedCompanyIds.length === 0) {
+          return { currentStock: 0, minLimit: 0, maxLimit: 0, status: 'zerado' };
+        }
+        if (selectedCompanyIds.length === 1) {
+          return getProductStockInfoForCompany(productId, selectedCompanyIds[0]);
+        }
+        let current = 0;
+        let minLimit = 0;
+        let maxLimit = 0;
+        selectedCompanyIds.forEach((cId) => {
+          const cInfo = getProductStockInfoForCompany(productId, cId);
+          current += cInfo.currentStock;
+          minLimit += cInfo.minLimit;
+          maxLimit += cInfo.maxLimit;
+        });
+        let status: ProductStockInfo['status'] = 'normal';
+        if (current === 0) {
+          status = 'zerado';
+        } else if (minLimit > 0 && current < minLimit) {
+          status = 'critico_baixo';
+        } else if (maxLimit > 0 && current > maxLimit) {
+          status = 'excesso';
+        }
+        return { currentStock: current, minLimit, maxLimit, status };
+      }
+
+      // Case 3: Overall stock across all companies & warehouses
+      return getProductStockInfo(productId);
+    },
+    [
+      selectedWarehouseIds,
+      warehouses.length,
+      selectedCompanyIds,
+      companies.length,
+      getProductStockInfo,
+      getCurrentStock,
+      stockConfigs,
+      getProductStockInfoForCompany,
+    ]
+  );
 
   // Filtered products list
   const filteredProducts = useMemo(() => {
@@ -55,22 +219,62 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         }
       }
 
-      // 2. Category Filter
-      if (selectedCategory !== 'all' && product.category !== selectedCategory) {
+      // 2. Category Filter (Caixa de seleção)
+      if (selectedCategories.length === 0 || !selectedCategories.includes(product.category)) {
         return false;
       }
 
-      // 3. Status Filter
-      if (selectedStatus !== 'all' && product.status !== selectedStatus) {
+      // 3. Status Filter (Caixa de seleção)
+      if (selectedStatuses.length === 0 || !selectedStatuses.includes(product.status)) {
         return false;
       }
 
-      // 4. Stock Level Filter
-      const stockInfo = getProductStockInfo(
-        product.id,
-        selectedWarehouseId !== 'all' ? selectedWarehouseId : undefined
-      );
+      // 4. Condition Filter (Caixa de seleção)
+      if (selectedConditions.length === 0 || !selectedConditions.includes(product.condition || 'novo')) {
+        return false;
+      }
 
+      // 5. If user unchecked all companies or warehouses: show 0 products
+      if (selectedCompanyIds.length === 0 || selectedWarehouseIds.length === 0) {
+        return false;
+      }
+
+      // Relação Estoque (Produto × Armazém) → Armazém → Empresa
+      const prodWhs = getProductWarehouses(product.id);
+      const prodWhIds = prodWhs.map((w) => w.id);
+      const prodCompIds = prodWhs.map((w) => w.companyId);
+
+      // 6. Filtro por Empresa:
+      // Depende exclusivamente da relação Estoque (Produto × Armazém) → Armazém → Empresa,
+      // NUNCA da existência de movimentações!
+      if (selectedCompanyIds.length < companies.length) {
+        const belongsToCompany = prodCompIds.some((cId) => selectedCompanyIds.includes(cId));
+        if (!belongsToCompany) {
+          return false;
+        }
+      }
+
+      // 7. Filtro por Armazém / Local:
+      // Depende exclusivamente da relação Estoque (Produto × Armazém)
+      if (selectedWarehouseIds.length < warehouses.length) {
+        const belongsToWarehouse = prodWhIds.some((whId) => selectedWarehouseIds.includes(whId));
+        if (!belongsToWarehouse) {
+          return false;
+        }
+      }
+
+      // 8. Cálculo de estoque atual (via LEFT JOIN sobre Movimentação com COALESCE(SUM, 0))
+      const stockInfo = getFilterStockInfo(product.id);
+
+      // 9. Opção Ocultar / Mostrar Estoque Zero:
+      // Apenas exclui se o utilizador ativou explicitamente a opção de ocultar (hideZeroStock = true).
+      // Se "mostrar estoque zero" estiver ativo (hideZeroStock = false), o produto com quantidade = 0
+      // NUNCA é excluído do resultado!
+      if (hideZeroStock && stockInfo.currentStock <= 0) {
+        return false;
+      }
+
+      // 10. Stock Level Filter (Cards de métrica)
       if (stockLevelFilter === 'baixo' && stockInfo.status !== 'critico_baixo') return false;
       if (stockLevelFilter === 'normal' && stockInfo.status !== 'normal') return false;
       if (stockLevelFilter === 'excesso' && stockInfo.status !== 'excesso') return false;
@@ -81,11 +285,17 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
   }, [
     products,
     searchQuery,
-    selectedCategory,
-    selectedStatus,
-    selectedWarehouseId,
+    selectedCategories,
+    selectedStatuses,
+    selectedConditions,
+    selectedCompanyIds,
+    selectedWarehouseIds,
+    companies.length,
+    warehouses.length,
+    hideZeroStock,
     stockLevelFilter,
-    getProductStockInfo,
+    getProductWarehouses,
+    getFilterStockInfo,
   ]);
 
   // Global counts for metrics
@@ -97,8 +307,24 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
     let totalStockValueKz = 0;
 
     products.forEach((p) => {
-      const whId = selectedWarehouseId !== 'all' ? selectedWarehouseId : undefined;
-      const info = getProductStockInfo(p.id, whId);
+      // Must belong to filtered company/warehouse
+      const pWhs = getProductWarehouses(p.id);
+      const pWhIds = pWhs.map((w) => w.id);
+      const pCompIds = pWhs.map((w) => w.companyId);
+
+      if (selectedCompanyIds.length < companies.length) {
+        if (!pCompIds.some((cId) => selectedCompanyIds.includes(cId))) {
+          return;
+        }
+      }
+      if (selectedWarehouseIds.length < warehouses.length) {
+        if (!pWhIds.some((whId) => selectedWarehouseIds.includes(whId))) {
+          return;
+        }
+      }
+
+      const info = getFilterStockInfo(p.id);
+
       totalItemsStock += info.currentStock;
       totalStockValueKz += info.currentStock * p.costPrice;
 
@@ -114,9 +340,139 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
       zeroCount,
       totalStockValueKz,
     };
-  }, [products, selectedWarehouseId, getProductStockInfo]);
+  }, [
+    products,
+    getFilterStockInfo,
+    getProductWarehouses,
+    selectedCompanyIds,
+    selectedWarehouseIds,
+    companies.length,
+    warehouses.length,
+  ]);
 
-  const selectedWarehouse = warehouses.find((w) => w.id === selectedWarehouseId);
+  // Subtitle for banner
+  const bannerSubtitle = useMemo(() => {
+    if (selectedWarehouseIds.length === 1) {
+      const wh = warehouses.find((w) => w.id === selectedWarehouseIds[0]);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      return `${wh?.name || 'Armazém'} (${comp?.name || ''})`;
+    }
+    if (selectedWarehouseIds.length < warehouses.length) {
+      return `${selectedWarehouseIds.length} armazéns selecionados`;
+    }
+    if (selectedCompanyIds.length === 1) {
+      const comp = companies.find((c) => c.id === selectedCompanyIds[0]);
+      return `Estoque em armazéns da ${comp?.name || 'Empresa'}`;
+    }
+    if (selectedCompanyIds.length < companies.length) {
+      return `Estoque em ${selectedCompanyIds.length} empresas selecionadas`;
+    }
+    return 'Todos os armazéns e lojas';
+  }, [selectedWarehouseIds, selectedCompanyIds, warehouses, companies]);
+
+  // Filter option sets with counts
+  const companyOptions: FilterOption[] = useMemo(() => {
+    return companies.map((c) => {
+      const count = products.filter((p) => {
+        const pComps = getProductCompanies(p.id);
+        const belongs = pComps.some((comp) => comp.id === c.id);
+        if (!belongs) return false;
+        if (hideZeroStock) {
+          return getProductStockInfoForCompany(p.id, c.id).currentStock > 0;
+        }
+        return true;
+      }).length;
+      const compWhs = warehouses.filter((w) => w.companyId === c.id);
+      return {
+        id: c.id,
+        label: c.name,
+        count,
+        sublabel: `${compWhs.length} armazém(ns) • NIF: ${c.nif}`,
+      };
+    });
+  }, [companies, products, warehouses, hideZeroStock, getProductCompanies, getProductStockInfoForCompany]);
+
+  const warehouseOptions: FilterOption[] = useMemo(() => {
+    return visibleWarehouses.map((w) => {
+      const count = products.filter((p) => {
+        const pWhs = getProductWarehouses(p.id);
+        const belongs = pWhs.some((wh) => wh.id === w.id);
+        if (!belongs) return false;
+        if (hideZeroStock) {
+          return getProductStockInfo(p.id, w.id).currentStock > 0;
+        }
+        return true;
+      }).length;
+      const comp = companies.find((c) => c.id === w.companyId);
+      return {
+        id: w.id,
+        label: w.name,
+        count,
+        sublabel: comp?.name,
+      };
+    });
+  }, [visibleWarehouses, products, companies, hideZeroStock, getProductWarehouses, getProductStockInfo]);
+
+  const categoryOptions: FilterOption[] = useMemo(() => {
+    return categories.map((cat) => {
+      const count = products.filter((p) => p.category === cat).length;
+      return {
+        id: cat,
+        label: cat,
+        count,
+      };
+    });
+  }, [categories, products]);
+
+  const statusOptions: FilterOption[] = useMemo(() => {
+    return [
+      { id: 'ativo', label: 'Ativo', count: products.filter((p) => p.status === 'ativo').length },
+      {
+        id: 'inativo',
+        label: 'Inativo',
+        count: products.filter((p) => p.status === 'inativo').length,
+      },
+      {
+        id: 'descontinuado',
+        label: 'Descontinuado',
+        count: products.filter((p) => p.status === 'descontinuado').length,
+      },
+    ];
+  }, [products]);
+
+  const conditionOptions: FilterOption[] = useMemo(() => {
+    return [
+      { id: 'novo', label: 'Novo', count: products.filter((p) => p.condition === 'novo').length },
+      {
+        id: 'novo_usado',
+        label: 'Novo e Usado',
+        count: products.filter((p) => p.condition === 'novo_usado').length,
+      },
+      { id: 'usado', label: 'Usado', count: products.filter((p) => p.condition === 'usado').length },
+      { id: 'troca', label: 'Troca', count: products.filter((p) => p.condition === 'troca').length },
+    ];
+  }, [products]);
+
+  // Check if any filter is non-default
+  const isAnyFilterActive =
+    selectedCompanyIds.length < companies.length ||
+    selectedWarehouseIds.length < warehouses.length ||
+    selectedCategories.length < categories.length ||
+    selectedStatuses.length < 3 ||
+    selectedConditions.length < 4 ||
+    stockLevelFilter !== 'all' ||
+    hideZeroStock;
+
+  // Reset all filters
+  const handleResetAllFilters = () => {
+    setSelectedCompanyIds(companies.map((c) => c.id));
+    setSelectedWarehouseIds(warehouses.map((w) => w.id));
+    setSelectedCategories(categories);
+    setSelectedStatuses(['ativo', 'inativo', 'descontinuado']);
+    setSelectedConditions(['novo', 'novo_usado', 'usado', 'troca']);
+    setHideZeroStock(false);
+    setStockLevelFilter('all');
+  };
 
   return (
     <div className="space-y-6">
@@ -132,8 +488,8 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             </span>
             <span className="text-xs text-slate-400">itens</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">
-            {selectedWarehouse ? selectedWarehouse.name : 'Todos os armazéns e lojas'}
+          <p className="text-[11px] text-slate-500 mt-1 truncate" title={bannerSubtitle}>
+            {bannerSubtitle}
           </p>
         </div>
 
@@ -200,71 +556,160 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Armazém Selector */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg">
-            <Building className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-medium text-slate-500">Local:</span>
-            <select
-              id="filter-warehouse-select"
-              value={selectedWarehouseId}
-              onChange={(e) => setSelectedWarehouseId(e.target.value)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="all">Todos os Armazéns & Lojas</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.type === 'loja_fisica' ? 'Loja' : 'Armazém'})
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Filter Toolbar (Caixas de seleção interativas para todos os filtros) */}
+      <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Empresa Filter (Caixa de seleção multi-select com checkboxes) */}
+          <FilterCheckboxDropdown
+            id="company"
+            label="Empresa"
+            icon={<Building2 className="w-3.5 h-3.5" />}
+            options={companyOptions}
+            selectedIds={selectedCompanyIds}
+            onChange={handleCompanyChange}
+            allLabel="Todas"
+            searchPlaceholder="Buscar empresa..."
+            extraCheckbox={{
+              id: 'chk-hide-zero-company',
+              label: 'Ocultar produtos com estoque 0',
+              checked: hideZeroStock,
+              onChange: setHideZeroStock,
+            }}
+          />
 
-          {/* Categoria Selector */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-medium text-slate-500">Categoria:</span>
-            <select
-              id="filter-category-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-transparent font-medium text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="all">Todas ({categories.length})</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Armazém / Local Selector (Caixa de seleção) */}
+          <FilterCheckboxDropdown
+            id="warehouse"
+            label="Local"
+            icon={<WarehouseIcon className="w-3.5 h-3.5" />}
+            options={warehouseOptions}
+            selectedIds={selectedWarehouseIds}
+            onChange={setSelectedWarehouseIds}
+            allLabel="Todos"
+            searchPlaceholder="Buscar armazém ou loja..."
+            extraCheckbox={{
+              id: 'chk-hide-zero-warehouse',
+              label: 'Ocultar produtos com estoque 0',
+              checked: hideZeroStock,
+              onChange: setHideZeroStock,
+            }}
+          />
 
-          {/* Status Selector */}
-          <select
-            id="filter-status-select"
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none"
+          {/* Categoria Selector (Caixa de seleção) */}
+          <FilterCheckboxDropdown
+            id="category"
+            label="Categoria"
+            icon={<Filter className="w-3.5 h-3.5" />}
+            options={categoryOptions}
+            selectedIds={selectedCategories}
+            onChange={setSelectedCategories}
+            allLabel="Todas"
+            searchPlaceholder="Buscar categoria..."
+            extraCheckbox={{
+              id: 'chk-hide-zero-category',
+              label: 'Ocultar produtos com estoque 0',
+              checked: hideZeroStock,
+              onChange: setHideZeroStock,
+            }}
+          />
+
+          {/* Status Selector (Caixa de seleção) */}
+          <FilterCheckboxDropdown
+            id="status"
+            label="Status"
+            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+            options={statusOptions}
+            selectedIds={selectedStatuses}
+            onChange={setSelectedStatuses}
+            allLabel="Todos"
+            extraCheckbox={{
+              id: 'chk-hide-zero-status',
+              label: 'Ocultar produtos com estoque 0',
+              checked: hideZeroStock,
+              onChange: setHideZeroStock,
+            }}
+          />
+
+          {/* Condição / Estado Selector (Caixa de seleção) */}
+          <FilterCheckboxDropdown
+            id="condition"
+            label="Estado"
+            icon={<Boxes className="w-3.5 h-3.5" />}
+            options={conditionOptions}
+            selectedIds={selectedConditions}
+            onChange={setSelectedConditions}
+            allLabel="Todos"
+            extraCheckbox={{
+              id: 'chk-hide-zero-condition',
+              label: 'Ocultar produtos com estoque 0',
+              checked: hideZeroStock,
+              onChange: setHideZeroStock,
+            }}
+          />
+
+          {/* Botão dedicado Mostrar / Ocultar Estoque Zero */}
+          <button
+            type="button"
+            id="btn-toggle-show-zero-stock"
+            onClick={() => setHideZeroStock((prev) => !prev)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-colors font-medium border shadow-2xs cursor-pointer ${
+              !hideZeroStock
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50'
+            }`}
+            title={
+              !hideZeroStock
+                ? 'Produtos com estoque zero estão visíveis (Clique para ocultar)'
+                : 'Produtos com estoque zero estão ocultos (Clique para mostrar)'
+            }
           >
-            <option value="all">Todos os Status</option>
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-            <option value="descontinuado">Descontinuado</option>
-          </select>
+            {!hideZeroStock ? (
+              <Eye className="w-3.5 h-3.5 text-emerald-600" />
+            ) : (
+              <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+            )}
+            <span>{!hideZeroStock ? 'Estoque zero: Visível' : 'Estoque zero: Oculto'}</span>
+          </button>
+
+          {/* Limpar Filtros se algum filtro estiver ativo */}
+          {isAnyFilterActive && (
+            <button
+              type="button"
+              id="btn-clear-all-stock-filters"
+              onClick={handleResetAllFilters}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors font-medium shadow-2xs cursor-pointer"
+              title="Redefinir todos os filtros para o padrão"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Limpar Filtros</span>
+            </button>
+          )}
         </div>
 
-        {/* Action Button */}
-        <button
-          type="button"
-          id="btn-stock-add-product"
-          onClick={onOpenAddProduct}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs ml-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>+ Adicionar</span>
-        </button>
+        {/* Drafts & Add Buttons */}
+        <div className="flex items-center gap-2 ml-auto">
+          {productDrafts.length > 0 && (
+            <button
+              type="button"
+              id="btn-stock-open-drafts"
+              onClick={onOpenDrafts}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-medium transition-colors shadow-2xs"
+              title="Ver produtos não concluídos guardados como rascunho"
+            >
+              <FileEdit className="w-3.5 h-3.5 text-amber-600" />
+              <span>Não Concluídos ({productDrafts.length})</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            id="btn-stock-add-product"
+            onClick={onOpenAddProduct}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
+          >
+            <span>Adicionar</span>
+          </button>
+        </div>
       </div>
 
       {/* Stock Table */}
@@ -275,6 +720,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
               <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-4">Produto & SKU</th>
                 <th className="py-3 px-4">Categoria</th>
+                <th className="py-3 px-4">Empresa</th>
                 <th className="py-3 px-4">Localização / Armazém</th>
                 <th className="py-3 px-4 text-right">Estoque Atual</th>
                 <th className="py-3 px-4 text-center">Limites (Mín / Máx)</th>
@@ -286,14 +732,34 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     Nenhum produto encontrado com os filtros selecionados.
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((product) => {
-                  const whId = selectedWarehouseId !== 'all' ? selectedWarehouseId : undefined;
-                  const stockInfo = getProductStockInfo(product.id, whId);
+                  const stockInfo = getFilterStockInfo(product.id);
+                  const prodCompanies = getProductCompanies(product.id);
+                  const prodWarehouses = getProductWarehouses(product.id);
+
+                  // Resolving product company via relationship Estoque (Produto × Armazém) → Armazém → Empresa
+                  let productCompany = null;
+                  if (selectedWarehouseIds.length === 1) {
+                    const wh = warehouses.find((w) => w.id === selectedWarehouseIds[0]);
+                    if (wh) productCompany = companies.find((c) => c.id === wh.companyId);
+                  } else if (selectedCompanyIds.length === 1) {
+                    productCompany = companies.find((c) => c.id === selectedCompanyIds[0]);
+                  } else {
+                    // Match with selected companies first
+                    const matchedComp = prodCompanies.find((c) => selectedCompanyIds.includes(c.id));
+                    if (matchedComp) {
+                      productCompany = matchedComp;
+                    } else if (prodCompanies.length > 0) {
+                      productCompany = prodCompanies[0];
+                    } else if (companies.length > 0) {
+                      productCompany = companies[0];
+                    }
+                  }
 
                   return (
                     <tr
@@ -333,17 +799,66 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Categoria */}
+                      {/* Categoria & Estado */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
-                          {product.category}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                            {product.category}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            {product.condition === 'novo'
+                              ? 'Novo'
+                              : product.condition === 'novo_usado'
+                              ? 'Novo e usado'
+                              : product.condition === 'usado'
+                              ? 'Usado'
+                              : product.condition === 'troca'
+                              ? 'Troca'
+                              : 'Novo'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Empresa */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {productCompany ? (
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="font-medium text-slate-800 text-xs">
+                              {productCompany.name}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
 
                       {/* Armazém */}
                       <td className="py-3 px-4 whitespace-nowrap text-slate-600">
-                        {selectedWarehouse ? (
-                          <span>{selectedWarehouse.name}</span>
+                        {selectedWarehouseIds.length === 1 ? (
+                          <span>{warehouses.find((w) => w.id === selectedWarehouseIds[0])?.name}</span>
+                        ) : prodWarehouses.length === 1 ? (
+                          <span className="text-slate-800 font-medium">
+                            {prodWarehouses[0].name}
+                          </span>
+                        ) : prodWarehouses.length > 1 ? (
+                          <span className="text-slate-700 font-medium">
+                            {prodWarehouses.length} armazéns vinculados
+                          </span>
+                        ) : selectedWarehouseIds.length < warehouses.length ? (
+                          <span className="text-slate-700 font-medium">
+                            {selectedWarehouseIds.length} armazéns selecionados
+                          </span>
+                        ) : selectedCompanyIds.length === 1 ? (
+                          <span className="text-slate-700 font-medium">
+                            {visibleWarehouses.length === 1
+                              ? visibleWarehouses[0].name
+                              : `${visibleWarehouses.length} armazéns da empresa`}
+                          </span>
+                        ) : selectedCompanyIds.length < companies.length ? (
+                          <span className="text-slate-700 font-medium">
+                            {visibleWarehouses.length} armazéns filtrados
+                          </span>
                         ) : (
                           <span className="text-slate-500">
                             Distribuído em {warehouses.length} armazéns
@@ -407,9 +922,32 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
 
                       {/* Ações */}
                       <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <span className="text-[11px] font-medium text-slate-500 group-hover:text-slate-900 inline-flex items-center gap-1">
-                          Ver Detalhes <ArrowRight className="w-3 h-3" />
-                        </span>
+                        <div
+                          className="flex items-center justify-center gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            id={`btn-edit-product-${product.id}`}
+                            onClick={() => onEditProduct?.(product)}
+                            className="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition-colors shadow-2xs"
+                            title="Editar produto"
+                            aria-label="Editar produto"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            id={`btn-delete-product-${product.id}`}
+                            onClick={() => setProductToDelete(product)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shadow-2xs border border-transparent hover:border-rose-100"
+                            title="Eliminar produto"
+                            aria-label="Eliminar produto"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -425,6 +963,54 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
           <span>MyOffice • Gestão em Tempo Real</span>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4"
+          onClick={() => setProductToDelete(null)}
+        >
+          <div
+            className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-slate-900">Eliminar produto</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Tem certeza de que deseja eliminar o produto{' '}
+                  <strong className="text-slate-800 font-semibold">{productToDelete.name}</strong> (SKU: {productToDelete.sku})? Esta ação não pode ser desfeita.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                id="btn-cancel-delete"
+                onClick={() => setProductToDelete(null)}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-delete"
+                onClick={() => {
+                  deleteProduct(productToDelete.id);
+                  setProductToDelete(null);
+                }}
+                className="px-3.5 py-1.5 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-xs"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

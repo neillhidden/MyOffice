@@ -1,0 +1,236 @@
+import { Agenda, CalendarEvent } from '../types/calendar';
+import { Employee } from '../types/employee';
+import { Client } from '../types/client';
+import { NotificationItem } from '../types/notification';
+
+export const INITIAL_AGENDAS: Agenda[] = [
+  {
+    id: 'agenda-assinaturas',
+    name: 'Assinaturas',
+    color: 'indigo',
+    colorHex: '#6366f1',
+    origin: 'manual',
+    status: 'ativa',
+    description: 'Compromissos recorrentes de assinaturas, licenciamentos e serviços contratados.',
+    createdAt: '2026-01-10T08:00:00.000Z',
+  },
+  {
+    id: 'agenda-aniversarios',
+    name: 'Aniversários',
+    color: 'emerald',
+    colorHex: '#10b981',
+    origin: 'automatica',
+    automaticSource: 'aniversarios',
+    status: 'ativa',
+    description: 'Datas comemorativas geradas automaticamente a partir do cadastro de colaboradores.',
+    createdAt: '2026-01-10T08:00:00.000Z',
+  },
+  {
+    id: 'agenda-entregas',
+    name: 'Entregas',
+    color: 'amber',
+    colorHex: '#f59e0b',
+    origin: 'automatica',
+    automaticSource: 'entregas',
+    status: 'ativa',
+    description: 'Compromissos de logística e despachos gerados automaticamente a partir do módulo Caixa / Transporte.',
+    createdAt: '2026-01-10T08:00:00.000Z',
+  },
+];
+
+export const INITIAL_MANUAL_EVENTS: CalendarEvent[] = [
+  {
+    id: 'evt-man-1',
+    agendaId: 'agenda-assinaturas',
+    title: 'Renovação do Licenciamento ERP & Suporte Técnico',
+    date: '2026-09-28',
+    time: '10:00',
+    description: 'Vencimento da anuidade da licença de software e suporte do provedor.',
+    status: 'pendente',
+    originRef: {
+      type: 'manual',
+      id: 'lic-erp-01',
+      label: 'Contrato Contábil #2026/A',
+    },
+    createdAt: '2026-09-01T09:00:00.000Z',
+  },
+  {
+    id: 'evt-man-2',
+    agendaId: 'agenda-assinaturas',
+    title: 'Hospedagem Cloud & Renovação do Domínio .ao',
+    date: '2026-09-16',
+    time: '14:30',
+    description: 'Renovação dos certificados SSL e infraestrutura de servidores em nuvem.',
+    status: 'pendente',
+    originRef: {
+      type: 'manual',
+      id: 'cloud-hosting',
+      label: 'Fatura Provedor Cloud',
+    },
+    createdAt: '2026-09-02T11:00:00.000Z',
+  },
+  {
+    id: 'evt-man-3',
+    agendaId: 'agenda-assinaturas',
+    title: 'Inspeção Semestral do Sistema de Segurança do Armazém',
+    date: '2026-09-22',
+    time: '09:00',
+    description: 'Revisão dos extintores, sensores de presença e alarme no Armazém Central de Viana.',
+    status: 'pendente',
+    originRef: {
+      type: 'manual',
+      id: 'insp-sec-01',
+      label: 'Equipe de Manutenção',
+    },
+    createdAt: '2026-09-05T08:30:00.000Z',
+  },
+];
+
+export const INITIAL_EMPLOYEES: Employee[] = [
+  {
+    id: 'emp-1',
+    name: 'Administrador (Neidilson)',
+    companyId: 'comp-1',
+    role: 'Diretor de Operações',
+    department: 'Diretoria Executiva',
+    email: 'administrador@myoffice.ao',
+    phone: '+244 923 112 233',
+    birthDate: '1988-09-15', // Aniversário em 2 dias (Setembro 15)
+    address: 'Edifício Vernon Corporate, Av. 4 de Fevereiro, Luanda',
+    status: 'ativo',
+    accessPermissions: ['Administrador Geral'],
+    createdAt: '2025-01-15T08:00:00.000Z',
+  },
+  {
+    id: 'emp-2',
+    name: 'Mariana Costa',
+    companyId: 'comp-1',
+    role: 'Supervisora de Caixa & Atendimento',
+    department: 'Comercial',
+    email: 'mariana.costa@myoffice.ao',
+    phone: '+244 931 445 566',
+    birthDate: '1995-09-23', // Aniversário em Setembro 23
+    address: 'Rua Rainha Ginga nº 84, Ingombota, Luanda',
+    status: 'ativo',
+    accessPermissions: ['Operador de Caixa'],
+    createdAt: '2025-02-01T08:00:00.000Z',
+  },
+  {
+    id: 'emp-3',
+    name: 'João Baptista Afonso',
+    companyId: 'comp-1',
+    role: 'Responsável de Logística & Estoque',
+    department: 'Armazém Central',
+    email: 'joao.afonso@myoffice.ao',
+    phone: '+244 945 778 899',
+    birthDate: '1991-10-04',
+    address: 'Bairro Palanca, Rua Direita nº 12, Luanda',
+    status: 'ativo',
+    accessPermissions: ['Gestor de Estoque'],
+    createdAt: '2025-03-10T08:00:00.000Z',
+  },
+  {
+    id: 'emp-4',
+    name: 'Domingos Sebastião',
+    companyId: 'comp-2',
+    role: 'Motorista & Estafeta',
+    department: 'Transporte & Entregas',
+    email: 'domingos.sebastiao@myoffice.ao',
+    phone: '+244 912 334 455',
+    birthDate: '1993-11-18',
+    address: 'Município de Viana, Bairro Capalanga, Luanda',
+    status: 'ativo',
+    accessPermissions: ['Logística'],
+    createdAt: '2025-05-12T08:00:00.000Z',
+  },
+];
+
+export const INITIAL_CLIENTS: Client[] = [
+  {
+    id: 'cli-1',
+    name: 'Manuel Gonçalves de Carvalho',
+    phone: '+244 923 881 223',
+    whatsapp: '+244 923 881 223',
+    address: 'Condomínio Vila Flor, Casa 14B, Talatona, Luanda',
+    notes: 'Cliente corporativo frequente. Prefere entregas no período matinal.',
+    createdAt: '2026-02-10T10:00:00.000Z',
+  },
+  {
+    id: 'cli-2',
+    name: 'Nova Horizonte Consultoria, Lda.',
+    phone: '+244 912 400 900',
+    whatsapp: '+244 934 556 778',
+    address: 'Edifício Kilamba, 4º Andar, Escritório 402, Marginal de Luanda',
+    notes: 'Faturação em nome da empresa com NIF 5419902341.',
+    createdAt: '2026-03-05T14:30:00.000Z',
+  },
+  {
+    id: 'cli-3',
+    name: 'Dra. Teresa Van-Dúnem',
+    phone: '+244 928 654 321',
+    whatsapp: '+244 928 654 321',
+    address: 'Rua Comandante Gika nº 45, Alvalade, Luanda',
+    notes: 'Cliente para equipamentos de escritório e informática.',
+    createdAt: '2026-04-18T09:15:00.000Z',
+  },
+  {
+    id: 'cli-4',
+    name: 'António Pedro Silva',
+    phone: '+244 945 112 334',
+    whatsapp: '+244 945 112 334',
+    address: 'Bairro Miramar, Rua 12, Vivenda 8, Luanda',
+    notes: 'Cliente individual de artigos gaming e periféricos.',
+    createdAt: '2026-05-20T16:00:00.000Z',
+  },
+];
+
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: 'notif-1',
+    type: 'entrega_proxima',
+    title: 'Entrega Prevista para Amanhã',
+    message: 'Transporte #TRP-1001 com destino ao Condomínio Vila Flor (Talatona) previsto para 14/09/2026.',
+    reference: {
+      type: 'transporte',
+      id: 'TRP-1001',
+    },
+    date: '2026-09-13T08:00:00.000Z',
+    read: false,
+  },
+  {
+    id: 'notif-2',
+    type: 'aniversario',
+    title: 'Aniversário Próximo de Colaborador',
+    message: 'O colaborador Administrador (Neidilson) completa aniversário em 15 de Setembro.',
+    reference: {
+      type: 'empregado',
+      id: 'emp-1',
+    },
+    date: '2026-09-12T09:30:00.000Z',
+    read: false,
+  },
+  {
+    id: 'notif-3',
+    type: 'evento_proximo',
+    title: 'Compromisso da Agenda Assinaturas',
+    message: 'Hospedagem Cloud & Renovação do Domínio .ao agendada para 16/09/2026 às 14:30.',
+    reference: {
+      type: 'evento',
+      id: 'evt-man-2',
+    },
+    date: '2026-09-11T14:00:00.000Z',
+    read: false,
+  },
+  {
+    id: 'notif-4',
+    type: 'estoque_baixo',
+    title: 'Alerta de Nível Crítico no Estoque',
+    message: 'Fritadeira Air Fryer Digital 5.5L está com estoque baixo no Armazém Central.',
+    reference: {
+      type: 'produto',
+      id: 'prod-2',
+    },
+    date: '2026-09-10T16:20:00.000Z',
+    read: true,
+  },
+];

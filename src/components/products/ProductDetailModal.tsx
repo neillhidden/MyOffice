@@ -12,20 +12,24 @@ import {
   CheckCircle2,
   ExternalLink,
   Plus,
+  Edit3,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { formatKwanza, formatDate, formatDateTime } from '../../utils/formatters';
+import { Product } from '../../types/stock';
 
 interface ProductDetailModalProps {
   productId: string | null;
   onClose: () => void;
   onOpenMovementModalForProduct?: (productId: string) => void;
+  onEditProduct?: (product: Product) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   productId,
   onClose,
   onOpenMovementModalForProduct,
+  onEditProduct,
 }) => {
   const {
     products,
@@ -88,12 +92,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                   {product.category}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400">
                   SKU: {product.sku}
+                </span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                  {product.condition === 'novo'
+                    ? 'Novo'
+                    : product.condition === 'novo_usado'
+                    ? 'Novo e usado'
+                    : product.condition === 'usado'
+                    ? 'Usado'
+                    : product.condition === 'troca'
+                    ? 'Troca'
+                    : 'Novo'}
                 </span>
                 <span
                   className={`text-[10px] font-medium px-2 py-0.5 rounded ${
@@ -115,6 +130,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onEditProduct && (
+              <button
+                type="button"
+                id="btn-product-detail-edit"
+                onClick={() => {
+                  onClose();
+                  onEditProduct(product);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                <span>Editar</span>
+              </button>
+            )}
+
             <button
               type="button"
               id="btn-product-detail-move"
@@ -471,33 +501,56 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* TAB 3: VARIAÇÕES */}
           {activeTab === 'variacoes' && (
             <div className="space-y-2">
-              {product.variations.map((v) => (
-                <div
-                  key={v.id}
-                  className="p-3 border border-slate-200 rounded-xl bg-white flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <div className="font-semibold text-slate-800">
-                      {v.color || 'Cor padrão'} {v.size ? `• ${v.size}` : ''}
-                    </div>
-                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-                      SKU Variação: {v.sku}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[11px] text-slate-400 block">Preço Final:</span>
-                    <span className="font-semibold font-mono text-slate-800">
-                      {formatKwanza(product.salePrice + v.additionalPrice)}
-                    </span>
-                    {v.additionalPrice > 0 && (
-                      <span className="text-[10px] text-emerald-600 block">
-                        (+{formatKwanza(v.additionalPrice)})
-                      </span>
-                    )}
-                  </div>
+              {product.variations.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  Este produto não possui variações registradas.
                 </div>
-              ))}
+              ) : (
+                product.variations.map((v) => (
+                  <div
+                    key={v.id}
+                    className="p-3 border border-slate-200 rounded-xl bg-white flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      {v.colorHex ? (
+                        <div
+                          className="w-5 h-5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                          style={{ backgroundColor: v.colorHex }}
+                          title={v.color}
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-slate-200 border border-slate-300 shrink-0" />
+                      )}
+                      <div>
+                        <div className="font-semibold text-slate-800 flex items-center gap-2">
+                          <span>{v.color || 'Cor padrão'}</span>
+                          {v.size && <span className="text-slate-500 font-normal">• {v.size}</span>}
+                          {typeof v.quantity === 'number' && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono font-medium">
+                              Qtd: {v.quantity}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                          SKU: {v.sku}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[11px] text-slate-400 block">Preço Final:</span>
+                      <span className="font-semibold font-mono text-slate-800">
+                        {formatKwanza(product.salePrice + v.additionalPrice)}
+                      </span>
+                      {v.additionalPrice > 0 && (
+                        <span className="text-[10px] text-emerald-600 block">
+                          (+{formatKwanza(v.additionalPrice)})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
 

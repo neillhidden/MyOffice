@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Plus,
@@ -12,49 +12,149 @@ import {
   Store,
   UserPlus,
   Layers,
-  DollarSign,
-  PackageCheck,
   Building,
+  Save,
+  Clock,
+  Palette,
+  Gamepad2,
+  UtensilsCrossed,
+  Shirt,
+  Smartphone,
+  PawPrint,
+  FileEdit,
+  Info,
+  Copy,
+  ArrowLeftRight,
+  StickyNote,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
-import { Product, ProductVariation, UnitOfMeasure } from '../../types/stock';
+import {
+  Product,
+  ProductVariation,
+  UnitOfMeasure,
+  ProductCondition,
+  ProductDraft,
+} from '../../types/stock';
 import { generateSKU, formatKwanza } from '../../utils/formatters';
+import { ColorPickerInput } from './ColorPickerInput';
 
 interface ProductCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  productToEdit?: Product | null;
+  draftToResume?: ProductDraft | null;
   onViewProduct?: (productId: string) => void;
+  onCreateMovement?: (productId: string) => void;
 }
 
-const SAMPLE_IMAGE_PRESETS = [
-  { label: 'Alimento / Grãos', url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Óleo / Bebidas', url: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Eletrónico / Smartphone', url: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Construção / Materiais', url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Vestuário / Moda', url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Limpeza / Produtos', url: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?auto=format&fit=crop&w=600&q=80' },
-];
+// Curated image presets by category for quick professional selection
+const CATEGORY_IMAGE_PRESETS: Record<
+  string,
+  Array<{ label: string; url: string }>
+> = {
+  Games: [
+    {
+      label: 'Consola & Setup Gaming',
+      url: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Comando / Joystick Pro',
+      url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Jogo Físico / Estojo',
+      url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80',
+    },
+  ],
+  'Casa & Cozinha': [
+    {
+      label: 'Fritadeira / Eletrodoméstico',
+      url: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Panelas & Utensílios',
+      url: 'https://images.unsplash.com/photo-1584990347449-39908cf44147?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Cafeteira Moderna',
+      url: 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?auto=format&fit=crop&w=600&q=80',
+    },
+  ],
+  Moda: [
+    {
+      label: 'T-Shirt Casual / Algodão',
+      url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Calçado / Tênis Running',
+      url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Casaco & Moda Urbana',
+      url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80',
+    },
+  ],
+  Eletrónicos: [
+    {
+      label: 'Smartphone 5G Dual SIM',
+      url: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Auscultadores Bluetooth ANC',
+      url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Computador Portátil / Laptop',
+      url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=600&q=80',
+    },
+  ],
+  Animais: [
+    {
+      label: 'Ração Premium para Cães/Gatos',
+      url: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Brinquedos & Acessórios Pet',
+      url: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      label: 'Higiene & Cuidados Animais',
+      url: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&w=600&q=80',
+    },
+  ],
+};
+
+const DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?auto=format&fit=crop&w=600&q=80';
 
 export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   isOpen,
   onClose,
+  productToEdit,
+  draftToResume,
   onViewProduct,
+  onCreateMovement,
 }) => {
   const {
     suppliers,
     categories,
     warehouses,
+    companies,
+    stockConfigs,
     addProduct,
+    updateProduct,
+    saveProductDraft,
     addSupplier,
     addCategory,
   } = useStock();
 
-  // Current Wizard Step: 1 = Dados, 2 = Variações, 3 = Estoque inicial, 4 = Concluído
+  // Wizard Step: 1 = Dados, 2 = Variações, 3 = Configuração Estoque, 4 = Concluído
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Step 1 State: Produto
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('Eletrónicos');
+  const [condition, setCondition] = useState<ProductCondition>('novo');
   const [description, setDescription] = useState('');
   const [brand, setBrand] = useState('');
   const [unitOfMeasure, setUnitOfMeasure] = useState<UnitOfMeasure>('unidade');
@@ -63,7 +163,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const [costPrice, setCostPrice] = useState<number | ''>('');
   const [salePrice, setSalePrice] = useState<number | ''>('');
   const [supplierId, setSupplierId] = useState('');
-  const [mainImage, setMainImage] = useState(SAMPLE_IMAGE_PRESETS[0].url);
+  const [mainImage, setMainImage] = useState(DEFAULT_IMAGE);
   const [gallery, setGallery] = useState<string[]>([]);
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
 
@@ -72,20 +172,22 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     Array<{
       id: string;
       color: string;
+      colorHex?: string;
       size: string;
       sku: string;
       additionalPrice: number;
+      quantity?: number;
     }>
   >([]);
 
-  // Step 3 State: Estoque inicial (opcional)
+  // Step 3 State: Configuração de Limites de Estoque (SEM quantidade inicial)
   const [initialWarehouseId, setInitialWarehouseId] = useState(warehouses[0]?.id || '');
-  const [initialQuantity, setInitialQuantity] = useState<number | ''>('');
   const [minLimit, setMinLimit] = useState<number | ''>(10);
   const [maxLimit, setMaxLimit] = useState<number | ''>(100);
   const [physicalLocation, setPhysicalLocation] = useState('');
 
-  // Inline Modals & Alert confirmations
+  // Inline Modals & Alert Confirmations
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
 
@@ -96,10 +198,449 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const [newSupplierNotes, setNewSupplierNotes] = useState('');
 
   const [showMarginWarningModal, setShowMarginWarningModal] = useState(false);
+  const [priceWarningDetails, setPriceWarningDetails] = useState<{
+    title: string;
+    message: string;
+    targetStep: number;
+  } | null>(null);
+
   const [createdProductResult, setCreatedProductResult] = useState<Product | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [saveDraftFeedback, setSaveDraftFeedback] = useState(false);
+  const [activeDraftId, setActiveDraftId] = useState<string | undefined>(draftToResume?.id);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+
+  // Snapshot ref for strict dirty checking
+  const initialSnapshotRef = useRef<string>('');
+
+  const computeSnapshot = (data: {
+    name: string;
+    category: string;
+    condition: string;
+    description: string;
+    brand: string;
+    unitOfMeasure: string;
+    sku: string;
+    barcode: string;
+    costPrice: number | '';
+    salePrice: number | '';
+    supplierId: string;
+    mainImage: string;
+    gallery: string[];
+    variations: Array<{
+      color?: string;
+      colorHex?: string;
+      size?: string;
+      sku?: string;
+      additionalPrice?: number;
+      quantity?: number;
+    }>;
+    initialWarehouseId: string;
+    minLimit: number | '';
+    maxLimit: number | '';
+    physicalLocation: string;
+  }) => {
+    return JSON.stringify({
+      name: data.name.trim(),
+      category: data.category,
+      condition: data.condition,
+      description: data.description.trim(),
+      brand: data.brand.trim(),
+      unitOfMeasure: data.unitOfMeasure,
+      sku: data.sku.trim(),
+      barcode: data.barcode.trim(),
+      costPrice: data.costPrice === '' ? '' : Number(data.costPrice),
+      salePrice: data.salePrice === '' ? '' : Number(data.salePrice),
+      supplierId: data.supplierId,
+      mainImage: data.mainImage,
+      gallery: data.gallery,
+      variations: data.variations.map((v) => ({
+        color: v.color?.trim() || '',
+        colorHex: v.colorHex?.trim() || '',
+        size: v.size?.trim() || '',
+        sku: v.sku?.trim() || '',
+        additionalPrice: Number(v.additionalPrice) || 0,
+        quantity: Number(v.quantity) || 0,
+      })),
+      initialWarehouseId: data.initialWarehouseId,
+      minLimit: data.minLimit === '' ? '' : Number(data.minLimit),
+      maxLimit: data.maxLimit === '' ? '' : Number(data.maxLimit),
+      physicalLocation: data.physicalLocation.trim(),
+    });
+  };
+
+  // Condition change handler with automatic min/max limit defaults
+  const handleConditionChange = (newCondition: ProductCondition) => {
+    setCondition(newCondition);
+    if (newCondition === 'novo') {
+      setMinLimit(10);
+      setMaxLimit(100);
+    } else if (newCondition === 'novo_usado' || newCondition === 'usado' || newCondition === 'troca') {
+      setMinLimit(0);
+      setMaxLimit(0);
+    }
+  };
+
+  // Initialize or populate form when opening
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (productToEdit) {
+      setActiveDraftId(undefined);
+      // Pre-fill from existing product
+      setName(productToEdit.name);
+      setCategory(productToEdit.category);
+      setCondition(productToEdit.condition || 'novo');
+      setDescription(productToEdit.description || '');
+      setBrand(productToEdit.brand);
+      setUnitOfMeasure(productToEdit.unitOfMeasure);
+      setSku(productToEdit.sku);
+      setBarcode(productToEdit.barcode || '');
+      setCostPrice(productToEdit.costPrice);
+      setSalePrice(productToEdit.salePrice);
+      setSupplierId(productToEdit.supplierId || suppliers[0]?.id || '');
+      setMainImage(productToEdit.mainImage || DEFAULT_IMAGE);
+      setGallery(productToEdit.gallery || []);
+
+      const initialVars = (productToEdit.variations || []).map((v) => ({
+        id: v.id,
+        color: v.color || '',
+        colorHex: v.colorHex || '',
+        size: v.size || '',
+        sku: v.sku,
+        additionalPrice: v.additionalPrice || 0,
+        quantity: v.quantity ?? 0,
+      }));
+      setVariations(initialVars);
+
+      // Find stock config for this product
+      const existingConfig = stockConfigs.find((c) => c.productId === productToEdit.id);
+      const initialWh = existingConfig ? existingConfig.warehouseId : (warehouses[0]?.id || '');
+      const initialMin = existingConfig ? existingConfig.minLimit : 10;
+      const initialMax = existingConfig ? existingConfig.maxLimit : 100;
+      const initialLoc = existingConfig ? (existingConfig.physicalLocation || '') : '';
+
+      setInitialWarehouseId(initialWh);
+      setMinLimit(initialMin);
+      setMaxLimit(initialMax);
+      setPhysicalLocation(initialLoc);
+      setCurrentStep(1);
+
+      initialSnapshotRef.current = computeSnapshot({
+        name: productToEdit.name,
+        category: productToEdit.category,
+        condition: productToEdit.condition || 'novo',
+        description: productToEdit.description || '',
+        brand: productToEdit.brand,
+        unitOfMeasure: productToEdit.unitOfMeasure,
+        sku: productToEdit.sku,
+        barcode: productToEdit.barcode || '',
+        costPrice: productToEdit.costPrice,
+        salePrice: productToEdit.salePrice,
+        supplierId: productToEdit.supplierId || suppliers[0]?.id || '',
+        mainImage: productToEdit.mainImage || DEFAULT_IMAGE,
+        gallery: productToEdit.gallery || [],
+        variations: initialVars,
+        initialWarehouseId: initialWh,
+        minLimit: initialMin,
+        maxLimit: initialMax,
+        physicalLocation: initialLoc,
+      });
+    } else if (draftToResume) {
+      setActiveDraftId(draftToResume.id);
+      // Pre-fill from saved draft
+      const draftCond = draftToResume.condition || 'novo';
+      const defaultMin = draftCond === 'novo' ? 10 : 0;
+      const defaultMax = draftCond === 'novo' ? 100 : 0;
+      const draftMin = typeof draftToResume.minLimit === 'number' ? draftToResume.minLimit : defaultMin;
+      const draftMax = typeof draftToResume.maxLimit === 'number' ? draftToResume.maxLimit : defaultMax;
+      const draftWh = draftToResume.initialWarehouseId || warehouses[0]?.id || '';
+      const draftLoc = draftToResume.physicalLocation || '';
+      const draftVars = (draftToResume.variations || []).map((v) => ({
+        id: v.id,
+        color: v.color || '',
+        colorHex: v.colorHex || '',
+        size: v.size || '',
+        sku: v.sku,
+        additionalPrice: v.additionalPrice || 0,
+        quantity: v.quantity ?? 0,
+      }));
+
+      setName(draftToResume.name || '');
+      setCategory(draftToResume.category || 'Eletrónicos');
+      setCondition(draftCond);
+      setDescription(draftToResume.description || '');
+      setBrand(draftToResume.brand || '');
+      setUnitOfMeasure(draftToResume.unitOfMeasure || 'unidade');
+      setSku(draftToResume.sku || '');
+      setBarcode(draftToResume.barcode || '');
+      setCostPrice(typeof draftToResume.costPrice === 'number' ? draftToResume.costPrice : '');
+      setSalePrice(typeof draftToResume.salePrice === 'number' ? draftToResume.salePrice : '');
+      setSupplierId(draftToResume.supplierId || suppliers[0]?.id || '');
+      setMainImage(draftToResume.mainImage || DEFAULT_IMAGE);
+      setGallery(draftToResume.gallery || []);
+      setVariations(draftVars);
+      setInitialWarehouseId(draftWh);
+      setMinLimit(draftMin);
+      setMaxLimit(draftMax);
+      setPhysicalLocation(draftLoc);
+      setCurrentStep(draftToResume.currentStep || 1);
+
+      initialSnapshotRef.current = computeSnapshot({
+        name: draftToResume.name || '',
+        category: draftToResume.category || 'Eletrónicos',
+        condition: draftCond,
+        description: draftToResume.description || '',
+        brand: draftToResume.brand || '',
+        unitOfMeasure: draftToResume.unitOfMeasure || 'unidade',
+        sku: draftToResume.sku || '',
+        barcode: draftToResume.barcode || '',
+        costPrice: typeof draftToResume.costPrice === 'number' ? draftToResume.costPrice : '',
+        salePrice: typeof draftToResume.salePrice === 'number' ? draftToResume.salePrice : '',
+        supplierId: draftToResume.supplierId || suppliers[0]?.id || '',
+        mainImage: draftToResume.mainImage || DEFAULT_IMAGE,
+        gallery: draftToResume.gallery || [],
+        variations: draftVars,
+        initialWarehouseId: draftWh,
+        minLimit: draftMin,
+        maxLimit: draftMax,
+        physicalLocation: draftLoc,
+      });
+    } else {
+      // New clean product
+      setActiveDraftId(undefined);
+      const defaultCat = categories[0] || 'Eletrónicos';
+      const defaultCond: ProductCondition = 'novo';
+      const defaultWh = warehouses[0]?.id || '';
+      const defaultSupp = suppliers[0]?.id || '';
+
+      setName('');
+      setCategory(defaultCat);
+      setCondition(defaultCond);
+      setDescription('');
+      setBrand('');
+      setUnitOfMeasure('unidade');
+      setSku('');
+      setBarcode('');
+      setCostPrice('');
+      setSalePrice('');
+      setSupplierId(defaultSupp);
+      setMainImage(DEFAULT_IMAGE);
+      setGallery([]);
+      setVariations([]);
+      setInitialWarehouseId(defaultWh);
+      setMinLimit(10);
+      setMaxLimit(100);
+      setPhysicalLocation('');
+      setCurrentStep(1);
+
+      initialSnapshotRef.current = computeSnapshot({
+        name: '',
+        category: defaultCat,
+        condition: defaultCond,
+        description: '',
+        brand: '',
+        unitOfMeasure: 'unidade',
+        sku: '',
+        barcode: '',
+        costPrice: '',
+        salePrice: '',
+        supplierId: defaultSupp,
+        mainImage: DEFAULT_IMAGE,
+        gallery: [],
+        variations: [],
+        initialWarehouseId: defaultWh,
+        minLimit: 10,
+        maxLimit: 100,
+        physicalLocation: '',
+      });
+    }
+
+    setCreatedProductResult(null);
+    setValidationError(null);
+    setShowCloseConfirmation(false);
+  }, [isOpen, productToEdit, draftToResume]);
 
   if (!isOpen) return null;
+
+  // Strict dirty state: true only if actual data changed compared to initial snapshot
+  const isFormDirty = Boolean(
+    initialSnapshotRef.current &&
+      computeSnapshot({
+        name,
+        category,
+        condition,
+        description,
+        brand,
+        unitOfMeasure,
+        sku,
+        barcode,
+        costPrice,
+        salePrice,
+        supplierId,
+        mainImage,
+        gallery,
+        variations,
+        initialWarehouseId,
+        minLimit,
+        maxLimit,
+        physicalLocation,
+      }) !== initialSnapshotRef.current
+  );
+
+  // Close attempt: prompts confirmation only if real changes were made
+  const handleAttemptClose = () => {
+    if (currentStep === 4) {
+      onClose();
+      return;
+    }
+    if (isFormDirty) {
+      setShowCloseConfirmation(true);
+    } else {
+      onClose();
+    }
+  };
+
+  // Header Save Action (icon only in header)
+  const handleSaveFromHeader = () => {
+    if (productToEdit) {
+      const formattedVariations: ProductVariation[] = variations.map((v) => ({
+        id: v.id,
+        color: v.color.trim() || undefined,
+        colorHex: v.colorHex?.trim() || undefined,
+        size: v.size.trim() || undefined,
+        sku: v.sku.trim(),
+        additionalPrice: Number(v.additionalPrice) || 0,
+        quantity: Number(v.quantity) || 0,
+      }));
+
+      const productPayload: Partial<Product> = {
+        name: name.trim() || productToEdit.name,
+        category: category.trim() || productToEdit.category,
+        condition,
+        description: description.trim(),
+        brand: brand.trim(),
+        unitOfMeasure,
+        sku: sku.trim() || productToEdit.sku,
+        barcode: barcode.trim() || undefined,
+        costPrice: Number(costPrice) || 0,
+        salePrice: Number(salePrice) || 0,
+        supplierId: supplierId || productToEdit.supplierId,
+        mainImage: mainImage || productToEdit.mainImage,
+        gallery: gallery.length > 0 ? gallery : productToEdit.gallery,
+        variations: formattedVariations,
+      };
+
+      const stockConfigPayload = initialWarehouseId
+        ? {
+            warehouseId: initialWarehouseId,
+            minLimit: Number(minLimit) || 0,
+            maxLimit: Number(maxLimit) || 0,
+            physicalLocation: physicalLocation.trim() || undefined,
+          }
+        : undefined;
+
+      updateProduct(productToEdit.id, productPayload, stockConfigPayload);
+      initialSnapshotRef.current = computeSnapshot({
+        name,
+        category,
+        condition,
+        description,
+        brand,
+        unitOfMeasure,
+        sku,
+        barcode,
+        costPrice,
+        salePrice,
+        supplierId,
+        mainImage,
+        gallery,
+        variations,
+        initialWarehouseId,
+        minLimit,
+        maxLimit,
+        physicalLocation,
+      });
+      setSaveDraftFeedback(true);
+      setTimeout(() => setSaveDraftFeedback(false), 1500);
+    } else {
+      setIsSavingDraft(true);
+      const targetDraftId = activeDraftId || draftToResume?.id;
+      const savedDraft = saveProductDraft({
+        id: targetDraftId,
+        name: name.trim() || 'Produto sem título',
+        category,
+        condition,
+        brand,
+        unitOfMeasure,
+        sku,
+        barcode,
+        costPrice: typeof costPrice === 'number' ? costPrice : undefined,
+        salePrice: typeof salePrice === 'number' ? salePrice : undefined,
+        supplierId,
+        description,
+        mainImage,
+        gallery,
+        variations: variations.map((v) => ({
+          id: v.id,
+          color: v.color || undefined,
+          colorHex: v.colorHex || undefined,
+          size: v.size || undefined,
+          sku: v.sku,
+          additionalPrice: v.additionalPrice,
+          quantity: v.quantity,
+        })),
+        currentStep,
+        initialWarehouseId,
+        minLimit: typeof minLimit === 'number' ? minLimit : undefined,
+        maxLimit: typeof maxLimit === 'number' ? maxLimit : undefined,
+        physicalLocation,
+      });
+
+      if (savedDraft?.id) {
+        setActiveDraftId(savedDraft.id);
+      }
+
+      initialSnapshotRef.current = computeSnapshot({
+        name,
+        category,
+        condition,
+        description,
+        brand,
+        unitOfMeasure,
+        sku,
+        barcode,
+        costPrice,
+        salePrice,
+        supplierId,
+        mainImage,
+        gallery,
+        variations,
+        initialWarehouseId,
+        minLimit,
+        maxLimit,
+        physicalLocation,
+      });
+      setSaveDraftFeedback(true);
+      setTimeout(() => {
+        setSaveDraftFeedback(false);
+        setIsSavingDraft(false);
+      }, 1500);
+    }
+  };
+
+  // Save and Close from Confirmation Dialog
+  const handleSaveAndCloseFromDialog = () => {
+    handleSaveFromHeader();
+    setShowCloseConfirmation(false);
+    onClose();
+  };
+
+  // Discard and Close
+  const handleDiscardAndClose = () => {
+    setShowCloseConfirmation(false);
+    onClose();
+  };
 
   // Auto-generate SKU helper
   const handleAutoGenerateSku = () => {
@@ -109,6 +650,37 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     }
     const generated = generateSKU(name || 'ITEM', category || 'GERAL');
     setSku(generated);
+  };
+
+  // Price validation rules per condition:
+  // - Novo: alert if salePrice < costPrice
+  // - Novo-Usado: value can be lower or higher than cost without alert
+  // - Usado: alert if salePrice > costPrice (inverse)
+  const checkPriceValidation = (targetStep: number): boolean => {
+    const cost = Number(costPrice) || 0;
+    const sale = Number(salePrice) || 0;
+
+    if (condition === 'novo' && cost > 0 && sale > 0 && sale < cost) {
+      setPriceWarningDetails({
+        title: 'Preço de Venda Inferior ao Custo (Artigo Novo)',
+        message: `Para artigos novos, o preço de venda (${formatKwanza(sale)}) é inferior ao preço de custo (${formatKwanza(cost)}). Isto gerará prejuízo por unidade vendida. Deseja prosseguir mesmo assim?`,
+        targetStep,
+      });
+      setShowMarginWarningModal(true);
+      return false;
+    }
+
+    if (condition === 'usado' && cost > 0 && sale > 0 && sale > cost) {
+      setPriceWarningDetails({
+        title: 'Preço de Venda Superior ao Custo (Artigo Usado)',
+        message: `Para artigos usados, o preço de venda (${formatKwanza(sale)}) é superior ao preço de custo (${formatKwanza(cost)}). Deseja prosseguir com este valor ou ajustar os preços?`,
+        targetStep,
+      });
+      setShowMarginWarningModal(true);
+      return false;
+    }
+
+    return true;
   };
 
   // Step 1 Validation & Next
@@ -122,12 +694,12 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       setValidationError('A categoria é obrigatória.');
       return;
     }
+    if (!condition) {
+      setValidationError('O estado do artigo é obrigatório.');
+      return;
+    }
 
-    // Check margin warning (sale price < cost price)
-    const cost = Number(costPrice) || 0;
-    const sale = Number(salePrice) || 0;
-    if (cost > 0 && sale > 0 && sale < cost) {
-      setShowMarginWarningModal(true);
+    if (!checkPriceValidation(2)) {
       return;
     }
 
@@ -139,24 +711,46 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     setCurrentStep(2);
   };
 
-  // Step 2: Add Variation Line
+  // Step 2: Add Variation Line (mantém o mesmo tamanho da variação anterior se existir)
   const handleAddVariation = () => {
-    const varSku = sku ? `${sku}-V${variations.length + 1}` : `VAR-${Date.now().toString().slice(-4)}`;
+    const varSku = sku
+      ? `${sku}-V${variations.length + 1}`
+      : `VAR-${Date.now().toString().slice(-4)}`;
+    const lastVar = variations.length > 0 ? variations[variations.length - 1] : null;
     setVariations((prev) => [
       ...prev,
       {
         id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         color: '',
-        size: '',
+        colorHex: '',
+        size: lastVar?.size || '',
         sku: varSku,
-        additionalPrice: 0,
+        additionalPrice: lastVar?.additionalPrice ?? 0,
+        quantity: 0,
+      },
+    ]);
+  };
+
+  // Duplicar variação mantendo o mesmo tamanho e configurações
+  const handleDuplicateVariation = (index: number) => {
+    const source = variations[index];
+    if (!source) return;
+    const varSku = sku
+      ? `${sku}-V${variations.length + 1}`
+      : `VAR-${Date.now().toString().slice(-4)}`;
+    setVariations((prev) => [
+      ...prev,
+      {
+        ...source,
+        id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        sku: varSku,
       },
     ]);
   };
 
   const handleUpdateVariation = (
     index: number,
-    field: 'color' | 'size' | 'sku' | 'additionalPrice',
+    field: 'color' | 'colorHex' | 'size' | 'sku' | 'additionalPrice' | 'quantity',
     value: string | number
   ) => {
     setVariations((prev) => {
@@ -173,12 +767,11 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   // Step 2 Validation & Next
   const handleProceedFromStep2 = () => {
     setValidationError(null);
-    // Validation: if variation rows added, at least color or size must be filled
     for (let i = 0; i < variations.length; i++) {
       const v = variations[i];
       if (!v.color.trim() && !v.size.trim()) {
         setValidationError(
-          `Na variação #${i + 1}, preencha pelo menos a cor ou o tamanho.`
+          `Na variação #${i + 1}, selecione pelo menos a cor ou informe o tamanho/especificação.`
         );
         return;
       }
@@ -186,21 +779,24 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     setCurrentStep(3);
   };
 
-  // Step 3: Final Save
+  // Step 3: Final Save / Submit (Creates or Updates, strictly no initial quantity input)
   const handleFinalSubmit = () => {
     setValidationError(null);
 
     const formattedVariations: ProductVariation[] = variations.map((v) => ({
       id: v.id,
       color: v.color.trim() || undefined,
+      colorHex: v.colorHex?.trim() || undefined,
       size: v.size.trim() || undefined,
       sku: v.sku.trim(),
       additionalPrice: Number(v.additionalPrice) || 0,
+      quantity: Number(v.quantity) || 0,
     }));
 
     const productPayload: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
       name: name.trim(),
       category: category.trim(),
+      condition,
       description: description.trim(),
       brand: brand.trim() || 'Genérica',
       unitOfMeasure,
@@ -211,40 +807,78 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       status: 'ativo',
       supplierId: supplierId || suppliers[0]?.id || '',
       createdBy: 'Administrador MyOffice',
-      mainImage: mainImage || SAMPLE_IMAGE_PRESETS[0].url,
-      gallery: gallery.length > 0 ? gallery : [mainImage || SAMPLE_IMAGE_PRESETS[0].url],
+      mainImage: mainImage || DEFAULT_IMAGE,
+      gallery: gallery.length > 0 ? gallery : [mainImage || DEFAULT_IMAGE],
       variations: formattedVariations,
     };
 
-    // Initial stock (optional): generates automatic audited entrada Movement
-    const initialStockPayload =
-      initialWarehouseId && initialQuantity !== '' && Number(initialQuantity) >= 0
-        ? {
-            warehouseId: initialWarehouseId,
-            quantity: Number(initialQuantity),
-            minLimit: Number(minLimit) || 0,
-            maxLimit: Number(maxLimit) || 0,
-            physicalLocation: physicalLocation.trim() || undefined,
-          }
-        : initialWarehouseId && (minLimit !== '' || maxLimit !== '')
-        ? {
-            warehouseId: initialWarehouseId,
-            quantity: 0,
-            minLimit: Number(minLimit) || 0,
-            maxLimit: Number(maxLimit) || 0,
-            physicalLocation: physicalLocation.trim() || undefined,
-          }
-        : undefined;
+    // Limits config only (zero initial quantity)
+    const stockConfigPayload = initialWarehouseId
+      ? {
+          warehouseId: initialWarehouseId,
+          minLimit: Number(minLimit) || 0,
+          maxLimit: Number(maxLimit) || 0,
+          physicalLocation: physicalLocation.trim() || undefined,
+        }
+      : undefined;
 
-    const created = addProduct(productPayload, initialStockPayload);
-    setCreatedProductResult(created);
+    let savedResult: Product;
+    if (productToEdit) {
+      savedResult = updateProduct(productToEdit.id, productPayload, stockConfigPayload);
+    } else {
+      savedResult = addProduct(
+        productPayload,
+        stockConfigPayload,
+        activeDraftId || draftToResume?.id
+      );
+    }
+
+    setCreatedProductResult(savedResult);
     setCurrentStep(4);
+  };
+
+  // Salvar direto quando em modo edição de artigo existente (disponível nas etapas 1 e 2 ao lado do Avançar)
+  const handleQuickSaveWhenEditing = () => {
+    setValidationError(null);
+    if (!name.trim()) {
+      setValidationError('O nome do produto é obrigatório.');
+      return;
+    }
+    if (!category.trim()) {
+      setValidationError('A categoria é obrigatória.');
+      return;
+    }
+    if (!condition) {
+      setValidationError('O estado do artigo é obrigatório.');
+      return;
+    }
+
+    if (currentStep === 1) {
+      if (!checkPriceValidation(currentStep)) {
+        return;
+      }
+    }
+
+    if (currentStep === 2) {
+      for (let i = 0; i < variations.length; i++) {
+        const v = variations[i];
+        if (!v.color.trim() && !v.size.trim()) {
+          setValidationError(
+            `Na variação #${i + 1}, selecione pelo menos a cor ou informe o tamanho/especificação.`
+          );
+          return;
+        }
+      }
+    }
+
+    handleFinalSubmit();
   };
 
   // Reset Form for "Cadastrar outro produto"
   const handleResetForAnother = () => {
     setName('');
-    setCategory('');
+    setCategory(categories[0] || 'Eletrónicos');
+    setCondition('novo');
     setDescription('');
     setBrand('');
     setUnitOfMeasure('unidade');
@@ -252,21 +886,21 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     setBarcode('');
     setCostPrice('');
     setSalePrice('');
-    setSupplierId('');
-    setMainImage(SAMPLE_IMAGE_PRESETS[0].url);
+    setSupplierId(suppliers[0]?.id || '');
+    setMainImage(DEFAULT_IMAGE);
     setGallery([]);
     setVariations([]);
-    setInitialQuantity('');
     setMinLimit(10);
     setMaxLimit(100);
     setPhysicalLocation('');
     setCreatedProductResult(null);
     setValidationError(null);
+    setActiveDraftId(undefined);
     setCurrentStep(1);
   };
 
-  // Save new category inline
-  const handleSaveInlineCategory = () => {
+  // Add inline Category
+  const handleCreateNewCategory = () => {
     if (newCategoryInput.trim()) {
       addCategory(newCategoryInput.trim());
       setCategory(newCategoryInput.trim());
@@ -275,14 +909,14 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     }
   };
 
-  // Save new supplier inline
-  const handleSaveInlineSupplier = () => {
+  // Add inline Supplier
+  const handleCreateNewSupplier = () => {
     if (newSupplierName.trim()) {
       const created = addSupplier({
         name: newSupplierName.trim(),
-        contact: newSupplierContact.trim() || 'Não informado',
-        address: newSupplierAddress.trim() || 'Luanda, Angola',
-        notes: newSupplierNotes.trim() || undefined,
+        contact: newSupplierContact.trim(),
+        address: newSupplierAddress.trim(),
+        notes: newSupplierNotes.trim(),
       });
       setSupplierId(created.id);
       setNewSupplierName('');
@@ -293,953 +927,1278 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     }
   };
 
-  // Add URL to gallery
-  const handleAddGalleryUrl = () => {
-    if (newGalleryUrl.trim() && !gallery.includes(newGalleryUrl.trim())) {
-      setGallery([...gallery, newGalleryUrl.trim()]);
+  // Add image to gallery
+  const handleAddGalleryImage = () => {
+    if (newGalleryUrl.trim()) {
+      setGallery((prev) => [...prev, newGalleryUrl.trim()]);
       setNewGalleryUrl('');
     }
   };
 
+  const handleRemoveGalleryImage = (index: number) => {
+    setGallery((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Category Icon helper
+  const renderCategoryIcon = (cat: string) => {
+    switch (cat) {
+      case 'Games':
+        return <Gamepad2 className="w-3.5 h-3.5 text-indigo-600" />;
+      case 'Casa & Cozinha':
+        return <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />;
+      case 'Moda':
+        return <Shirt className="w-3.5 h-3.5 text-pink-600" />;
+      case 'Eletrónicos':
+        return <Smartphone className="w-3.5 h-3.5 text-blue-600" />;
+      case 'Animais':
+        return <PawPrint className="w-3.5 h-3.5 text-emerald-600" />;
+      default:
+        return <Layers className="w-3.5 h-3.5 text-slate-500" />;
+    }
+  };
+
+  // Variations total quantity calculation
+  const totalVariationsQuantity = variations.reduce(
+    (sum, v) => sum + (Number(v.quantity) || 0),
+    0
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-      <div
-        className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden my-6 transition-all"
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
-              +
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                {currentStep === 4 ? 'Produto Cadastrado com Sucesso' : 'Novo Produto'}
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                {currentStep === 1 && 'Passo 1 de 3 — Informações do catálogo'}
-                {currentStep === 2 && 'Passo 2 de 3 — Variações (opcional)'}
-                {currentStep === 3 && 'Passo 3 de 3 — Estoque inicial & limites (opcional)'}
-                {currentStep === 4 && 'Registro concluído e auditado'}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            id="btn-close-product-modal"
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Step Indicator (only for steps 1-3) */}
-        {currentStep < 4 && (
-          <div className="px-6 pt-4 pb-2">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div
-                className={`flex items-center gap-1.5 text-xs ${
-                  currentStep === 1
-                    ? 'text-slate-900 font-semibold'
-                    : 'text-slate-400'
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                    currentStep === 1
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  1
-                </span>
-                <span>Dados Gerais</span>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
+        <div
+          className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col overflow-hidden my-auto transition-all"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Modal Top Header */}
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                {productToEdit ? 'ED' : 'CD'}
               </div>
-
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-
-              <div
-                className={`flex items-center gap-1.5 text-xs ${
-                  currentStep === 2
-                    ? 'text-slate-900 font-semibold'
-                    : 'text-slate-400'
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                    currentStep === 2
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  2
-                </span>
-                <span>Variações</span>
-              </div>
-
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-
-              <div
-                className={`flex items-center gap-1.5 text-xs ${
-                  currentStep === 3
-                    ? 'text-slate-900 font-semibold'
-                    : 'text-slate-400'
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                    currentStep === 3
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  3
-                </span>
-                <span>Estoque Inicial</span>
-              </div>
-            </div>
-
-            {validationError && (
-              <div className="mt-3 p-2.5 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-xs text-rose-700">
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{validationError}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Modal Body */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-4">
-          {/* PASSO 1: DADOS DO PRODUTO */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              {/* Nome e Categoria */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Nome do Produto <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="input-product-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: Arroz Agulha Tipo 1 (25kg)"
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-medium text-slate-700">
-                      Categoria <span className="text-rose-500">*</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewCategoryModal(true)}
-                      className="text-[11px] text-slate-600 hover:text-slate-900 font-medium flex items-center gap-0.5"
-                    >
-                      <Plus className="w-3 h-3" /> Nova Categoria
-                    </button>
-                  </div>
-                  <select
-                    id="select-product-category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                  >
-                    <option value="">Selecione uma categoria...</option>
-                    {categories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Descrição */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Descrição Detalhada
-                </label>
-                <textarea
-                  rows={2}
-                  id="input-product-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Informações adicionais, especificações técnicas, embalagem..."
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                />
-              </div>
-
-              {/* Marca, Unidade de Medida, SKU e Código de Barras */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Marca
-                  </label>
-                  <input
-                    type="text"
-                    id="input-product-brand"
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    placeholder="Ex: Tio Lucas"
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Unidade de Medida
-                  </label>
-                  <select
-                    id="select-unit-of-measure"
-                    value={unitOfMeasure}
-                    onChange={(e) => setUnitOfMeasure(e.target.value as UnitOfMeasure)}
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                  >
-                    <option value="unidade">Unidade (un)</option>
-                    <option value="kg">Quilograma (kg)</option>
-                    <option value="litro">Litro (L)</option>
-                    <option value="caixa">Caixa (cx)</option>
-                    <option value="saco">Saco (sc)</option>
-                    <option value="pacote">Pacote (pct)</option>
-                    <option value="metro">Metro (m)</option>
-                    <option value="par">Par</option>
-                  </select>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-medium text-slate-700">
-                      SKU
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleAutoGenerateSku}
-                      className="text-[10px] text-slate-500 hover:text-slate-900"
-                      title="Gerar SKU automático"
-                    >
-                      Gerar
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    id="input-product-sku"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    placeholder="Ex: ALI-ARR-1025"
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Código de Barras (EAN)
-                  </label>
-                  <input
-                    type="text"
-                    id="input-product-barcode"
-                    value={barcode}
-                    onChange={(e) => setBarcode(e.target.value)}
-                    placeholder="Ex: 5601234567890"
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Preços (Kwanza) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200/60">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Preço de Custo (Kz)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      id="input-cost-price"
-                      min="0"
-                      step="any"
-                      value={costPrice}
-                      onChange={(e) => setCostPrice(e.target.value ? Number(e.target.value) : '')}
-                      placeholder="0,00"
-                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white font-mono pl-10"
-                    />
-                    <span className="absolute left-3 top-2 text-xs text-slate-400 font-mono">
-                      Kz
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    {productToEdit
+                      ? `Editar Produto: ${productToEdit.name}`
+                      : draftToResume
+                      ? 'Retomar Rascunho de Produto'
+                      : 'Novo Produto no Catálogo'}
+                  </h2>
+                  {productToEdit && (
+                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-medium rounded border border-blue-200">
+                      Edição
                     </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 mt-1 block">
-                    Custo de aquisição junto ao fornecedor
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Preço de Venda (Kz)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      id="input-sale-price"
-                      min="0"
-                      step="any"
-                      value={salePrice}
-                      onChange={(e) => setSalePrice(e.target.value ? Number(e.target.value) : '')}
-                      placeholder="0,00"
-                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white font-mono pl-10"
-                    />
-                    <span className="absolute left-3 top-2 text-xs text-slate-400 font-mono">
-                      Kz
-                    </span>
-                  </div>
-                  {costPrice && salePrice ? (
-                    <span className="text-[10px] text-slate-600 mt-1 block">
-                      Margem bruta: {formatKwanza(Number(salePrice) - Number(costPrice))} (
-                      {(((Number(salePrice) - Number(costPrice)) / Number(salePrice)) * 100).toFixed(1)}%)
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 mt-1 block">
-                      Preço ao consumidor / revenda
+                  )}
+                  {draftToResume && (
+                    <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded border border-amber-200">
+                      Rascunho
                     </span>
                   )}
                 </div>
-              </div>
-
-              {/* Fornecedor */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-slate-700">
-                    Fornecedor Principal
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewSupplierModal(true)}
-                    className="text-[11px] text-slate-600 hover:text-slate-900 font-medium flex items-center gap-0.5"
-                  >
-                    <UserPlus className="w-3 h-3" /> Criar Novo Fornecedor
-                  </button>
-                </div>
-                <select
-                  id="select-supplier"
-                  value={supplierId}
-                  onChange={(e) => setSupplierId(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                >
-                  <option value="">Selecione o fornecedor do produto...</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.contact.split('•')[0].trim()})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Imagens (Principal + Galeria) */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="block text-xs font-medium text-slate-700">
-                  Imagem Principal & Galeria
-                </label>
-
-                {/* Preset Fast Picker */}
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  <span className="text-[11px] text-slate-400 self-center mr-1">Predefinições:</span>
-                  {SAMPLE_IMAGE_PRESETS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setMainImage(preset.url)}
-                      className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${
-                        mainImage === preset.url
-                          ? 'border-slate-800 bg-slate-800 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg border border-slate-200 overflow-hidden shrink-0 bg-slate-50">
-                    <img
-                      src={mainImage}
-                      alt="Preview principal"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  <div className="flex-1 space-y-1.5">
-                    <input
-                      type="text"
-                      id="input-main-image-url"
-                      value={mainImage}
-                      onChange={(e) => setMainImage(e.target.value)}
-                      placeholder="URL da imagem principal..."
-                      className="w-full text-xs px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newGalleryUrl}
-                        onChange={(e) => setNewGalleryUrl(e.target.value)}
-                        placeholder="Adicionar URL à galeria..."
-                        className="flex-1 text-xs px-3 py-1 border border-slate-300 rounded-lg focus:outline-none bg-white text-slate-600"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddGalleryUrl}
-                        className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium"
-                      >
-                        + Foto
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {gallery.length > 0 && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[10px] text-slate-400">Galeria ({gallery.length}):</span>
-                    {gallery.map((img, i) => (
-                      <div key={i} className="relative group w-8 h-8 rounded border border-slate-200 overflow-hidden">
-                        <img src={img} alt={`Thumb ${i}`} className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))}
-                          className="absolute inset-0 bg-rose-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <p className="text-[11px] text-slate-400">
+                  {currentStep === 1 && 'Passo 1 de 3: Identificação, Estado, Preços e Categoria'}
+                  {currentStep === 2 && 'Passo 2 de 3: Variações (Cores, Tamanhos e Quantidades)'}
+                  {currentStep === 3 && 'Passo 3 de 3: Configuração de Limites no Armazém'}
+                  {currentStep === 4 && 'Cadastro Concluído com Sucesso'}
+                </p>
               </div>
             </div>
-          )}
 
-          {/* PASSO 2: VARIAÇÕES (OPCIONAL) */}
-          {currentStep === 2 && (
-            <div className="space-y-4">
-              <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-600 leading-relaxed flex items-start gap-2">
-                <Layers className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Variações são opcionais.</strong> Se o produto tiver cores, tamanhos ou especificações distintas, adicione-as aqui. Caso contrário, o próprio produto já é o item vendável.
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-700">
-                  Grade de Variações ({variations.length})
-                </span>
+            <div className="flex items-center gap-2">
+              {/* Single Save / Draft Action (Icon only) */}
+              {currentStep !== 4 && (
                 <button
                   type="button"
-                  id="btn-add-variation-row"
-                  onClick={handleAddVariation}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-800 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-xs"
+                  id="btn-save-draft"
+                  onClick={handleSaveFromHeader}
+                  title={
+                    productToEdit
+                      ? 'Guardar alterações'
+                      : activeDraftId
+                      ? 'Atualizar apontamento / rascunho de artigo não terminado'
+                      : 'Guardar apontamento / rascunho de artigo não terminado'
+                  }
+                  aria-label={productToEdit ? 'Guardar alterações' : 'Guardar rascunho de artigo não terminado'}
+                  disabled={isSavingDraft}
+                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors relative disabled:opacity-60"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Adicionar Variação
+                  {productToEdit ? (
+                    <Save className="w-4 h-4 text-slate-600" />
+                  ) : (
+                    <StickyNote className="w-4 h-4 text-amber-600" />
+                  )}
+                  {saveDraftFeedback && (
+                    <span className="absolute -bottom-7 right-0 text-[10px] bg-slate-900 text-white px-2 py-0.5 rounded shadow-sm whitespace-nowrap z-10">
+                      {productToEdit
+                        ? 'Alterações guardadas!'
+                        : activeDraftId
+                        ? 'Rascunho atualizado!'
+                        : 'Rascunho guardado!'}
+                    </span>
+                  )}
                 </button>
-              </div>
-
-              {variations.length === 0 ? (
-                <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
-                  <p className="text-xs text-slate-400 mb-2">Nenhuma variação adicionada.</p>
-                  <p className="text-[11px] text-slate-500 mb-3">
-                    Você pode avançar diretamente se este item for vendido em formato único.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleAddVariation}
-                    className="text-xs text-slate-800 underline font-medium hover:text-slate-950"
-                  >
-                    + Criar primeira variação agora
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {variations.map((v, index) => (
-                    <div
-                      key={v.id}
-                      className="p-3 border border-slate-200 rounded-xl bg-white shadow-xs space-y-2"
-                    >
-                      <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                        <span className="text-xs font-semibold text-slate-700">
-                          Variação #{index + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveVariation(index)}
-                          className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors"
-                          title="Remover linha"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div>
-                          <label className="block text-[10px] text-slate-500 mb-0.5">
-                            Cor
-                          </label>
-                          <input
-                            type="text"
-                            value={v.color}
-                            onChange={(e) => handleUpdateVariation(index, 'color', e.target.value)}
-                            placeholder="Ex: Azul Escuro"
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-slate-500 mb-0.5">
-                            Tamanho / Medida
-                          </label>
-                          <input
-                            type="text"
-                            value={v.size}
-                            onChange={(e) => handleUpdateVariation(index, 'size', e.target.value)}
-                            placeholder="Ex: 256GB / XL"
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-slate-500 mb-0.5">
-                            SKU Próprio
-                          </label>
-                          <input
-                            type="text"
-                            value={v.sku}
-                            onChange={(e) => handleUpdateVariation(index, 'sku', e.target.value)}
-                            placeholder="Ex: PROD-BLU-256"
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-md focus:outline-none font-mono"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-slate-500 mb-0.5">
-                            Preço Adicional (Kz)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={v.additionalPrice || ''}
-                            onChange={(e) => handleUpdateVariation(index, 'additionalPrice', Number(e.target.value))}
-                            placeholder="0 Kz"
-                            className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-md focus:outline-none font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               )}
+
+              {/* Close Button with Confirmation trigger */}
+              <button
+                type="button"
+                id="btn-close-product-modal"
+                onClick={handleAttemptClose}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                title="Fechar formulário"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Stepper Progress Bar */}
+          {currentStep !== 4 && (
+            <div className="bg-white border-b border-slate-100 px-6 py-3 shrink-0">
+              <div className="flex items-center justify-between max-w-2xl mx-auto">
+                {/* Step 1 */}
+                <div
+                  className={`flex items-center gap-2 text-xs font-medium cursor-pointer ${
+                    currentStep === 1
+                      ? 'text-slate-900 font-semibold'
+                      : currentStep > 1
+                      ? 'text-emerald-600'
+                      : 'text-slate-400'
+                  }`}
+                  onClick={() => setCurrentStep(1)}
+                >
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                      currentStep === 1
+                        ? 'bg-slate-900 text-white'
+                        : currentStep > 1
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    1
+                  </span>
+                  <span>Dados Básicos</span>
+                </div>
+
+                <div
+                  className={`flex-1 h-0.5 mx-3 ${
+                    currentStep > 1 ? 'bg-emerald-500' : 'bg-slate-200'
+                  }`}
+                />
+
+                {/* Step 2 */}
+                <div
+                  className={`flex items-center gap-2 text-xs font-medium cursor-pointer ${
+                    currentStep === 2
+                      ? 'text-slate-900 font-semibold'
+                      : currentStep > 2
+                      ? 'text-emerald-600'
+                      : 'text-slate-400'
+                  }`}
+                  onClick={() => {
+                    if (name.trim() && category.trim()) {
+                      if (currentStep === 1) {
+                        if (checkPriceValidation(2)) setCurrentStep(2);
+                      } else {
+                        setCurrentStep(2);
+                      }
+                    } else {
+                      setValidationError('Preencha o nome e a categoria do produto antes de prosseguir.');
+                    }
+                  }}
+                >
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                      currentStep === 2
+                        ? 'bg-slate-900 text-white'
+                        : currentStep > 2
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    2
+                  </span>
+                  <span>Variações</span>
+                </div>
+
+                <div
+                  className={`flex-1 h-0.5 mx-3 ${
+                    currentStep > 2 ? 'bg-emerald-500' : 'bg-slate-200'
+                  }`}
+                />
+
+                {/* Step 3: Configuração de Estoque (Clicável) */}
+                <div
+                  className={`flex items-center gap-2 text-xs font-medium cursor-pointer ${
+                    currentStep === 3
+                      ? 'text-slate-900 font-semibold'
+                      : currentStep > 3
+                      ? 'text-emerald-600'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  onClick={() => {
+                    if (name.trim() && category.trim()) {
+                      if (currentStep === 1) {
+                        if (checkPriceValidation(3)) setCurrentStep(3);
+                      } else {
+                        setCurrentStep(3);
+                      }
+                    } else {
+                      setValidationError('Preencha o nome e a categoria do produto antes de prosseguir.');
+                    }
+                  }}
+                >
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                      currentStep === 3
+                        ? 'bg-slate-900 text-white'
+                        : currentStep > 3
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    3
+                  </span>
+                  <span>Configuração de Estoque</span>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* PASSO 3: ESTOQUE INICIAL (OPCIONAL & AUDITADO) */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900 leading-relaxed space-y-1">
-                <div className="flex items-center gap-1.5 font-semibold">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  Regra de Auditoria de Estoque
-                </div>
-                <p className="text-[11px] text-amber-800">
-                  O saldo de estoque nunca é gravado estaticamente. Ao definir a quantidade inicial aqui, o sistema gerará automaticamente uma <strong>Movimentação de Entrada</strong> com a data de hoje e o seu utilizador como responsável, preservando a trilha de auditoria completa.
-                </p>
-                <p className="text-[11px] text-amber-800">
-                  Você pode pular esta etapa se preferir deixar o produto com saldo zero até a primeira entrada física no armazém.
-                </p>
+          {/* Validation Error Banner */}
+          {validationError && (
+            <div className="px-6 pt-4 shrink-0">
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{validationError}</span>
               </div>
+            </div>
+          )}
 
-              <div className="space-y-3 p-4 bg-white border border-slate-200 rounded-xl">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Armazém ou Loja de Entrada
-                  </label>
-                  <select
-                    id="select-initial-warehouse"
-                    value={initialWarehouseId}
-                    onChange={(e) => setInitialWarehouseId(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
-                  >
-                    {warehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name} ({w.type === 'loja_fisica' ? 'Loja Física' : 'Armazém'}) - {w.address.split(',')[0]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Quantidade Inicial
+          {/* Modal Scrollable Body */}
+          <div className="p-6 flex-1 overflow-y-auto min-h-0">
+            {/* ========================================================================= */}
+            {/* STEP 1: DADOS BÁSICOS, ESTADO, PREÇOS E CATEGORIA                         */}
+            {/* ========================================================================= */}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                {/* Nome do Produto & Estado */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Nome do Produto <span className="text-rose-500">*</span>
                     </label>
                     <input
-                      type="number"
-                      id="input-initial-quantity"
-                      min="0"
-                      value={initialQuantity}
-                      onChange={(e) => setInitialQuantity(e.target.value ? Number(e.target.value) : '')}
-                      placeholder="0 (opcional)"
-                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
+                      type="text"
+                      id="input-product-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex: Comando Sem Fios DualSense PS5 / Fritadeira Air Fryer 4.5L"
+                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800 placeholder:text-slate-400"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      Gera movimento de entrada
-                    </span>
                   </div>
 
+                  {/* NOVO CAMPO OBRIGATÓRIO: Estado do Artigo */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Limite Mínimo (Alerta)
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Estado do Artigo <span className="text-rose-500">*</span>
                     </label>
-                    <input
-                      type="number"
-                      id="input-min-limit"
-                      min="0"
-                      value={minLimit}
-                      onChange={(e) => setMinLimit(e.target.value ? Number(e.target.value) : '')}
-                      placeholder="Ex: 10"
-                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
-                    />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      Dispara alerta de reposição
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Limite Máximo
-                    </label>
-                    <input
-                      type="number"
-                      id="input-max-limit"
-                      min="0"
-                      value={maxLimit}
-                      onChange={(e) => setMaxLimit(e.target.value ? Number(e.target.value) : '')}
-                      placeholder="Ex: 100"
-                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
-                    />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      Evita excesso de capital
-                    </span>
+                    <select
+                      id="select-product-condition"
+                      value={condition}
+                      onChange={(e) => handleConditionChange(e.target.value as ProductCondition)}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                    >
+                      <option value="novo">Novo (de fábrica / lacrado)</option>
+                      <option value="novo_usado">Novo-Usado (caixa aberta / demo)</option>
+                      <option value="usado">Usado (em bom estado)</option>
+                      <option value="troca">Troca (recebido para retoma)</option>
+                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Localização Física no Armazém (Opcional)
+                {/* Categoria & Marca */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Categoria com as 5 principais */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Categoria <span className="text-rose-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewCategoryModal(true)}
+                        className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        + Nova
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <select
+                        id="select-product-category"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                      >
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
+                      {renderCategoryIcon(category)}
+                      <span>Taxonomia do catálogo</span>
+                    </div>
+                  </div>
+
+                  {/* Marca */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Marca
+                    </label>
+                    <input
+                      type="text"
+                      id="input-product-brand"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      placeholder="Ex: Sony, Philips, Apple, Nike, Purina"
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                    />
+                  </div>
+
+                  {/* Unidade de Medida */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Unidade de Medida
+                    </label>
+                    <select
+                      id="select-unit-of-measure"
+                      value={unitOfMeasure}
+                      onChange={(e) => setUnitOfMeasure(e.target.value as UnitOfMeasure)}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                    >
+                      <option value="unidade">Unidade (un)</option>
+                      <option value="caixa">Caixa (cx)</option>
+                      <option value="par">Par</option>
+                      <option value="pacote">Pacote (pct)</option>
+                      <option value="kg">Quilograma (kg)</option>
+                      <option value="litro">Litro (L)</option>
+                      <option value="metro">Metro (m)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* SKU e Código de Barras */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Código SKU <span className="text-slate-400 font-normal">(Identificador)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleAutoGenerateSku}
+                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1"
+                      >
+                        <Sparkles className="w-3 h-3" /> Gerar automático
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      id="input-product-sku"
+                      value={sku}
+                      onChange={(e) => setSku(e.target.value.toUpperCase())}
+                      placeholder="Ex: GAME-PS5-001"
+                      className="w-full px-3 py-2 text-xs font-mono uppercase bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Código de Barras EAN-13 <span className="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="input-product-barcode"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      placeholder="Ex: 5601234567890"
+                      className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                {/* Preços e Fornecedor */}
+                <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Preço de Custo */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Preço de Custo (Kz)
+                      </label>
+                      <input
+                        type="number"
+                        id="input-cost-price"
+                        min="0"
+                        step="100"
+                        value={costPrice}
+                        onChange={(e) =>
+                          setCostPrice(e.target.value === '' ? '' : Number(e.target.value))
+                        }
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                      />
+                    </div>
+
+                    {/* Preço de Venda */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Preço de Venda (Kz)
+                      </label>
+                      <input
+                        type="number"
+                        id="input-sale-price"
+                        min="0"
+                        step="100"
+                        value={salePrice}
+                        onChange={(e) =>
+                          setSalePrice(e.target.value === '' ? '' : Number(e.target.value))
+                        }
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 text-xs font-mono font-semibold bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-900"
+                      />
+                    </div>
+
+                    {/* Fornecedor */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          Fornecedor
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewSupplierModal(true)}
+                          className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          + Novo
+                        </button>
+                      </div>
+                      <select
+                        id="select-supplier"
+                        value={supplierId}
+                        onChange={(e) => setSupplierId(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                      >
+                        {suppliers.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Margem Calculada & Alertas por Estado */}
+                  {Number(costPrice) > 0 && Number(salePrice) > 0 && (
+                    <div className="pt-2 border-t border-slate-200/60 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Margem Bruta Estimada:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-medium text-slate-700">
+                            {formatKwanza(Number(salePrice) - Number(costPrice))}
+                          </span>
+                          <span
+                            className={`font-semibold px-2 py-0.5 rounded text-[11px] ${
+                              Number(salePrice) >= Number(costPrice)
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}
+                          >
+                            {Math.round(
+                              ((Number(salePrice) - Number(costPrice)) / Number(costPrice)) * 100
+                            )}
+                            %
+                          </span>
+                        </div>
+                      </div>
+
+                      {condition === 'novo' && Number(salePrice) < Number(costPrice) && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[11px]">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                          <span>Alerta (Novo): O preço de venda é inferior ao preço de custo.</span>
+                        </div>
+                      )}
+
+                      {condition === 'usado' && Number(salePrice) > Number(costPrice) && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                          <span>Aviso (Usado): O preço de venda é superior ao preço de custo.</span>
+                        </div>
+                      )}
+
+                      {condition === 'novo_usado' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px]">
+                          <Info className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                          <span>Novo-Usado: Preço livre (pode ser inferior ou superior ao custo).</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Imagens (Principal e Galeria com Presets das 5 Categorias) */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Imagem do Produto
                   </label>
-                  <input
-                    type="text"
-                    id="input-physical-location"
-                    value={physicalLocation}
-                    onChange={(e) => setPhysicalLocation(e.target.value)}
-                    placeholder="Ex: Corredor B, Prateleira 4, Posição 2"
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-20 h-20 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shrink-0 shadow-2xs">
+                      <img
+                        src={mainImage}
+                        alt="Pré-visualização"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="url"
+                        id="input-main-image-url"
+                        value={mainImage}
+                        onChange={(e) => setMainImage(e.target.value)}
+                        placeholder="URL da imagem (https://...)"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400"
+                      />
+
+                      {/* Presets adaptados para a categoria selecionada */}
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block mb-1">
+                          Fotos sugeridas para {category}:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(CATEGORY_IMAGE_PRESETS[category] || CATEGORY_IMAGE_PRESETS['Eletrónicos']).map(
+                            (preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => setMainImage(preset.url)}
+                                className={`px-2.5 py-1 text-[11px] rounded-lg border transition-all ${
+                                  mainImage === preset.url
+                                    ? 'bg-slate-900 text-white border-slate-900 font-medium'
+                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descrição */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Descrição Detalhada & Especificações
+                  </label>
+                  <textarea
+                    id="textarea-description"
+                    rows={2}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Detalhes técnicos, garantia, dimensões, voltagem, especificações..."
+                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800 placeholder:text-slate-400"
                   />
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* PASSO 4: SUCESSO & OPÇÕES DE CONCLUSÃO */}
-          {currentStep === 4 && createdProductResult && (
-            <div className="py-6 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-
-              <div>
-                <h4 className="text-base font-semibold text-slate-900">
-                  {createdProductResult.name}
-                </h4>
-                <p className="text-xs text-slate-500 mt-1 font-mono">
-                  SKU: {createdProductResult.sku} • {createdProductResult.category}
-                </p>
-                <p className="text-xs text-slate-600 mt-2 max-w-md mx-auto">
-                  O produto foi inserido no catálogo com sucesso. Todas as configurações e movimentações associadas foram registradas no log de auditoria.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  id="btn-add-another-product"
-                  onClick={handleResetForAnother}
-                  className="w-full sm:w-auto px-4 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-xs"
-                >
-                  + Cadastrar Outro Produto
-                </button>
-
-                <button
-                  type="button"
-                  id="btn-view-created-product"
-                  onClick={() => {
-                    onClose();
-                    onViewProduct?.(createdProductResult.id);
-                  }}
-                  className="w-full sm:w-auto px-5 py-2 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors shadow-xs"
-                >
-                  Ver Produto Cadastrado
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Modal Footer Controls (for steps 1-3) */}
-        {currentStep < 4 && (
-          <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-            {currentStep > 1 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setValidationError(null);
-                  setCurrentStep((prev) => (prev - 1) as any);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" /> Voltar
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                Cancelar
-              </button>
             )}
 
-            <div className="flex items-center gap-2">
-              {currentStep === 1 && (
+            {/* ========================================================================= */}
+            {/* STEP 2: VARIAÇÕES (COR COM COLOR PICKER, TAMANHO E QUANTIDADE)            */}
+            {/* ========================================================================= */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-800">
+                      Grade de Variações do Produto
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Configure combinações como Cor, Tamanho, Capacidade e Quantidade por variação.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    id="btn-add-variation-row"
+                    onClick={handleAddVariation}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Adicionar Variação</span>
+                  </button>
+                </div>
+
+                {variations.length === 0 ? (
+                  <div className="p-8 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-2">
+                      <Palette className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-xs font-medium text-slate-700">Sem variações configuradas</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm mx-auto">
+                      Se o produto não tiver tamanhos ou cores diferentes, pode avançar diretamente para o próximo passo.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleAddVariation}
+                      className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Adicionar Primeira Variação</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {variations.map((v, index) => (
+                      <div
+                        key={v.id}
+                        className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-2xs space-y-3"
+                      >
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">
+                              {index + 1}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-800">
+                              Variação #{index + 1}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateVariation(index)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+                              title="Duplicar variação mantendo o mesmo tamanho"
+                            >
+                              <Copy className="w-3 h-3 text-slate-500" />
+                              <span>Manter tamanho</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariation(index)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                              title="Remover variação"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+                          {/* Campo Cor com Seletor Visual ColorPickerInput */}
+                          <div className="sm:col-span-1">
+                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                              Cor (Seletor)
+                            </label>
+                            <ColorPickerInput
+                              value={v.color}
+                              hex={v.colorHex}
+                              onChange={(colorName, colorHex) => {
+                                handleUpdateVariation(index, 'color', colorName);
+                                handleUpdateVariation(index, 'colorHex', colorHex);
+                              }}
+                              placeholder="Escolher cor"
+                            />
+                          </div>
+
+                          {/* Tamanho / Especificação */}
+                          <div className="sm:col-span-1">
+                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                              Tamanho / Versão
+                            </label>
+                            <input
+                              type="text"
+                              value={v.size}
+                              onChange={(e) =>
+                                handleUpdateVariation(index, 'size', e.target.value)
+                              }
+                              placeholder="Ex: M / 42 / 1TB"
+                              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400"
+                            />
+                          </div>
+
+                          {/* SKU Específico */}
+                          <div className="sm:col-span-1">
+                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                              SKU da Variação
+                            </label>
+                            <input
+                              type="text"
+                              value={v.sku}
+                              onChange={(e) =>
+                                handleUpdateVariation(index, 'sku', e.target.value.toUpperCase())
+                              }
+                              className="w-full px-3 py-2 text-xs font-mono uppercase bg-white border border-slate-200 rounded-lg text-slate-800"
+                            />
+                          </div>
+
+                          {/* Acréscimo Preço (Kz) */}
+                          <div className="sm:col-span-1">
+                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                              + Preço (Kz)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="500"
+                              value={v.additionalPrice || ''}
+                              onChange={(e) =>
+                                handleUpdateVariation(
+                                  index,
+                                  'additionalPrice',
+                                  Number(e.target.value) || 0
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800"
+                            />
+                          </div>
+
+                          {/* NOVO CAMPO: Quantidade por Variação */}
+                          <div className="sm:col-span-1">
+                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                              Qtd. Esperada
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={v.quantity ?? ''}
+                              onChange={(e) =>
+                                handleUpdateVariation(
+                                  index,
+                                  'quantity',
+                                  e.target.value === '' ? 0 : Number(e.target.value)
+                                )
+                              }
+                              placeholder="0"
+                              className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Resumo visual das variações */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-slate-500" />
+                        <span>
+                          Total de variações cadastradas: <strong>{variations.length}</strong>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">•</span>
+                        <span>
+                          Soma das variações: <strong>{totalVariationsQuantity}</strong> unidades
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* STEP 3: CONFIGURAÇÃO DE ESTOQUE (SEM QUANTIDADE INICIAL DIRETA)            */}
+            {/* ========================================================================= */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                {/* Audit & Compliance Banner (Explains why quantity is set via movements) */}
+                <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="font-semibold text-blue-950">
+                      Regra de Integridade e Auditoria MyOffice
+                    </h4>
+                    <p className="text-[11px] text-blue-800 leading-relaxed">
+                      A quantidade física em armazém não é editada diretamente no cadastro do catálogo.
+                      Aqui define-se o armazém padrão, limites de alerta e localização física. A entrada de
+                      estoque deve ser registrada através de uma <strong>Entrada Formal</strong> no submódulo{' '}
+                      <strong>Movimentação</strong>, garantindo rastreabilidade contábil e fiscal.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Seleção do Armazém Padrão */}
+                <div className="p-4 bg-white border border-slate-200/80 rounded-xl space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Armazém Padrão / Principal
+                    </label>
+                    <select
+                      id="select-initial-warehouse"
+                      value={initialWarehouseId}
+                      onChange={(e) => setInitialWarehouseId(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 font-medium"
+                    >
+                      {warehouses.map((wh) => {
+                        const comp = companies.find((c) => c.id === wh.companyId);
+                        return (
+                          <option key={wh.id} value={wh.id}>
+                            {wh.name} {comp ? `(${comp.name})` : ''} — {wh.address}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Limites de Segurança */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Limite Mínimo (Alerta de Reposição)
+                      </label>
+                      <input
+                        type="number"
+                        id="input-min-limit"
+                        min="0"
+                        value={minLimit}
+                        onChange={(e) =>
+                          setMinLimit(e.target.value === '' ? '' : Number(e.target.value))
+                        }
+                        placeholder="10"
+                        className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Gera alerta automático quando o estoque estiver abaixo deste número.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Limite Máximo Recomendado
+                      </label>
+                      <input
+                        type="number"
+                        id="input-max-limit"
+                        min="0"
+                        value={maxLimit}
+                        onChange={(e) =>
+                          setMaxLimit(e.target.value === '' ? '' : Number(e.target.value))
+                        }
+                        placeholder="100"
+                        className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Evita super-estocagem e custo excessivo de capital imobilizado.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Localização Física */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Localização Física no Armazém
+                    </label>
+                    <input
+                      type="text"
+                      id="input-physical-location"
+                      value={physicalLocation}
+                      onChange={(e) => setPhysicalLocation(e.target.value)}
+                      placeholder="Ex: Corredor B • Prateleira 4 • Gaveta 12"
+                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* STEP 4: SUCESSO & RESUMO DO PRODUTO CADASTRADO / EDITADO                  */}
+            {/* ========================================================================= */}
+            {currentStep === 4 && createdProductResult && (
+              <div className="py-6 text-center space-y-6 flex flex-col items-center justify-center h-full min-h-[440px]">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {productToEdit
+                      ? 'Produto Atualizado com Sucesso!'
+                      : 'Produto Cadastrado com Sucesso!'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                    {productToEdit
+                      ? 'As informações do catálogo e regras de limites foram salvas.'
+                      : 'O item está ativo no catálogo. Para adicionar quantidade ao estoque físico, registre uma movimentação de entrada.'}
+                  </p>
+                </div>
+
+                {/* Card Resumo do Produto */}
+                <div className="max-w-md mx-auto p-4 bg-slate-50 border border-slate-200/80 rounded-2xl text-left flex items-start gap-4">
+                  <img
+                    src={createdProductResult.mainImage}
+                    alt={createdProductResult.name}
+                    className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                  />
+                  <div className="space-y-1 min-w-0">
+                    <h4 className="text-xs font-bold text-slate-900 truncate">
+                      {createdProductResult.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      SKU: <span className="font-mono">{createdProductResult.sku}</span> •{' '}
+                      {createdProductResult.category}
+                    </p>
+                    <div className="flex items-center gap-2 pt-1 text-xs">
+                      <span className="font-mono font-semibold text-slate-900">
+                        {formatKwanza(createdProductResult.salePrice)}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">
+                        {createdProductResult.condition || 'Novo'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ações de Sucesso */}
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  {onViewProduct && (
+                    <button
+                      type="button"
+                      id="btn-view-product-details-after-create"
+                      onClick={() => {
+                        onViewProduct(createdProductResult.id);
+                        onClose();
+                      }}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                    >
+                      Ver Detalhes do Produto
+                    </button>
+                  )}
+
+                  {onCreateMovement && (
+                    <button
+                      type="button"
+                      id="btn-create-movement-after-create"
+                      onClick={() => {
+                        onCreateMovement(createdProductResult.id);
+                        onClose();
+                      }}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-xs inline-flex items-center gap-1.5"
+                    >
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
+                      Criar Movimento
+                    </button>
+                  )}
+
+                  {!productToEdit && (
+                    <button
+                      type="button"
+                      id="btn-create-another-product"
+                      onClick={handleResetForAnother}
+                      className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      Cadastrar Outro Produto
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    id="btn-finish-modal"
+                    onClick={onClose}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Concluir e Fechar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Modal Bottom Footer (Navigation & Actions) */}
+          {currentStep !== 4 && (
+            <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+              {/* Left action: Cancel only (no duplicate save button) */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  id="btn-step1-next"
-                  onClick={handleProceedFromStep1}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                  id="btn-cancel-modal"
+                  onClick={handleAttemptClose}
+                  className="px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
                 >
-                  <span>Avançar para Variações</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  Cancelar
                 </button>
-              )}
+              </div>
 
-              {currentStep === 2 && (
-                <>
+              {/* Right actions: Voltar / Avançar / Salvar */}
+              <div className="flex items-center gap-2">
+                {currentStep > 1 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setValidationError(null);
-                      setCurrentStep(3);
-                    }}
-                    className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
+                    id="btn-wizard-prev"
+                    onClick={() => setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3)}
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium transition-colors"
                   >
-                    Pular Variações
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Voltar</span>
                   </button>
+                )}
+
+                {/* Botão de Guardar Imediato (Exclusivo para EDIÇÃO de artigo já criado) */}
+                {Boolean(productToEdit) && currentStep < 3 && (
                   <button
                     type="button"
-                    id="btn-step2-next"
+                    id={`btn-quick-save-step${currentStep}`}
+                    onClick={handleQuickSaveWhenEditing}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+                    title="Guardar alterações feitas no artigo logo nesta guia sem precisar avançar até o fim"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Guardar Alterações</span>
+                  </button>
+                )}
+
+                {currentStep === 1 && (
+                  <button
+                    type="button"
+                    id="btn-wizard-next-step1"
+                    onClick={handleProceedFromStep1}
+                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                  >
+                    <span>Avançar para Variações</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {currentStep === 2 && (
+                  <button
+                    type="button"
+                    id="btn-wizard-next-step2"
                     onClick={handleProceedFromStep2}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
                   >
                     <span>Avançar para Estoque</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
-                </>
-              )}
+                )}
 
-              {currentStep === 3 && (
-                <button
-                  type="button"
-                  id="btn-save-product-final"
-                  onClick={handleFinalSubmit}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
-                >
-                  <PackageCheck className="w-3.5 h-3.5" />
-                  <span>Salvar Produto</span>
-                </button>
-              )}
+                {currentStep === 3 && (
+                  <button
+                    type="button"
+                    id="btn-wizard-finish"
+                    onClick={handleFinalSubmit}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{productToEdit ? 'Salvar Alterações' : 'Finalizar Cadastro'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* CONFIRMATION DIALOG WHEN CLOSING UNFINISHED MODAL                         */}
+      {/* ========================================================================= */}
+      {showCloseConfirmation && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+                <FileEdit className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Deseja guardar o cadastro como rascunho?
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Existem informações alteradas no formulário. Pode continuar editando, guardar o
+                  rascunho para retomar mais tarde ou sair sem guardar.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                id="btn-dialog-continue-editing"
+                onClick={() => setShowCloseConfirmation(false)}
+                className="w-full sm:w-auto px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
+              >
+                Continuar
+              </button>
+
+              <button
+                type="button"
+                id="btn-dialog-save-draft"
+                onClick={handleSaveFromHeader}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
+              >
+                {productToEdit ? (
+                  <Save className="w-3.5 h-3.5" />
+                ) : (
+                  <StickyNote className="w-3.5 h-3.5" />
+                )}
+                <span>{productToEdit ? 'Guardar' : 'Guardar Rascunho'}</span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-dialog-discard"
+                onClick={handleDiscardAndClose}
+                className="w-full sm:w-auto px-3.5 py-1.5 text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg font-medium transition-colors"
+              >
+                Sair
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* INLINE MODAL: Criar Nova Categoria */}
-        {showNewCategoryModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xl max-w-sm w-full space-y-3">
-              <h4 className="text-xs font-semibold text-slate-800">Nova Categoria</h4>
+      {/* ========================================================================= */}
+      {/* MARGIN WARNING MODAL                                                      */}
+      {/* ========================================================================= */}
+      {showMarginWarningModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {priceWarningDetails.title || 'Aviso de Preço'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  {priceWarningDetails.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                id="btn-correct-prices"
+                onClick={() => setShowMarginWarningModal(false)}
+                className="px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
+              >
+                Corrigir Preços
+              </button>
+              <button
+                type="button"
+                id="btn-ignore-margin-warning"
+                onClick={() => {
+                  setShowMarginWarningModal(false);
+                  setCurrentStep((priceWarningDetails.targetStep as 1 | 2 | 3) || 2);
+                }}
+                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                Ignorar e Avançar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL INLINE: CRIAR NOVA CATEGORIA                                        */}
+      {/* ========================================================================= */}
+      {showNewCategoryModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3">
+            <h4 className="text-xs font-bold text-slate-900">Adicionar Nova Categoria</h4>
+            <input
+              type="text"
+              value={newCategoryInput}
+              onChange={(e) => setNewCategoryInput(e.target.value)}
+              placeholder="Ex: Livros, Ferramentas, Bebidas..."
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+              autoFocus
+            />
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowNewCategoryModal(false)}
+                className="px-3 py-1.5 text-xs text-slate-600 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateNewCategory}
+                className="px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium"
+              >
+                Adicionar Categoria
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL INLINE: CRIAR NOVO FORNECEDOR                                       */}
+      {/* ========================================================================= */}
+      {showNewSupplierModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-3">
+            <h4 className="text-xs font-bold text-slate-900">Cadastrar Fornecedor</h4>
+            <div className="space-y-2">
               <input
                 type="text"
+                value={newSupplierName}
+                onChange={(e) => setNewSupplierName(e.target.value)}
+                placeholder="Nome da Empresa / Fornecedor *"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
                 autoFocus
-                id="input-inline-category"
-                value={newCategoryInput}
-                onChange={(e) => setNewCategoryInput(e.target.value)}
-                placeholder="Ex: Bebidas Alcoólicas, Ferramentas..."
-                className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
               />
-              <div className="flex justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowNewCategoryModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  id="btn-save-inline-category"
-                  onClick={handleSaveInlineCategory}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
-                >
-                  Salvar Categoria
-                </button>
-              </div>
+              <input
+                type="text"
+                value={newSupplierContact}
+                onChange={(e) => setNewSupplierContact(e.target.value)}
+                placeholder="Contato (Telefone / Email)"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+              />
+              <input
+                type="text"
+                value={newSupplierAddress}
+                onChange={(e) => setNewSupplierAddress(e.target.value)}
+                placeholder="Localização / Província (ex: Luanda - Viana)"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowNewSupplierModal(false)}
+                className="px-3 py-1.5 text-xs text-slate-600 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateNewSupplier}
+                className="px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium"
+              >
+                Salvar Fornecedor
+              </button>
             </div>
           </div>
-        )}
-
-        {/* INLINE MODAL: Criar Novo Fornecedor */}
-        {showNewSupplierModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-md w-full space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <h4 className="text-xs font-semibold text-slate-800">Cadastrar Novo Fornecedor</h4>
-                <button
-                  type="button"
-                  onClick={() => setShowNewSupplierModal(false)}
-                  className="text-slate-400 hover:text-slate-700"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                  Nome da Empresa / Fornecedor <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  autoFocus
-                  id="input-inline-supplier-name"
-                  value={newSupplierName}
-                  onChange={(e) => setNewSupplierName(e.target.value)}
-                  placeholder="Ex: Luanda Imports Lda"
-                  className="w-full text-xs px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                  Contacto (Telefone / WhatsApp / Email)
-                </label>
-                <input
-                  type="text"
-                  id="input-inline-supplier-contact"
-                  value={newSupplierContact}
-                  onChange={(e) => setNewSupplierContact(e.target.value)}
-                  placeholder="Ex: +244 923 000 111 • geral@fornecedor.ao"
-                  className="w-full text-xs px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                  Endereço
-                </label>
-                <input
-                  type="text"
-                  id="input-inline-supplier-address"
-                  value={newSupplierAddress}
-                  onChange={(e) => setNewSupplierAddress(e.target.value)}
-                  placeholder="Ex: Viana Km 18, Luanda"
-                  className="w-full text-xs px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">
-                  Observações
-                </label>
-                <input
-                  type="text"
-                  value={newSupplierNotes}
-                  onChange={(e) => setNewSupplierNotes(e.target.value)}
-                  placeholder="Prazo de pagamento, condições de frete..."
-                  className="w-full text-xs px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowNewSupplierModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  id="btn-save-inline-supplier"
-                  onClick={handleSaveInlineSupplier}
-                  className="px-4 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
-                >
-                  Salvar Fornecedor
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ALERTA: Margem Negativa (Preço de Venda < Custo) */}
-        {showMarginWarningModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4">
-            <div className="bg-white border border-amber-300 rounded-xl p-5 shadow-xl max-w-sm w-full space-y-3">
-              <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs">
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-                Alerta de Margem Negativa
-              </div>
-
-              <p className="text-xs text-slate-600 leading-normal">
-                O preço de venda (<strong>{formatKwanza(Number(salePrice))}</strong>) é menor do que o preço de custo (<strong>{formatKwanza(Number(costPrice))}</strong>).
-              </p>
-              <p className="text-xs text-slate-500 leading-normal">
-                Isto resultará em margem negativa. Deseja prosseguir mesmo assim?
-              </p>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowMarginWarningModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 rounded-lg"
-                >
-                  Revisar Preços
-                </button>
-                <button
-                  type="button"
-                  id="btn-confirm-negative-margin"
-                  onClick={() => {
-                    setShowMarginWarningModal(false);
-                    if (!sku.trim()) setSku(generateSKU(name, category));
-                    setCurrentStep(2);
-                  }}
-                  className="px-3.5 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg"
-                >
-                  Confirmar e Continuar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 };

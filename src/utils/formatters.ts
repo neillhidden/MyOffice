@@ -23,11 +23,35 @@ export function formatUSD(value: number): string {
   }).format(value);
 }
 
-export function convertToKwanza(amountInCurrency: number, currency: 'USD' | 'EUR' | 'CNY' | 'KZ', customRate?: number): number {
-  if (currency === 'KZ') return amountInCurrency;
-  if (currency === 'USD') return amountInCurrency * (customRate || USD_TO_KZ_RATE);
-  if (currency === 'EUR') return amountInCurrency * (customRate || 1010);
-  if (currency === 'CNY') return amountInCurrency * (customRate || 128);
+export function formatCurrencyValue(value: number, currency: string = 'Kz'): string {
+  if (isNaN(value) || value === null || value === undefined) {
+    return `0,00 ${currency}`;
+  }
+  const curr = currency.trim();
+  if (curr.toUpperCase() === 'USD' || curr === '$') {
+    return formatUSD(value);
+  }
+  if (curr.toUpperCase() === 'EUR' || curr === '€') {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+    }).format(value);
+  }
+  // Default Kwanza (Kz)
+  return formatKwanza(value);
+}
+
+export function convertToKwanza(
+  amountInCurrency: number,
+  currency: string = 'KZ',
+  customRate?: number
+): number {
+  const norm = currency.toUpperCase().trim();
+  if (norm === 'KZ' || norm === 'Kwanza' || norm === 'AOA') return amountInCurrency;
+  if (norm === 'USD') return amountInCurrency * (customRate || USD_TO_KZ_RATE);
+  if (norm === 'EUR') return amountInCurrency * (customRate || 1010);
+  if (norm === 'CNY') return amountInCurrency * (customRate || 128);
   return amountInCurrency;
 }
 

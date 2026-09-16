@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
+
 import {
   DefectReason,
   DefectDecision,
