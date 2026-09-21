@@ -100,7 +100,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
     <div
       id="modal-employee-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
     >
       <div
         id="modal-employee-card"
@@ -124,7 +123,10 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </div>
           <button
             type="button"
+            id="btn-close-employee-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
@@ -172,11 +174,13 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 onChange={(e) => setCompanyId(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
               >
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.status === 'inativa' ? '(Inativa)' : ''}
-                  </option>
-                ))}
+                {companies
+                  .filter((c) => c.status !== 'desativada')
+                  .map((c) => (
+                    <option key={c.id} value={c.id} disabled={c.status === 'parada'}>
+                      {c.name} {c.status === 'parada' ? '(Parada)' : ''}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

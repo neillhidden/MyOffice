@@ -88,7 +88,6 @@ export const WarehouseModal: React.FC<WarehouseModalProps> = ({
     <div
       id="modal-warehouse-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-warehouse-card"
@@ -114,6 +113,8 @@ export const WarehouseModal: React.FC<WarehouseModalProps> = ({
             type="button"
             id="btn-close-warehouse-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -169,11 +170,17 @@ export const WarehouseModal: React.FC<WarehouseModalProps> = ({
               <option value="" disabled>
                 Selecione a empresa proprietária
               </option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.status === 'ativa' ? 'Ativa' : 'Inativa'}) • NIF: {c.nif}
-                </option>
-              ))}
+              {companies.map((c) => {
+                const statusLabel =
+                  c.status === 'ativa' ? 'Ativa' : c.status === 'parada' ? 'Parada' : 'Desativada';
+                const isDesativada = c.status === 'desativada';
+                return (
+                  <option key={c.id} value={c.id} disabled={isDesativada && !warehouseToEdit}>
+                    {c.name} ({statusLabel}) • NIF: {c.nif}
+                    {isDesativada ? ' — Indisponível para novos armazéns' : ''}
+                  </option>
+                );
+              })}
             </select>
             <p className="text-[11px] text-slate-500 mt-1">
               Cada armazém pertence obrigatoriamente a exatamente uma Empresa cadastrada em Definições.

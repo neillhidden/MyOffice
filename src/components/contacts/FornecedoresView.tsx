@@ -12,13 +12,15 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle2,
+  X,
+  Building2,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Supplier } from '../../types/stock';
 import { SupplierModal } from './SupplierModal';
 
 export const FornecedoresView: React.FC = () => {
-  const { suppliers, products, deleteSupplier } = useStock();
+  const { suppliers, products, companies, warehouses, stockConfigs, deleteSupplier } = useStock();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('todas');
@@ -51,6 +53,57 @@ export const FornecedoresView: React.FC = () => {
     });
     return map;
   }, [products]);
+
+  // Supplier entity mapping to detect linked companies or orphaned links
+  const supplierEntitiesMap = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        companyNames: string[];
+        hasOrphaned: boolean;
+        inactiveCompany: boolean;
+      }
+    >();
+
+    suppliers.forEach((s) => {
+      const linkedProds = products.filter((p) => p.supplierId === s.id);
+      const companyNamesSet = new Set<string>();
+      let hasOrphaned = false;
+      let inactiveCompany = false;
+
+      linkedProds.forEach((p) => {
+        const whIds = stockConfigs.filter((sc) => sc.productId === p.id).map((sc) => sc.warehouseId);
+        if (whIds.length === 0) {
+          hasOrphaned = true;
+        } else {
+          whIds.forEach((whId) => {
+            const wh = warehouses.find((w) => w.id === whId);
+            if (wh) {
+              const comp = companies.find((c) => c.id === wh.companyId);
+              if (comp) {
+                companyNamesSet.add(comp.name);
+                if (comp.status === 'desativada') {
+                  inactiveCompany = true;
+                }
+              } else {
+                hasOrphaned = true;
+              }
+            } else {
+              hasOrphaned = true;
+            }
+          });
+        }
+      });
+
+      map.set(s.id, {
+        companyNames: Array.from(companyNamesSet),
+        hasOrphaned,
+        inactiveCompany,
+      });
+    });
+
+    return map;
+  }, [suppliers, products, companies, warehouses, stockConfigs]);
 
   // Overall totals
   const overallStats = useMemo(() => {
@@ -289,6 +342,7 @@ export const FornecedoresView: React.FC = () => {
                   const cleanPhone = supplier.contact.replace(/\D/g, '');
                   const linkedCount = productCountBySupplier.get(supplier.id) || 0;
                   const isInactive = supplier.status === 'inativo';
+                  const entityInfo = supplierEntitiesMap.get(supplier.id);
 
                   return (
                     <tr key={supplier.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
@@ -362,16 +416,37 @@ export const FornecedoresView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Artigos Vinculados */}
+                      {/* Artigos Vinculados & Entidade */}
                       <td className="py-3 px-3 text-center whitespace-nowrap">
-                        {linkedCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                            <Package className="w-3 h-3" />
-                            {linkedCount} {linkedCount === 1 ? 'artigo' : 'artigos'}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Nenhum artigo</span>
-                        )}
+                        <div className="flex flex-col items-center gap-1">
+                          {linkedCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                              <Package className="w-3 h-3" />
+                              {linkedCount} {linkedCount === 1 ? 'artigo' : 'artigos'}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">Nenhum artigo</span>
+                          )}
+
+                          {/* Company / Entity info */}
+                          {entityInfo && entityInfo.companyNames.length > 0 ? (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] ${
+                                entityInfo.inactiveCompany
+                                  ? 'text-amber-600 dark:text-amber-400'
+                                  : 'text-slate-500 dark:text-slate-400'
+                              }`}
+                              title={entityInfo.inactiveCompany ? 'Empresa com artigos está desativada' : undefined}
+                            >
+                              <Building2 className="w-2.5 h-2.5" />
+                              {entityInfo.companyNames.join(', ')}
+                            </span>
+                          ) : entityInfo && entityInfo.hasOrphaned ? (
+                            <span className="text-[10px] text-rose-500 dark:text-rose-400">
+                              Vínculo sem empresa
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
 
                       {/* Estado */}
@@ -435,25 +510,36 @@ export const FornecedoresView: React.FC = () => {
         <div
           id="modal-delete-supplier-overlay"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setSupplierToDelete(null)}
         >
           <div
             id="modal-delete-supplier-card"
             className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-800 p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Eliminar Fornecedor
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Deseja realmente remover "{supplierToDelete.name}"?
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Eliminar Fornecedor
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Deseja realmente remover "{supplierToDelete.name}"?
-                </p>
-              </div>
+              <button
+                type="button"
+                id="btn-close-delete-supplier-modal"
+                onClick={() => setSupplierToDelete(null)}
+                aria-label="Fechar"
+                title="Fechar"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors -mr-1 -mt-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60">

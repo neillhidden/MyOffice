@@ -18,8 +18,10 @@ import {
   Warehouse as WarehouseIcon,
   Eye,
   EyeOff,
+  X,
 } from 'lucide-react';
 import { useStock, ProductStockInfo } from '../../context/StockContext';
+import { useWarehouseFilters } from '../../context/WarehouseFilterContext';
 import { formatKwanza } from '../../utils/formatters';
 import { Product } from '../../types/stock';
 import { FilterCheckboxDropdown, FilterOption } from './FilterCheckboxDropdown';
@@ -54,81 +56,31 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
     deleteProduct,
   } = useStock();
 
-  // Multi-select filter states (caixas de seleção)
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(() =>
-    companies.map((c) => c.id)
-  );
-  const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<string[]>(() =>
-    warehouses.map((w) => w.id)
-  );
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => categories);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
-    'ativo',
-    'inativo',
-    'descontinuado',
-  ]);
-  const [selectedConditions, setSelectedConditions] = useState<string[]>([
-    'novo',
-    'novo_usado',
-    'usado',
-    'troca',
-  ]);
-  // Opção Mostrar / Ocultar produtos com estoque 0 (false = mostrar produtos com estoque 0, true = ocultar)
-  const [hideZeroStock, setHideZeroStock] = useState<boolean>(false);
-  const [stockLevelFilter, setStockLevelFilter] = useState<
-    'all' | 'baixo' | 'normal' | 'excesso' | 'zerado'
-  >('all');
+  const {
+    selectedCompanyIds,
+    setSelectedCompanyIds,
+    selectedWarehouseIds,
+    setSelectedWarehouseIds,
+    selectedCategories,
+    setSelectedCategories,
+    selectedStatuses,
+    setSelectedStatuses,
+    selectedConditions,
+    setSelectedConditions,
+    hideZeroStock,
+    setHideZeroStock,
+    stockLevelFilter,
+    setStockLevelFilter,
+    searchQuery: contextSearchQuery,
+    visibleWarehouses,
+    handleCompanyChange,
+    isAnyFilterActive,
+    resetAllFilters,
+  } = useWarehouseFilters();
+
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  // Synchronize company list when companies update
-  useEffect(() => {
-    if (companies.length > 0) {
-      setSelectedCompanyIds((prev) => {
-        // If all were previously selected, keep all selected
-        if (prev.length === 0) return prev;
-        const validIds = companies.map((c) => c.id);
-        const filtered = prev.filter((id) => validIds.includes(id));
-        return filtered.length > 0 ? filtered : validIds;
-      });
-    }
-  }, [companies]);
-
-  // Synchronize categories list
-  useEffect(() => {
-    setSelectedCategories((prev) => {
-      const valid = prev.filter((c) => categories.includes(c));
-      return valid.length > 0 ? valid : categories;
-    });
-  }, [categories]);
-
-  // Warehouses filtered by selected companies
-  const visibleWarehouses = useMemo(() => {
-    if (selectedCompanyIds.length === 0) return [];
-    if (selectedCompanyIds.length === companies.length) return warehouses;
-    return warehouses.filter((w) => selectedCompanyIds.includes(w.companyId));
-  }, [warehouses, selectedCompanyIds, companies.length]);
-
-  // Handle company filter change: sync selected warehouses smoothly
-  const handleCompanyChange = (newCompanyIds: string[]) => {
-    setSelectedCompanyIds(newCompanyIds);
-    if (newCompanyIds.length === 0 || newCompanyIds.length === companies.length) {
-      // Se todas (ou nenhuma) selecionadas, seleciona todos os armazéns
-      setSelectedWarehouseIds(warehouses.map((w) => w.id));
-    } else {
-      // Auto-seleciona todos os armazéns pertencentes às empresas escolhidas
-      const matchingWarehouses = warehouses.filter((w) => newCompanyIds.includes(w.companyId));
-      setSelectedWarehouseIds(matchingWarehouses.map((w) => w.id));
-    }
-  };
-
-  // Keep selectedWarehouseIds in sync with visibleWarehouses
-  useEffect(() => {
-    const visibleIds = new Set(visibleWarehouses.map((w) => w.id));
-    setSelectedWarehouseIds((prev) => {
-      const valid = prev.filter((id) => visibleIds.has(id));
-      return valid.length > 0 ? valid : visibleWarehouses.map((w) => w.id);
-    });
-  }, [visibleWarehouses]);
+  const effectiveSearchQuery = searchQuery !== undefined ? searchQuery : contextSearchQuery;
 
   // Helper to compute stock info based on active warehouse/company multi-filter
   const getFilterStockInfo = useCallback(
@@ -208,8 +160,8 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       // 1. Search Query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+      if (effectiveSearchQuery.trim()) {
+        const query = effectiveSearchQuery.toLowerCase();
         const matchesName = product.name.toLowerCase().includes(query);
         const matchesSku = product.sku.toLowerCase().includes(query);
         const matchesBrand = product.brand.toLowerCase().includes(query);
@@ -284,7 +236,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
     });
   }, [
     products,
-    searchQuery,
+    effectiveSearchQuery,
     selectedCategories,
     selectedStatuses,
     selectedConditions,
@@ -372,45 +324,58 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
 
   // Filter option sets with counts
   const companyOptions: FilterOption[] = useMemo(() => {
-    return companies.map((c) => {
-      const count = products.filter((p) => {
-        const pComps = getProductCompanies(p.id);
-        const belongs = pComps.some((comp) => comp.id === c.id);
-        if (!belongs) return false;
-        if (hideZeroStock) {
-          return getProductStockInfoForCompany(p.id, c.id).currentStock > 0;
-        }
-        return true;
-      }).length;
-      const compWhs = warehouses.filter((w) => w.companyId === c.id);
-      return {
-        id: c.id,
-        label: c.name,
-        count,
-        sublabel: `${compWhs.length} armazém(ns) • NIF: ${c.nif}`,
-      };
-    });
+    return companies
+      .filter((c) => c.status !== 'desativada')
+      .map((c) => {
+        const isParada = c.status === 'parada';
+        const count = products.filter((p) => {
+          const pComps = getProductCompanies(p.id);
+          const belongs = pComps.some((comp) => comp.id === c.id);
+          if (!belongs) return false;
+          if (hideZeroStock) {
+            return getProductStockInfoForCompany(p.id, c.id).currentStock > 0;
+          }
+          return true;
+        }).length;
+        const compWhs = warehouses.filter((w) => w.companyId === c.id);
+        return {
+          id: c.id,
+          label: isParada ? `${c.name} [Parada]` : c.name,
+          count,
+          badge: isParada ? 'Parada' : undefined,
+          sublabel: isParada
+            ? 'Empresa parada — consulta somente leitura'
+            : `${compWhs.length} armazém(ns) • NIF: ${c.nif}`,
+        };
+      });
   }, [companies, products, warehouses, hideZeroStock, getProductCompanies, getProductStockInfoForCompany]);
 
   const warehouseOptions: FilterOption[] = useMemo(() => {
-    return visibleWarehouses.map((w) => {
-      const count = products.filter((p) => {
-        const pWhs = getProductWarehouses(p.id);
-        const belongs = pWhs.some((wh) => wh.id === w.id);
-        if (!belongs) return false;
-        if (hideZeroStock) {
-          return getProductStockInfo(p.id, w.id).currentStock > 0;
-        }
-        return true;
-      }).length;
-      const comp = companies.find((c) => c.id === w.companyId);
-      return {
-        id: w.id,
-        label: w.name,
-        count,
-        sublabel: comp?.name,
-      };
-    });
+    return visibleWarehouses
+      .filter((w) => {
+        const comp = companies.find((c) => c.id === w.companyId);
+        return comp?.status !== 'desativada';
+      })
+      .map((w) => {
+        const comp = companies.find((c) => c.id === w.companyId);
+        const isParada = comp?.status === 'parada';
+        const count = products.filter((p) => {
+          const pWhs = getProductWarehouses(p.id);
+          const belongs = pWhs.some((wh) => wh.id === w.id);
+          if (!belongs) return false;
+          if (hideZeroStock) {
+            return getProductStockInfo(p.id, w.id).currentStock > 0;
+          }
+          return true;
+        }).length;
+        return {
+          id: w.id,
+          label: isParada ? `${w.name} [Parada]` : w.name,
+          count,
+          badge: isParada ? 'Parada' : undefined,
+          sublabel: isParada ? 'Armazém de empresa parada — somente leitura' : comp?.name,
+        };
+      });
   }, [visibleWarehouses, products, companies, hideZeroStock, getProductWarehouses, getProductStockInfo]);
 
   const categoryOptions: FilterOption[] = useMemo(() => {
@@ -452,27 +417,6 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
       { id: 'troca', label: 'Troca', count: products.filter((p) => p.condition === 'troca').length },
     ];
   }, [products]);
-
-  // Check if any filter is non-default
-  const isAnyFilterActive =
-    selectedCompanyIds.length < companies.length ||
-    selectedWarehouseIds.length < warehouses.length ||
-    selectedCategories.length < categories.length ||
-    selectedStatuses.length < 3 ||
-    selectedConditions.length < 4 ||
-    stockLevelFilter !== 'all' ||
-    hideZeroStock;
-
-  // Reset all filters
-  const handleResetAllFilters = () => {
-    setSelectedCompanyIds(companies.map((c) => c.id));
-    setSelectedWarehouseIds(warehouses.map((w) => w.id));
-    setSelectedCategories(categories);
-    setSelectedStatuses(['ativo', 'inativo', 'descontinuado']);
-    setSelectedConditions(['novo', 'novo_usado', 'usado', 'troca']);
-    setHideZeroStock(false);
-    setStockLevelFilter('all');
-  };
 
   return (
     <div className="space-y-6">
@@ -676,7 +620,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             <button
               type="button"
               id="btn-clear-all-stock-filters"
-              onClick={handleResetAllFilters}
+              onClick={resetAllFilters}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors font-medium shadow-2xs cursor-pointer"
               title="Redefinir todos os filtros para o padrão"
             >
@@ -761,11 +705,17 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                     }
                   }
 
+                  const isCompanyStopped = productCompany?.status === 'parada';
+
                   return (
                     <tr
                       key={product.id}
                       onClick={() => onSelectProduct(product.id)}
-                      className="hover:bg-slate-50/80 cursor-pointer transition-colors group"
+                      className={`cursor-pointer transition-colors group ${
+                        isCompanyStopped
+                          ? 'bg-amber-50/30 hover:bg-amber-50/60'
+                          : 'hover:bg-slate-50/80'
+                      }`}
                     >
                       {/* Produto & SKU */}
                       <td className="py-3 px-4">
@@ -822,11 +772,18 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                       {/* Empresa */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {productCompany ? (
-                          <div className="flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="font-medium text-slate-800 text-xs">
-                              {productCompany.name}
-                            </span>
+                          <div className="flex flex-col items-start gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="font-medium text-slate-800 text-xs">
+                                {productCompany.name}
+                              </span>
+                            </div>
+                            {isCompanyStopped && (
+                              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                                Empresa Parada
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-slate-400">—</span>
@@ -929,9 +886,16 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                           <button
                             type="button"
                             id={`btn-edit-product-${product.id}`}
-                            onClick={() => onEditProduct?.(product)}
-                            className="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 rounded-lg transition-colors shadow-2xs"
-                            title="Editar produto"
+                            onClick={() => {
+                              if (!isCompanyStopped) onEditProduct?.(product);
+                            }}
+                            disabled={isCompanyStopped}
+                            className={`p-1.5 rounded-lg transition-colors shadow-2xs ${
+                              isCompanyStopped
+                                ? 'text-slate-300 bg-slate-100 cursor-not-allowed opacity-50'
+                                : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80'
+                            }`}
+                            title={isCompanyStopped ? 'Empresa parada — serviços indisponíveis' : 'Editar produto'}
                             aria-label="Editar produto"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -940,9 +904,16 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                           <button
                             type="button"
                             id={`btn-delete-product-${product.id}`}
-                            onClick={() => setProductToDelete(product)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shadow-2xs border border-transparent hover:border-rose-100"
-                            title="Eliminar produto"
+                            onClick={() => {
+                              if (!isCompanyStopped) setProductToDelete(product);
+                            }}
+                            disabled={isCompanyStopped}
+                            className={`p-1.5 rounded-lg transition-colors shadow-2xs border border-transparent ${
+                              isCompanyStopped
+                                ? 'text-slate-300 bg-slate-100 cursor-not-allowed opacity-50'
+                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100'
+                            }`}
+                            title={isCompanyStopped ? 'Empresa parada — serviços indisponíveis' : 'Eliminar produto'}
                             aria-label="Eliminar produto"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -968,23 +939,34 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
       {productToDelete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4"
-          onClick={() => setProductToDelete(null)}
         >
           <div
             className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-slate-900">Eliminar produto</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Tem certeza de que deseja eliminar o produto{' '}
+                    <strong className="text-slate-800 font-semibold">{productToDelete.name}</strong> (SKU: {productToDelete.sku})? Esta ação não pode ser desfeita.
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-slate-900">Eliminar produto</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Tem certeza de que deseja eliminar o produto{' '}
-                  <strong className="text-slate-800 font-semibold">{productToDelete.name}</strong> (SKU: {productToDelete.sku})? Esta ação não pode ser desfeita.
-                </p>
-              </div>
+              <button
+                type="button"
+                id="btn-close-delete-product-modal"
+                onClick={() => setProductToDelete(null)}
+                aria-label="Fechar"
+                title="Fechar"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg transition-colors -mr-1 -mt-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">

@@ -39,11 +39,23 @@ export interface TopProductItem {
 }
 
 /**
- * Normalizes date string to YYYY-MM-DD
+ * Normalizes date string to YYYY-MM-DD using local calendar values
  */
 export function toISODateOnly(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toISOString().slice(0, 10);
+  if (typeof date === 'string') {
+    if (date.length >= 10 && date[4] === '-' && date[7] === '-') {
+      return date.slice(0, 10);
+    }
+    const d = new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /**
@@ -57,15 +69,36 @@ export function calculatePercentageChange(current: number, previous: number): nu
 }
 
 /**
- * Filter sales by company
+ * Filter sales by company and status.
+ * - Empresa Desativada: excluída por completo (histórico e novos dados ignorados)
+ * - Empresa Parada: histórico de vendas passadas continua a entrar nos totais e gráficos
+ * - "todas": agrega empresas Ativas e Paradas (nunca Desativadas)
  */
 export function filterSalesByCompany(
   sales: Sale[],
   companyId: string,
-  warehouses: Warehouse[]
+  warehouses: Warehouse[],
+  companies: Company[]
 ): Sale[] {
+  // Set of non-disabled companies (ativas and paradas are allowed, desativadas are completely excluded)
+  const nonDisabledCompanyIds = new Set(
+    companies.filter((c) => c.status !== 'desativada').map((c) => c.id)
+  );
+
+  // Armazéns pertencentes a empresas não desativadas
+  const nonDisabledWarehouseIds = new Set(
+    warehouses.filter((w) => nonDisabledCompanyIds.has(w.companyId)).map((w) => w.id)
+  );
+
   if (companyId === 'todas') {
-    return sales.filter((s) => s.status === 'concluida');
+    return sales.filter(
+      (s) => s.status === 'concluida' && nonDisabledWarehouseIds.has(s.warehouseId)
+    );
+  }
+
+  // Se uma empresa específica for selecionada: se for desativada ou inexistente, retorna vazio
+  if (!nonDisabledCompanyIds.has(companyId)) {
+    return [];
   }
 
   const companyWarehouseIds = new Set(
@@ -76,18 +109,25 @@ export function filterSalesByCompany(
 }
 
 /**
- * Detect currencies in sales
+ * Detect currencies in sales (excluding sales from disabled companies)
  */
 export function getSalesCurrencies(
   sales: Sale[],
   warehouses: Warehouse[],
   companies: Company[]
 ): string[] {
+  const nonDisabledCompanyIds = new Set(
+    companies.filter((c) => c.status !== 'desativada').map((c) => c.id)
+  );
   const currencies = new Set<string>();
   sales.forEach((s) => {
     const wh = warehouses.find((w) => w.id === s.warehouseId);
-    const comp = companies.find((c) => c.id === wh?.companyId);
-    currencies.add(comp?.currency || 'Kz');
+    if (wh && nonDisabledCompanyIds.has(wh.companyId)) {
+      const comp = companies.find((c) => c.id === wh.companyId);
+      if (comp?.currency) {
+        currencies.add(comp.currency);
+      }
+    }
   });
   return Array.from(currencies);
 }
@@ -119,7 +159,7 @@ export function computeDashboardData({
   previousPeriodRangeDescription: string;
 } {
   // 1. Filter sales by company and status
-  const validSales = filterSalesByCompany(sales, selectedCompanyId, warehouses);
+  const validSales = filterSalesByCompany(sales, selectedCompanyId, warehouses, companies);
 
   // 2. Map sales with their company currency
   const salesWithCurrency = validSales.map((s) => {
@@ -129,7 +169,7 @@ export function computeDashboardData({
       ...s,
       currency: comp?.currency || 'Kz',
       dateObj: new Date(s.date),
-      dateStr: s.date.slice(0, 10),
+      dateStr: toISODateOnly(s.date),
     };
   });
 
@@ -416,7 +456,7 @@ export function computeTopProducts({
   referenceDate?: Date;
   limit?: number;
 }): TopProductItem[] {
-  const validSales = filterSalesByCompany(sales, selectedCompanyId, warehouses);
+  const validSales = filterSalesByCompany(sales, selectedCompanyId, warehouses, companies);
 
   // Map sales with currency & dateStr
   const salesWithCurrency = validSales.map((s) => {
@@ -425,7 +465,7 @@ export function computeTopProducts({
     return {
       ...s,
       currency: comp?.currency || 'Kz',
-      dateStr: s.date.slice(0, 10),
+      dateStr: toISODateOnly(s.date),
     };
   });
 

@@ -68,7 +68,6 @@ export const TransportModal: React.FC<TransportModalProps> = ({
     <div
       id="modal-transport-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-transport-card"
@@ -93,6 +92,8 @@ export const TransportModal: React.FC<TransportModalProps> = ({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />

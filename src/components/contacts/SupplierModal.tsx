@@ -140,7 +140,6 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
     <div
       id="modal-supplier-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
     >
       <div
         id="modal-supplier-card"
@@ -164,7 +163,10 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           </div>
           <button
             type="button"
+            id="btn-close-supplier-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />

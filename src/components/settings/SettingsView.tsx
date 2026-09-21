@@ -12,17 +12,22 @@ import {
   ShieldAlert,
   Layers,
   AlertTriangle,
+  RotateCcw,
+  Database,
+  History,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Company, Warehouse } from '../../types/stock';
 import { CompanyModal } from './CompanyModal';
 import { DeleteCompanyModal } from './DeleteCompanyModal';
 import { WarehouseModal } from './WarehouseModal';
+import { ResetSettingsModal } from './ResetSettingsModal';
 
 export const SettingsView: React.FC = () => {
   const {
     companies,
     warehouses,
+    banks,
     addCompany,
     updateCompany,
     deleteCompany,
@@ -31,9 +36,13 @@ export const SettingsView: React.FC = () => {
     deleteWarehouse,
   } = useStock();
 
-  const [activeTab, setActiveTab] = useState<'empresas' | 'armazens'>('empresas');
+  const [activeTab, setActiveTab] = useState<'empresas' | 'armazens' | 'reset'>('empresas');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'ativa' | 'inativa'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ativa' | 'desativada' | 'parada'>('all');
+
+  // Reset Modal State
+  const [resetActionType, setResetActionType] = useState<'history' | 'all' | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Company Modals State
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
@@ -169,6 +178,19 @@ export const SettingsView: React.FC = () => {
             <WarehouseIcon className="w-3.5 h-3.5" />
             <span>Armazéns & Lojas ({warehouses.length})</span>
           </button>
+          <button
+            type="button"
+            id="tab-btn-reset"
+            onClick={() => setActiveTab('reset')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'reset'
+                ? 'bg-rose-50 text-rose-700 shadow-xs border border-rose-200'
+                : 'text-slate-600 hover:text-rose-600'
+            }`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Zona de Perigo / Reset</span>
+          </button>
         </div>
       </div>
 
@@ -218,12 +240,13 @@ export const SettingsView: React.FC = () => {
               <select
                 id="select-company-status-filter"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'ativa' | 'inativa')}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'ativa' | 'desativada' | 'parada')}
                 className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none"
               >
                 <option value="all">Todos os Status ({companies.length})</option>
                 <option value="ativa">Ativas ({companies.filter((c) => c.status === 'ativa').length})</option>
-                <option value="inativa">Inativas ({companies.filter((c) => c.status === 'inativa').length})</option>
+                <option value="desativada">Desativadas ({companies.filter((c) => c.status === 'desativada').length})</option>
+                <option value="parada">Paradas ({companies.filter((c) => c.status === 'parada').length})</option>
               </select>
             </div>
           </div>
@@ -278,9 +301,26 @@ export const SettingsView: React.FC = () => {
                                 <span className="font-semibold text-slate-900 block line-clamp-1">
                                   {comp.name}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-400 block">
                                   Cadastrada em {new Date(comp.createdAt).toLocaleDateString('pt-PT')}
                                 </span>
+                                {comp.principalBankId && (() => {
+                                  const pBank = banks.find((b) => b.id === comp.principalBankId);
+                                  if (!pBank) return null;
+                                  return (
+                                    <div className="flex items-center gap-1 mt-1 text-[10px] text-blue-800">
+                                      <Building2 className="w-3 h-3 text-blue-600 shrink-0" />
+                                      <span className="truncate max-w-[150px] font-medium" title={pBank.name}>
+                                        {pBank.name}
+                                      </span>
+                                      {pBank.type === 'banco_padrao' && (
+                                        <span className="text-[9px] px-1 py-0.2 bg-blue-100 text-blue-700 rounded font-medium">
+                                          Padrão
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </td>
@@ -327,15 +367,22 @@ export const SettingsView: React.FC = () => {
                             )}
                           </td>
 
-                          {/* Status: ativa / inativa */}
+                          {/* Status: ativa / desativada / parada */}
                           <td className="py-3.5 px-4">
                             {comp.status === 'ativa' ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 Ativa
                               </span>
+                            ) : comp.status === 'parada' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                Parada
+                              </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                Inativa
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                Desativada
                               </span>
                             )}
                           </td>
@@ -501,6 +548,165 @@ export const SettingsView: React.FC = () => {
         </div>
       )}
 
+      {/* TAB: RESET / ZONA DE PERIGO */}
+      {activeTab === 'reset' && (
+        <div id="section-reset-management" className="space-y-6 max-w-4xl">
+          {/* Top Banner */}
+          <div className="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-5 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-rose-950">
+                  Zona de Perigo • Gestão de Dados e Redefinição
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-200/80 text-rose-900">
+                  Ações Irreversíveis
+                </span>
+              </div>
+              <p className="text-xs text-rose-800/90 mt-1 leading-relaxed">
+                Opções avançadas de limpeza e reinicialização de base de dados. Utilize com extrema cautela.
+                Todas as operações executadas nesta secção exigem confirmação explícita por digitação de frase de segurança.
+              </p>
+              {/* Futuro: Backup antes do reset e restrição a administradores */}
+              <div className="mt-3 pt-3 border-t border-rose-200/60 flex flex-wrap items-center gap-3 text-[11px] text-rose-700">
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Futuro: Acesso restrito ao perfil Administrador
+                </span>
+                <span className="text-rose-300">•</span>
+                <span className="inline-flex items-center gap-1">
+                  <Database className="w-3.5 h-3.5" />
+                  Futuro: Backup automático sugerido antes do reset
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Duas Opções de Reset em Cards Claros e Separados */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Opção A — Zerar histórico */}
+            <div
+              id="card-reset-history"
+              className="bg-white border-2 border-amber-200/80 hover:border-amber-300 rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-all"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-amber-100 text-amber-800 rounded-md">
+                    Opção A
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Zerar histórico</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Apaga todo o histórico transacional do sistema, mantendo o catálogo de produtos e entidades intactos.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-2 text-[11px]">
+                  <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100/80 text-amber-900 space-y-1">
+                    <strong className="block font-semibold">O que é apagado:</strong>
+                    <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+                      <li>Movimentações de Estoque</li>
+                      <li>Movimentações Bancárias (extratos)</li>
+                      <li>Vendas e Transportes (Caixa)</li>
+                      <li>Notificações e Eventos da Agenda</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100/80 text-emerald-900 space-y-1">
+                    <strong className="block font-semibold">O que permanece:</strong>
+                    <ul className="list-disc pl-4 space-y-0.5 text-emerald-800">
+                      <li>Produtos e Variações (estoque zero)</li>
+                      <li>Empresas, Armazéns e Bancos (saldo zero)</li>
+                      <li>Funcionários, Clientes, Fornecedores</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-5 mt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  id="btn-open-reset-history"
+                  onClick={() => {
+                    setResetActionType('history');
+                    setIsResetModalOpen(true);
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100/90 text-amber-800 border border-amber-300 font-semibold text-xs rounded-xl transition-all shadow-xs active:scale-[0.98]"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Zerar Histórico</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Opção B — Zerar tudo */}
+            <div
+              id="card-reset-all"
+              className="bg-white border-2 border-rose-300 hover:border-rose-400 rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-all"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-rose-100 text-rose-800 rounded-md">
+                    Opção B • Extrema
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Zerar tudo</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Apaga absolutamente tudo, incluindo o catálogo e a configuração — deixa o sistema como se tivesse acabado de ser instalado.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-2 text-[11px]">
+                  <div className="p-2.5 bg-rose-50/80 rounded-xl border border-rose-200/80 text-rose-950 space-y-1">
+                    <strong className="block font-semibold">O que é apagado (TUDO):</strong>
+                    <ul className="list-disc pl-4 space-y-0.5 text-rose-900">
+                      <li>Todo o histórico transacional da Opção A</li>
+                      <li>Todos os Produtos e Variações</li>
+                      <li>Todas as Empresas, Armazéns e Bancos</li>
+                      <li>Todos os Contactos (Funcionários, Clientes, Fornecedores)</li>
+                      <li>Todas as Listas de Compras e Agendas</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-slate-600">
+                    <p className="text-[11px] italic">
+                      Útil para reiniciar testes durante o desenvolvimento ou redefinir a conta para uma instalação nova.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-5 mt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  id="btn-open-reset-all"
+                  onClick={() => {
+                    setResetActionType('all');
+                    setIsResetModalOpen(true);
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl transition-all shadow-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Zerar Tudo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Company Create/Edit Modal */}
       <CompanyModal
         isOpen={isCompanyModalOpen}
@@ -525,6 +731,16 @@ export const SettingsView: React.FC = () => {
         onSave={handleSaveWarehouse}
         warehouseToEdit={warehouseToEdit}
         companies={companies}
+      />
+
+      {/* Reset Confirmation Modal (Opção A: Zerar Histórico / Opção B: Zerar Tudo) */}
+      <ResetSettingsModal
+        isOpen={isResetModalOpen}
+        onClose={() => {
+          setIsResetModalOpen(false);
+          setResetActionType(null);
+        }}
+        actionType={resetActionType}
       />
     </div>
   );

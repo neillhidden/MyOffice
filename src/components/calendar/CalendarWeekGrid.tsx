@@ -25,8 +25,14 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
     return map;
   }, [agendas]);
 
-  // Today string
-  const todayStr = '2026-09-13';
+  // Today string in local time
+  const todayStr = React.useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
 
   // Calculate the 7 days of the week starting from Monday
   const weekDays = React.useMemo(() => {
@@ -53,10 +59,16 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
       'Domingo',
     ];
 
+    const formatLocalDate = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
     for (let i = 0; i < 7; i++) {
-      const cur = new Date(monday);
-      cur.setDate(monday.getDate() + i);
-      const dateStr = cur.toISOString().split('T')[0];
+      const cur = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      const dateStr = formatLocalDate(cur);
       list.push({
         date: cur,
         dateStr,
@@ -83,7 +95,7 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
     <div id="calendar-week-grid" className="flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
       {/* 7 Columns Grid */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-7 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 overflow-y-auto">
-        {weekDays.map((day) => {
+        {weekDays.map((day, idx) => {
           const dayEvents = (eventsByDate.get(day.dateStr) || []).sort((a, b) => {
             const timeA = a.time || '00:00';
             const timeB = b.time || '00:00';
@@ -92,7 +104,7 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
 
           return (
             <div
-              key={day.dateStr}
+              key={`week-col-${day.dateStr}-${idx}`}
               id={`week-col-${day.dateStr}`}
               className={`flex flex-col min-h-[180px] p-3 transition-colors ${
                 day.isToday ? 'bg-blue-50/20 dark:bg-blue-950/20' : 'bg-white dark:bg-slate-900'

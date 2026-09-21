@@ -23,6 +23,21 @@ export function formatUSD(value: number): string {
   }).format(value);
 }
 
+/**
+ * Formata valores monetários com notação decimal portuguesa (vírgula decimal)
+ * e código da moeda à direita, por exemplo: "2,50 USD", "1 160,00 USD", "72,00 CNY".
+ */
+export function formatForeignCurrency(value: number, currency: string = 'USD'): string {
+  if (isNaN(value) || value === null || value === undefined) {
+    return `0,00 ${currency}`;
+  }
+  const formatted = new Intl.NumberFormat('pt-PT', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted} ${currency}`;
+}
+
 export function formatCurrencyValue(value: number, currency: string = 'Kz'): string {
   if (isNaN(value) || value === null || value === undefined) {
     return `0,00 ${currency}`;

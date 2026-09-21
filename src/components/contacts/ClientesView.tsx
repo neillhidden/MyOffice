@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   AlertCircle,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Client } from '../../types/client';
@@ -58,6 +59,23 @@ export const ClientesView: React.FC = () => {
     return metricsMap;
   }, [sales, clients]);
 
+  // Helper to reliably determine client type (individual vs empresa)
+  const getEffectiveClientType = (client: Client): 'individual' | 'empresa' => {
+    if (client.type === 'empresa') return 'empresa';
+    if (client.type === 'individual') return 'individual';
+    const nameLower = client.name.toLowerCase();
+    if (
+      nameLower.includes('lda') ||
+      nameLower.includes('limitada') ||
+      nameLower.includes('s.a.') ||
+      nameLower.includes('consultoria') ||
+      nameLower.includes('tecnologias')
+    ) {
+      return 'empresa';
+    }
+    return 'individual';
+  };
+
   // Overall totals
   const overallStats = useMemo(() => {
     let totalPurchasesKz = 0;
@@ -72,8 +90,8 @@ export const ClientesView: React.FC = () => {
 
     return {
       totalClients: clients.length,
-      individualCount: clients.filter((c) => c.type === 'individual').length,
-      empresaCount: clients.filter((c) => c.type === 'empresa').length,
+      individualCount: clients.filter((c) => getEffectiveClientType(c) === 'individual').length,
+      empresaCount: clients.filter((c) => getEffectiveClientType(c) === 'empresa').length,
       clientsWithPurchases,
       totalPurchasesKz,
     };
@@ -82,7 +100,7 @@ export const ClientesView: React.FC = () => {
   // Filtered clients
   const filteredClients = useMemo(() => {
     return clients.filter((c) => {
-      if (selectedType !== 'todos' && c.type !== selectedType) return false;
+      if (selectedType !== 'todos' && getEffectiveClientType(c) !== selectedType) return false;
       if (selectedStatus !== 'todos' && c.status !== selectedStatus) return false;
 
       if (searchTerm.trim()) {
@@ -341,7 +359,7 @@ export const ClientesView: React.FC = () => {
 
                       {/* Tipo */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        {client.type === 'empresa' ? (
+                        {getEffectiveClientType(client) === 'empresa' ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                             <Building2 className="w-3 h-3" />
                             Empresa
@@ -484,25 +502,36 @@ export const ClientesView: React.FC = () => {
         <div
           id="modal-delete-client-overlay"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setClientToDelete(null)}
         >
           <div
             id="modal-delete-client-card"
             className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-800 p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Eliminar Cliente
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Deseja realmente remover "{clientToDelete.name}"?
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Eliminar Cliente
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Deseja realmente remover "{clientToDelete.name}"?
-                </p>
-              </div>
+              <button
+                type="button"
+                id="btn-close-delete-client-modal"
+                onClick={() => setClientToDelete(null)}
+                aria-label="Fechar"
+                title="Fechar"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors -mr-1 -mt-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60">

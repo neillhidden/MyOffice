@@ -160,10 +160,9 @@ export const BankView: React.FC = () => {
               setBankToEdit(null);
               setIsBankModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition-colors shadow-xs"
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition-colors shadow-xs cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nova Conta Bancária</span>
+            <span>Registar conta</span>
           </button>
         </div>
       </div>
@@ -306,6 +305,7 @@ export const BankView: React.FC = () => {
                 className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
               >
                 <option value="todas">Todos os Tipos de Conta</option>
+                <option value="banco_padrao">Banco padrão da empresa</option>
                 <option value="corrente">Conta Corrente</option>
                 <option value="poupanca">Conta Poupança</option>
                 <option value="caixa_fisico">Caixa Físico</option>
@@ -323,13 +323,19 @@ export const BankView: React.FC = () => {
                 <div
                   key={bank.id}
                   id={`card-bank-${bank.id}`}
-                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all"
+                  className={`bg-white rounded-xl border p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all ${
+                    bank.type === 'banco_padrao' ? 'border-blue-200/80 bg-linear-to-b from-blue-50/20 to-white' : 'border-slate-200'
+                  }`}
                 >
                   <div>
                     {/* Top Row: Icon, Name, Type */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                          bank.type === 'banco_padrao'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}>
                           {bank.type === 'caixa_fisico' ? (
                             <Wallet className="w-4 h-4" />
                           ) : (
@@ -340,17 +346,26 @@ export const BankView: React.FC = () => {
                           <h3 className="text-sm font-semibold text-slate-900 leading-tight">
                             {bank.name}
                           </h3>
-                          <span className="text-[11px] text-slate-500 capitalize">
-                            {bank.type === 'caixa_fisico'
+                          <span className="text-[11px] text-slate-500">
+                            {bank.type === 'banco_padrao'
+                              ? 'Banco padrão da empresa'
+                              : bank.type === 'caixa_fisico'
                               ? 'Caixa Físico'
                               : bank.type === 'poupanca'
                               ? 'Poupança'
+                              : bank.type === 'carteira_digital'
+                              ? 'Carteira Digital'
                               : 'Conta Corrente'}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1.5">
+                        {bank.type === 'banco_padrao' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            Banco Padrão
+                          </span>
+                        )}
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
                             bank.status === 'ativa'

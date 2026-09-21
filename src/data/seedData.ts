@@ -13,7 +13,21 @@ import {
   BankMovement,
   Sale,
   Transport,
+  Debt,
+  DebtPayment,
 } from '../types/stock';
+import {
+  KIANDA_COMPANY,
+  KIANDA_BANK,
+  KIANDA_WAREHOUSE,
+  KIANDA_PRODUCTS,
+  KIANDA_STOCK_CONFIGS,
+  KIANDA_INITIAL_MOVEMENTS,
+  KIANDA_SALE_MOVEMENTS,
+  KIANDA_BANK_MOVEMENTS,
+  KIANDA_SALES,
+  KIANDA_TRANSPORTS,
+} from './kiandaSeedData';
 
 export const INITIAL_BANKS: Bank[] = [
   {
@@ -60,6 +74,7 @@ export const INITIAL_BANKS: Bank[] = [
     createdAt: '2025-07-10T10:00:00.000Z',
     updatedAt: '2026-08-01T12:00:00.000Z',
   },
+  KIANDA_BANK,
 ];
 
 export const INITIAL_COMPANIES: Company[] = [
@@ -99,6 +114,7 @@ export const INITIAL_COMPANIES: Company[] = [
     createdAt: '2025-06-01T08:30:00.000Z',
     updatedAt: '2026-06-01T08:30:00.000Z',
   },
+  KIANDA_COMPANY,
 ];
 
 export const INITIAL_WAREHOUSES: Warehouse[] = [
@@ -132,6 +148,7 @@ export const INITIAL_WAREHOUSES: Warehouse[] = [
     contact: '+244 912 443 001',
     status: 'ativo',
   },
+  KIANDA_WAREHOUSE,
 ];
 
 export const INITIAL_CATEGORIES: string[] = [
@@ -370,6 +387,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     status: 'ativo',
     variations: [],
   },
+  ...KIANDA_PRODUCTS,
 ];
 
 export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
@@ -453,6 +471,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 250,
     physicalLocation: 'Corredor C-01, Prateleira 4',
   },
+  ...KIANDA_STOCK_CONFIGS,
 ];
 
 export const INITIAL_MOVEMENTS: Movement[] = [
@@ -657,6 +676,19 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     reason: 'Garrafas rompidas por amassamento na palete',
     reference: 'DEF-2026-001',
   },
+  {
+    id: 'mov-2256',
+    productId: 'prod-1',
+    warehouseId: 'wh-1',
+    type: 'saida',
+    quantity: 1,
+    date: '2026-09-12T11:20:00.000Z',
+    responsible: 'Mateus Gaspar',
+    reason: 'Venda #VND-2256',
+    reference: 'Venda #VND-2256',
+  },
+  ...KIANDA_INITIAL_MOVEMENTS,
+  ...KIANDA_SALE_MOVEMENTS,
 ];
 
 export const INITIAL_DEFECTIVE_RECORDS: DefectiveRecord[] = [
@@ -712,7 +744,7 @@ export const INITIAL_PURCHASE_LISTS: PurchaseList[] = [
     groupId: 'grp-1',
     name: 'Fones de Ouvido Sem Fio Bluetooth TWS',
     category: 'Eletrónicos & Informática',
-    status: 'cotando',
+    status: 'em_pesquisa',
     mainImage: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80',
@@ -726,7 +758,7 @@ export const INITIAL_PURCHASE_LISTS: PurchaseList[] = [
     groupId: 'grp-1',
     name: 'Smartwatch Esportivo À Prova de Água IP68',
     category: 'Eletrónicos & Informática',
-    status: 'cotando',
+    status: 'em_pesquisa',
     mainImage: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=600&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=600&q=80',
@@ -740,7 +772,7 @@ export const INITIAL_PURCHASE_LISTS: PurchaseList[] = [
     groupId: 'grp-2',
     name: 'Óleo de Soja / Palma Caixa 24x500ml',
     category: 'Alimentação & Bebidas',
-    status: 'aprovado',
+    status: 'concluido',
     mainImage: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
     gallery: [],
     notes: 'Cotação direta com importadores para evitar intermediários.',
@@ -752,7 +784,7 @@ export const INITIAL_PURCHASE_LISTS: PurchaseList[] = [
     groupId: null, // "Sem grupo"
     name: 'Furadeira de Impacto Profissional 750W',
     category: 'Construção & Ferragens',
-    status: 'cotando',
+    status: 'em_pesquisa',
     mainImage: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=600&q=80',
     gallery: [],
     notes: 'Equipamento para vendas na Filial Benguela.',
@@ -902,6 +934,7 @@ export const INITIAL_BANK_MOVEMENTS: BankMovement[] = [
     id: 'bmov-1',
     bankId: 'bank-1',
     type: 'entrada',
+    category: 'Outro',
     amount: 12500000,
     date: '2026-01-15T10:00:00.000Z',
     responsible: 'Administrador',
@@ -912,6 +945,7 @@ export const INITIAL_BANK_MOVEMENTS: BankMovement[] = [
     id: 'bmov-2',
     bankId: 'bank-1',
     type: 'entrada',
+    category: 'Venda',
     amount: 360000,
     date: '2026-09-10T14:30:00.000Z',
     responsible: 'Administrador',
@@ -919,14 +953,52 @@ export const INITIAL_BANK_MOVEMENTS: BankMovement[] = [
     reference: 'Venda #VND-1001',
   },
   {
+    id: 'bmov-2256',
+    bankId: 'bank-1',
+    type: 'entrada',
+    category: 'Venda',
+    amount: 520000,
+    date: '2026-09-12T11:20:00.000Z',
+    responsible: 'Mateus Gaspar',
+    reason: 'Receita da Venda #VND-2256 (1 item)',
+    reference: 'Venda #VND-2256',
+  },
+  {
     id: 'bmov-3',
     bankId: 'bank-1',
     type: 'saida',
+    category: 'Compra de estoque',
     amount: 250000,
     date: '2026-09-11T09:15:00.000Z',
     responsible: 'Administrador',
     reason: 'Pagamento de Frete e Material Logístico',
     reference: 'FAT-LOG-882',
+  },
+  {
+    id: 'bmov-debt-pay-1',
+    bankId: 'bank-1',
+    type: 'saida',
+    category: 'Dívida',
+    amount: 200000,
+    date: '2026-09-10T15:00:00.000Z',
+    responsible: 'Administrador',
+    reason: 'Pagamento de dívida (A pagar): Luanda Packaging Lda - Primeira tranche de pagamento via transferência bancária',
+    reference: 'Dívida #deb-1',
+    debtId: 'deb-1',
+    debtPaymentId: 'pay-1',
+  },
+  {
+    id: 'bmov-debt-pay-2',
+    bankId: 'bank-1',
+    type: 'entrada',
+    category: 'Dívida',
+    amount: 120000,
+    date: '2026-09-05T12:00:00.000Z',
+    responsible: 'Administrador',
+    reason: 'Pagamento de dívida (A receber): António Silva - Liquidação integral via transferência',
+    reference: 'Dívida #deb-4',
+    debtId: 'deb-4',
+    debtPaymentId: 'pay-2',
   },
 
   // Movimentações BFA (bank-2)
@@ -934,6 +1006,7 @@ export const INITIAL_BANK_MOVEMENTS: BankMovement[] = [
     id: 'bmov-4',
     bankId: 'bank-2',
     type: 'entrada',
+    category: 'Outro',
     amount: 8000000,
     date: '2026-03-20T11:00:00.000Z',
     responsible: 'Administrador',
@@ -944,6 +1017,7 @@ export const INITIAL_BANK_MOVEMENTS: BankMovement[] = [
     id: 'bmov-5',
     bankId: 'bank-2',
     type: 'entrada',
+    category: 'Venda',
     amount: 190000,
     date: '2026-09-12T16:00:00.000Z',
     responsible: 'Administrador',
@@ -974,6 +1048,7 @@ export const INITIAL_BANK_MOVEMENTS: BankMovement[] = [
     reason: 'Depósito em Moeda Estrangeira para Importações',
     reference: 'DEP-USD-01',
   },
+  ...KIANDA_BANK_MOVEMENTS,
 ];
 
 export const INITIAL_SALES: Sale[] = [
@@ -1167,6 +1242,30 @@ export const INITIAL_SALES: Sale[] = [
     status: 'concluida',
     requiresTransport: false,
     notes: 'Atendimento presencial de domingo em Talatona',
+  },
+  {
+    id: 'VND-2256',
+    date: '2026-09-12T11:20:00.000Z',
+    seller: 'Mateus Gaspar',
+    clientId: 'cli-1',
+    clientName: 'Manuel Gonçalves de Carvalho',
+    warehouseId: 'wh-1',
+    items: [
+      {
+        id: 'si-2256-1',
+        productId: 'prod-1',
+        productName: 'Consola PlayStation 5 Slim 1TB SSD',
+        productSku: 'GAM-PS5-1025',
+        quantity: 1,
+        unitPrice: 520000,
+        subtotal: 520000,
+      },
+    ],
+    paymentMethod: 'multicaixa',
+    total: 520000,
+    status: 'concluida',
+    requiresTransport: false,
+    notes: 'Venda no balcão de Talatona com levantamento imediato',
   },
 
   // ----------------------------------------------------
@@ -1740,6 +1839,7 @@ export const INITIAL_SALES: Sale[] = [
     status: 'concluida',
     requiresTransport: false,
   },
+  ...KIANDA_SALES,
 ];
 
 export const INITIAL_TRANSPORTS: Transport[] = [
@@ -1754,4 +1854,85 @@ export const INITIAL_TRANSPORTS: Transport[] = [
     notes: 'Entregar na portaria com o Sr. Manuel (Porteiro)',
     createdAt: '2026-09-10T14:35:00.000Z',
   },
+  ...KIANDA_TRANSPORTS,
 ];
+
+export const INITIAL_DEBTS: Debt[] = [
+  {
+    id: 'deb-1',
+    type: 'a_pagar',
+    counterpartyType: 'fornecedor',
+    counterpartyId: 'sup-1',
+    counterpartyName: 'Luanda Packaging Lda',
+    companyId: 'comp-1',
+    totalAmount: 450000,
+    currency: 'Kz',
+    createdAt: '2026-09-01T10:00:00.000Z',
+    dueDate: '2026-09-25T18:00:00.000Z',
+    notes: 'Fornecimento de caixas e fita gomada personalizada (NF 4892)',
+  },
+  {
+    id: 'deb-2',
+    type: 'a_receber',
+    counterpartyType: 'cliente',
+    counterpartyId: 'cli-1',
+    counterpartyName: 'TechSolutions Angola, Lda.',
+    companyId: 'comp-1',
+    totalAmount: 850000,
+    currency: 'Kz',
+    createdAt: '2026-09-05T14:30:00.000Z',
+    dueDate: '2026-09-30T18:00:00.000Z',
+    notes: 'Venda corporativa a prazo de periféricos de rede',
+  },
+  {
+    id: 'deb-3',
+    type: 'a_pagar',
+    counterpartyType: 'outro',
+    counterpartyName: 'Prestador de Serviços - Climatização Talatona',
+    companyId: 'comp-2',
+    totalAmount: 180000,
+    currency: 'Kz',
+    createdAt: '2026-08-15T09:00:00.000Z',
+    dueDate: '2026-09-10T18:00:00.000Z',
+    notes: 'Manutenção preventiva dos aparelhos AC do armazém',
+  },
+  {
+    id: 'deb-4',
+    type: 'a_receber',
+    counterpartyType: 'funcionario',
+    counterpartyId: 'emp-1',
+    counterpartyName: 'António Silva',
+    companyId: 'comp-1',
+    totalAmount: 120000,
+    currency: 'Kz',
+    createdAt: '2026-08-20T11:00:00.000Z',
+    dueDate: '2026-09-28T18:00:00.000Z',
+    notes: 'Adiantamento salarial autorizado para devolução parcelada',
+  },
+];
+
+export const INITIAL_DEBT_PAYMENTS: DebtPayment[] = [
+  {
+    id: 'pay-1',
+    debtId: 'deb-1',
+    amount: 200000,
+    date: '2026-09-10T15:00:00.000Z',
+    bankId: 'bank-1',
+    responsible: 'Administrador',
+    notes: 'Primeira tranche de pagamento via transferência bancária',
+    createdAt: '2026-09-10T15:00:00.000Z',
+    movementId: 'bmov-debt-pay-1',
+  },
+  {
+    id: 'pay-2',
+    debtId: 'deb-4',
+    amount: 120000,
+    date: '2026-09-05T12:00:00.000Z',
+    bankId: 'bank-1',
+    responsible: 'Administrador',
+    notes: 'Liquidação integral via transferência',
+    createdAt: '2026-09-05T12:00:00.000Z',
+    movementId: 'bmov-debt-pay-2',
+  },
+];
+

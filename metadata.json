@@ -1,6 +1,6 @@
 {
   "name": "MyOffice",
-  "description": "Sistema de gestão empresarial multi-empresa com módulos de Dashboard comparativo, Estoque, Caixa (Vendas e Transporte), Contactos (Funcionários, Clientes, Fornecedores, Afiliados), Calendário e Notificações centrais.",
+  "description": "Sistema de gestão empresarial multi-empresa com módulos de Dashboard comparativo, Estoque, Caixa (Vendas e Transporte), Financeiro (Contas, Lançamentos e Dívidas), Contactos, Calendário e Notificações.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

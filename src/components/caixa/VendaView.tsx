@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   Receipt,
   Eye,
+  X,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Sale, Transport } from '../../types/stock';
@@ -56,6 +57,9 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
     sales.forEach((s) => {
       const warehouse = warehouses.find((w) => w.id === s.warehouseId);
       const company = companies.find((c) => c.id === warehouse?.companyId);
+      // Empresas desativadas não contribuem para contadores, totais e indicadores
+      if (company?.status === 'desativada') return;
+
       const currency = company?.currency || 'Kz';
       const totalKz = convertToKwanza(s.total, currency);
 
@@ -86,10 +90,15 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
     };
   }, [sales, warehouses, companies]);
 
-  // Filtered sales sorted by date desc
+  // Filtered sales sorted by date desc (excludes desativada companies)
   const filteredSales = useMemo(() => {
     return sales
       .filter((sale) => {
+        const warehouse = warehouses.find((w) => w.id === sale.warehouseId);
+        const company = companies.find((c) => c.id === warehouse?.companyId);
+        // Desativada: histórico oculto de consultas operacionais
+        if (company?.status === 'desativada') return false;
+
         if (statusFilter !== 'todas' && sale.status !== statusFilter) return false;
         if (paymentFilter !== 'todos' && sale.paymentMethod !== paymentFilter) return false;
         if (search.trim()) {
@@ -103,7 +112,7 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sales, statusFilter, paymentFilter, search]);
+  }, [sales, warehouses, companies, statusFilter, paymentFilter, search]);
 
   const handleOpenReceipt = (sale: Sale) => {
     const tr = transports.find((t) => t.saleId === sale.id) || null;
@@ -114,6 +123,16 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
   const handleConfirmCancel = () => {
     if (!saleToCancel) return;
     try {
+      const wh = warehouses.find((w) => w.id === saleToCancel.warehouseId);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      if (comp?.status === 'parada') {
+        setCancelError(`Operação bloqueada: A empresa "${comp.name}" está com status Parada. Não é possível estornar vendas.`);
+        return;
+      }
+      if (comp?.status === 'desativada') {
+        setCancelError(`Operação bloqueada: A empresa "${comp.name}" está desativada.`);
+        return;
+      }
       cancelSale(saleToCancel.id, cancelReason.trim() || undefined);
       setSaleToCancel(null);
       setCancelReason('');
@@ -345,7 +364,14 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
 
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span className="font-medium text-slate-800 block">{warehouse?.name || 'Armazém'}</span>
-                        <span className="text-[11px] text-slate-400">{company?.name || 'Empresa'}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11px] text-slate-400">{company?.name || 'Empresa'}</span>
+                          {company?.status === 'parada' && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                              Parada
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3 px-3 text-slate-700 max-w-xs">
@@ -419,12 +445,22 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
                             <button
                               type="button"
                               onClick={() => {
+                                if (company?.status === 'parada') return;
                                 setSaleToCancel(sale);
                                 setCancelReason('');
                                 setCancelError(null);
                               }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="Estornar venda (devolve ao estoque e estorna o banco)"
+                              disabled={company?.status === 'parada'}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                company?.status === 'parada'
+                                  ? 'text-slate-300 cursor-not-allowed opacity-50'
+                                  : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                              }`}
+                              title={
+                                company?.status === 'parada'
+                                  ? 'Operação bloqueada: Empresa Parada'
+                                  : 'Estornar venda (devolve ao estoque e estorna o banco)'
+                              }
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                             </button>
@@ -445,25 +481,35 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
         <div
           id="modal-cancel-sale-overlay"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
-          onClick={() => setSaleToCancel(null)}
         >
           <div
             id="modal-cancel-sale-card"
             className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 overflow-hidden border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 text-rose-600 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5" />
+            <div className="flex items-start justify-between gap-3 text-rose-600 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Estornar Venda #{saleToCancel.id}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Operação contábil de cancelamento e reposição
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Estornar Venda #{saleToCancel.id}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Operação contábil de cancelamento e reposição
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSaleToCancel(null)}
+                aria-label="Fechar"
+                title="Fechar"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg transition-colors -mr-2 -mt-2"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {cancelError && (

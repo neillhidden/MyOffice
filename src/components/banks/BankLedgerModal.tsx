@@ -42,7 +42,6 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
     <div
       id="modal-bank-ledger-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-bank-ledger-card"
@@ -92,7 +91,10 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
 
             <button
               type="button"
+              id="btn-close-bank-ledger-modal"
               onClick={onClose}
+              aria-label="Fechar"
+              title="Fechar"
               className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors"
             >
               <X className="w-5 h-5" />

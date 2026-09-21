@@ -26,16 +26,40 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
   onOpenNewMovementModal,
   onSelectProduct,
 }) => {
-  const { movements, products, warehouses } = useStock();
+  const { movements, products, warehouses, companies, isCompanyDisabled } = useStock();
 
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Visible warehouses excluding disabled companies
+  const visibleWarehouses = useMemo(() => {
+    return warehouses.filter((w) => {
+      const comp = companies.find((c) => c.id === w.companyId);
+      return !isCompanyDisabled(comp?.status);
+    });
+  }, [warehouses, companies, isCompanyDisabled]);
+
+  // Visible movements: completely excludes disabled companies
+  const visibleMovements = useMemo(() => {
+    return movements.filter((m) => {
+      const wh = warehouses.find((w) => w.id === m.warehouseId);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      if (isCompanyDisabled(comp?.status)) return false;
+
+      if (m.destinationWarehouseId) {
+        const destWh = warehouses.find((w) => w.id === m.destinationWarehouseId);
+        const destComp = companies.find((c) => c.id === destWh?.companyId);
+        if (isCompanyDisabled(destComp?.status)) return false;
+      }
+      return true;
+    });
+  }, [movements, warehouses, companies, isCompanyDisabled]);
+
   // Sorted & filtered movements (strictly chronological, latest first)
   const filteredMovements = useMemo(() => {
-    return [...movements]
+    return [...visibleMovements]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .filter((m) => {
         if (typeFilter !== 'all' && m.type !== typeFilter) return false;
@@ -61,18 +85,18 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
         }
         return true;
       });
-  }, [movements, typeFilter, warehouseFilter, productFilter, searchQuery, products]);
+  }, [visibleMovements, typeFilter, warehouseFilter, productFilter, searchQuery, products]);
 
   // Movement type stats
   const typeCounts = useMemo(() => {
     const counts = { entrada: 0, saida: 0, transferencia: 0, ajuste: 0, defeituoso: 0 };
-    movements.forEach((m) => {
+    visibleMovements.forEach((m) => {
       if (counts[m.type] !== undefined) {
         counts[m.type]++;
       }
     });
     return counts;
-  }, [movements]);
+  }, [visibleMovements]);
 
   return (
     <div className="space-y-6">
@@ -132,11 +156,15 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
               className="bg-transparent font-medium text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="all">Todos os Armazéns</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
+              {visibleWarehouses.map((w) => {
+                const comp = companies.find((c) => c.id === w.companyId);
+                const isParada = comp?.status === 'parada';
+                return (
+                  <option key={w.id} value={w.id}>
+                    {w.name} {isParada ? '(Parada)' : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -147,11 +175,13 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
             className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none"
           >
             <option value="all">Todos os Produtos</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            {products
+              .filter((p) => visibleMovements.some((m) => m.productId === p.id))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -194,9 +224,11 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                 filteredMovements.map((mov) => {
                   const product = products.find((p) => p.id === mov.productId);
                   const wh = warehouses.find((w) => w.id === mov.warehouseId);
+                  const whComp = companies.find((c) => c.id === wh?.companyId);
                   const destWh = mov.destinationWarehouseId
                     ? warehouses.find((w) => w.id === mov.destinationWarehouseId)
                     : null;
+                  const destComp = destWh ? companies.find((c) => c.id === destWh.companyId) : null;
 
                   return (
                     <tr
@@ -273,11 +305,25 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                       {/* Origem / Destino */}
                       <td className="py-3 px-4 whitespace-nowrap text-slate-600">
                         <div>
-                          <span>{wh?.name || 'Armazém Geral'}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span>{wh?.name || 'Armazém Geral'}</span>
+                            {whComp?.status === 'parada' && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-50 text-amber-700 border border-amber-200 rounded">
+                                Parada
+                              </span>
+                            )}
+                          </div>
                           {destWh && (
-                            <span className="text-[11px] text-purple-700 block font-medium">
-                              → {destWh.name}
-                            </span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-purple-700 font-medium">
+                                → {destWh.name}
+                              </span>
+                              {destComp?.status === 'parada' && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-50 text-amber-700 border border-amber-200 rounded">
+                                  Parada
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>

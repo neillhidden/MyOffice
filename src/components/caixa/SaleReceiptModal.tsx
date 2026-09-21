@@ -51,7 +51,6 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
     <div
       id="modal-sale-receipt-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-sale-receipt-card"
@@ -67,6 +66,8 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-emerald-100 hover:text-white p-1 rounded-lg hover:bg-emerald-700/50 transition-colors"
           >
             <X className="w-4 h-4" />

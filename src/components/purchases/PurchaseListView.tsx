@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Folder,
   Layers,
-  Plus,
   ArrowLeft,
   ChevronDown,
   ChevronUp,
@@ -18,6 +17,9 @@ import {
   Clock,
   Sparkles,
   Search,
+  Edit3,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import {
@@ -25,6 +27,7 @@ import {
   PurchaseList,
   PurchaseSource,
   PurchaseListStatus,
+  normalizePurchaseListStatus,
   SourceAvailability,
 } from '../../types/stock';
 import {
@@ -35,6 +38,148 @@ import {
   USD_TO_KZ_RATE,
 } from '../../utils/formatters';
 
+interface StatusBadgeDropdownProps {
+  status: PurchaseListStatus;
+  onChangeStatus: (newStatus: PurchaseListStatus) => void;
+  listName?: string;
+  className?: string;
+}
+
+const STATUS_CONFIG: {
+  key: PurchaseListStatus;
+  label: string;
+  badgeStyle: string;
+  dotStyle: string;
+  menuItemStyle: string;
+}[] = [
+  {
+    key: 'em_pesquisa',
+    label: 'Em pesquisa',
+    badgeStyle:
+      'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    dotStyle: 'bg-slate-500 dark:bg-slate-400',
+    menuItemStyle:
+      'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800',
+  },
+  {
+    key: 'concluido',
+    label: 'Concluído',
+    badgeStyle:
+      'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/60',
+    dotStyle: 'bg-emerald-500 dark:bg-emerald-400',
+    menuItemStyle:
+      'text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/50',
+  },
+  {
+    key: 'cancelado',
+    label: 'Cancelado',
+    badgeStyle:
+      'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100/80 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800 dark:hover:bg-rose-950/60',
+    dotStyle: 'bg-rose-500 dark:bg-rose-400',
+    menuItemStyle:
+      'text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/50',
+  },
+];
+
+const StatusBadgeDropdown: React.FC<StatusBadgeDropdownProps> = ({
+  status,
+  onChangeStatus,
+  listName,
+  className = '',
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const normalized = normalizePurchaseListStatus(status);
+
+  const currentOption =
+    STATUS_CONFIG.find((opt) => opt.key === normalized) || STATUS_CONFIG[0];
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+            if (!isOpen) setIsOpen(true);
+          }
+        }}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={`Status de ${listName || 'lista'}: ${currentOption.label}. Clique para alterar.`}
+        title="Clique para alterar status"
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md border transition-all cursor-pointer shadow-2xs select-none ${currentOption.badgeStyle}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${currentOption.dotStyle}`} />
+        <span>{currentOption.label}</span>
+        <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-label="Opções de status da lista"
+          className="absolute left-0 mt-1 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {STATUS_CONFIG.map((opt) => {
+            const isSelected = opt.key === normalized;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChangeStatus(opt.key);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-left transition-colors cursor-pointer ${opt.menuItemStyle} ${
+                  isSelected ? 'font-semibold bg-slate-50 dark:bg-slate-800/60' : ''
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${opt.dotStyle}`} />
+                  <span>{opt.label}</span>
+                </div>
+                {isSelected && <Check className="w-3.5 h-3.5 opacity-80" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const PurchaseListView: React.FC = () => {
   const {
     purchaseGroups,
@@ -42,8 +187,12 @@ export const PurchaseListView: React.FC = () => {
     purchaseSources,
     categories,
     addPurchaseGroup,
+    updatePurchaseGroup,
     addPurchaseList,
+    updatePurchaseList,
+    deletePurchaseList,
     addPurchaseSource,
+    updatePurchaseSource,
     toggleSourceAccounted,
     deletePurchaseSource,
   } = useStock();
@@ -61,6 +210,35 @@ export const PurchaseListView: React.FC = () => {
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
+
+  // Modals and state for editing
+  const [editingGroup, setEditingGroup] = useState<PurchaseGroup | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDescription, setEditGroupDescription] = useState('');
+
+  const [editingList, setEditingList] = useState<PurchaseList | null>(null);
+  const [editListName, setEditListName] = useState('');
+  const [editListCategory, setEditListCategory] = useState('');
+  const [editListGroupId, setEditListGroupId] = useState<string | ''>('');
+  const [editListStatus, setEditListStatus] = useState<PurchaseListStatus>('em_pesquisa');
+  const [editListNotes, setEditListNotes] = useState('');
+
+  // Delete modal state & error message
+  const [listToDelete, setListToDelete] = useState<PurchaseList | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const [editingSource, setEditingSource] = useState<PurchaseSource | null>(null);
+  const [editStoreName, setEditStoreName] = useState('');
+  const [editStoreLink, setEditStoreLink] = useState('');
+  const [editUnitPrice, setEditUnitPrice] = useState<number | ''>('');
+  const [editCurrency, setEditCurrency] = useState<'USD' | 'EUR' | 'CNY' | 'KZ'>('USD');
+  const [editQuantity, setEditQuantity] = useState<number | ''>(1);
+  const [editShippingCost, setEditShippingCost] = useState<number | ''>(0);
+  const [editOtherCosts, setEditOtherCosts] = useState<number | ''>(0);
+  const [editSupplierName, setEditSupplierName] = useState('');
+  const [editAvailability, setEditAvailability] = useState<SourceAvailability>('em_estoque');
+  const [editSourceNotes, setEditSourceNotes] = useState('');
+  const [editSourceAccounted, setEditSourceAccounted] = useState(true);
 
   const [showNewListModal, setShowNewListModal] = useState(false);
   const [newListName, setNewListName] = useState('');
@@ -87,27 +265,39 @@ export const PurchaseListView: React.FC = () => {
   // Collapsed states for Source cards in list_detail
   const [expandedSourceIds, setExpandedSourceIds] = useState<Record<string, boolean>>({});
 
-  // Calculations for Lists (Researched total vs Accounted total in Kz)
+  // Calculations for Lists (Centralized exclusive contribution by status)
+  // - em_pesquisa: contribui para o Total pesquisado
+  // - concluido: contribui para o Total selecionado (apenas fontes marcadas como Contabilizar)
+  // - cancelado: não contribui para nenhum dos totais (0)
   const getListTotals = (listId: string) => {
+    const list = purchaseLists.find((l) => l.id === listId);
     const sources = purchaseSources.filter((s) => s.listId === listId);
-    let totalResearchedKz = 0;
-    let totalAccountedKz = 0;
+    let rawTotalResearchedKz = 0;
+    let rawTotalAccountedKz = 0;
     let accountedSourcesCount = 0;
 
     sources.forEach((s) => {
       const totalInKz = convertToKwanza(s.totalPrice, s.originalCurrency, s.approxKzRate);
-      totalResearchedKz += totalInKz;
+      rawTotalResearchedKz += totalInKz;
       if (s.isAccounted) {
-        totalAccountedKz += totalInKz;
+        rawTotalAccountedKz += totalInKz;
         accountedSourcesCount++;
       }
     });
 
+    const status = list ? normalizePurchaseListStatus(list.status) : 'em_pesquisa';
+
+    const totalResearchedKz = status === 'em_pesquisa' ? rawTotalResearchedKz : 0;
+    const totalAccountedKz = status === 'concluido' ? rawTotalAccountedKz : 0;
+
     return {
+      status,
       sourcesCount: sources.length,
       accountedSourcesCount,
       totalResearchedKz,
       totalAccountedKz,
+      rawTotalResearchedKz,
+      rawTotalAccountedKz,
     };
   };
 
@@ -176,7 +366,7 @@ export const PurchaseListView: React.FC = () => {
         name: newListName.trim(),
         category: newListCategory,
         groupId: newListGroupId || selectedGroupId || null,
-        status: 'cotando',
+        status: 'em_pesquisa',
         mainImage: newListImage,
         gallery: [newListImage],
         notes: newListNotes.trim() || undefined,
@@ -227,6 +417,130 @@ export const PurchaseListView: React.FC = () => {
     setNewStoreLink('');
     setNewSourceNotes('');
     setShowNewSourceModal(false);
+  };
+
+  // Handle Edit Group
+  const handleOpenEditGroup = (group: PurchaseGroup, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingGroup(group);
+    setEditGroupName(group.name);
+    setEditGroupDescription(group.description || '');
+  };
+
+  const handleUpdateGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroup || !editGroupName.trim()) return;
+    updatePurchaseGroup(
+      editingGroup.id,
+      editGroupName.trim(),
+      editGroupDescription.trim() || undefined
+    );
+    setEditingGroup(null);
+  };
+
+  // Handle Edit List
+  const handleOpenEditList = (list: PurchaseList, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingList(list);
+    setEditListName(list.name);
+    setEditListCategory(list.category);
+    setEditListGroupId(list.groupId || '');
+    setEditListStatus(normalizePurchaseListStatus(list.status));
+    setEditListNotes(list.notes || '');
+  };
+
+  const handleUpdateList = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingList || !editListName.trim()) return;
+    try {
+      updatePurchaseList(editingList.id, {
+        name: editListName.trim(),
+        category: editListCategory,
+        groupId: editListGroupId || null,
+        status: editListStatus,
+        notes: editListNotes.trim() || undefined,
+      });
+      setEditingList(null);
+    } catch (err) {
+      console.error('Erro ao atualizar lista:', err);
+      setActionError('Não foi possível guardar as alterações da lista. Tente novamente.');
+    }
+  };
+
+  // Immediate Status Change (without modal)
+  const handleQuickStatusChange = (listId: string, newStatus: PurchaseListStatus) => {
+    try {
+      updatePurchaseList(listId, { status: newStatus });
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+      setActionError('Não foi possível atualizar o status da lista. Tente novamente.');
+    }
+  };
+
+  // Delete List Confirmation
+  const handleConfirmDeleteList = () => {
+    if (!listToDelete) return;
+    try {
+      const idToDelete = listToDelete.id;
+      deletePurchaseList(idToDelete);
+      if (selectedListId === idToDelete) {
+        setSelectedListId(null);
+        setViewLevel(selectedGroupId ? 'group_detail' : 'main');
+      }
+      setListToDelete(null);
+    } catch (err) {
+      console.error('Erro ao eliminar lista:', err);
+      setActionError('Ocorreu um erro ao eliminar a lista de cotação.');
+    }
+  };
+
+  // Handle Edit Source
+  const handleOpenEditSource = (source: PurchaseSource, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingSource(source);
+    setEditStoreName(source.storeName);
+    setEditStoreLink(source.link || '');
+    setEditUnitPrice(source.unitPrice);
+    setEditCurrency(source.originalCurrency);
+    setEditQuantity(source.quantity);
+    setEditShippingCost(source.shippingCost);
+    setEditOtherCosts(source.otherCosts);
+    setEditSupplierName(source.supplierName || '');
+    setEditAvailability(source.availability);
+    setEditSourceNotes(source.notes || '');
+    setEditSourceAccounted(source.isAccounted);
+  };
+
+  const handleUpdateSource = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSource) return;
+
+    const unit = Number(editUnitPrice) || 0;
+    const qty = Number(editQuantity) || 1;
+    const ship = Number(editShippingCost) || 0;
+    const other = Number(editOtherCosts) || 0;
+
+    let rate = 1;
+    if (editCurrency === 'USD') rate = USD_TO_KZ_RATE;
+    if (editCurrency === 'EUR') rate = 1010;
+    if (editCurrency === 'CNY') rate = 128;
+
+    updatePurchaseSource(editingSource.id, {
+      storeName: editStoreName.trim() || 'Loja / Fornecedor',
+      link: editStoreLink.trim() || undefined,
+      unitPrice: unit,
+      originalCurrency: editCurrency,
+      approxKzRate: rate,
+      quantity: qty,
+      shippingCost: ship,
+      otherCosts: other,
+      supplierName: editSupplierName.trim() || undefined,
+      availability: editAvailability,
+      notes: editSourceNotes.trim() || undefined,
+      isAccounted: editSourceAccounted,
+    });
+
+    setEditingSource(null);
   };
 
   const toggleSourceCard = (id: string) => {
@@ -283,20 +597,18 @@ export const PurchaseListView: React.FC = () => {
                   type="button"
                   id="btn-new-purchase-group"
                   onClick={() => setShowNewGroupModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                  className="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Novo Grupo</span>
+                  <span>Novo Grupo</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   id="btn-new-purchase-list"
                   onClick={() => setShowNewListModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                  className="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Nova Lista</span>
+                  <span>Nova Lista</span>
                 </button>
               )}
             </div>
@@ -319,9 +631,19 @@ export const PurchaseListView: React.FC = () => {
                         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider font-mono">
                           Grupo de Cotações
                         </span>
-                        <span className="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
-                          {totals.totalListsCount} {totals.totalListsCount === 1 ? 'lista' : 'listas'}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenEditGroup(group, e)}
+                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                            title="Editar Grupo"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                            {totals.totalListsCount} {totals.totalListsCount === 1 ? 'lista' : 'listas'}
+                          </span>
+                        </div>
                       </div>
 
                       <h4 className="text-sm font-semibold text-slate-900 group-hover:text-slate-950">
@@ -367,6 +689,7 @@ export const PurchaseListView: React.FC = () => {
                       <th className="py-3 px-4 text-right">Valor Pesquisado</th>
                       <th className="py-3 px-4 text-right">Valor Contabilizado</th>
                       <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-4 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -424,10 +747,38 @@ export const PurchaseListView: React.FC = () => {
                             {formatKwanza(totals.totalAccountedKz)}
                           </td>
 
-                          <td className="py-3 px-4 text-center whitespace-nowrap">
-                            <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                              {list.status}
-                            </span>
+                          <td className="py-3 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <StatusBadgeDropdown
+                              status={list.status}
+                              onChangeStatus={(newStatus) => handleQuickStatusChange(list.id, newStatus)}
+                              listName={list.name}
+                            />
+                          </td>
+
+                          <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="inline-flex items-center gap-1 justify-end">
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenEditList(list, e)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                                title="Editar lista"
+                                aria-label={`Editar lista ${list.name}`}
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setListToDelete(list);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                title="Eliminar lista"
+                                aria-label={`Eliminar lista ${list.name}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -460,10 +811,9 @@ export const PurchaseListView: React.FC = () => {
                 setNewListGroupId(currentGroup.id);
                 setShowNewListModal(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium shadow-xs"
+              className="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow-xs transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Adicionar Lista a este Grupo</span>
+              <span>Adicionar Lista a este Grupo</span>
             </button>
           </div>
 
@@ -474,9 +824,20 @@ export const PurchaseListView: React.FC = () => {
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   Grupo de Cotações Selecionado
                 </span>
-                <h3 className="text-base font-semibold text-slate-900 mt-0.5">
-                  {currentGroup.name}
-                </h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {currentGroup.name}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={(e) => handleOpenEditGroup(currentGroup, e)}
+                    className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors inline-flex items-center"
+                    title="Editar grupo"
+                    aria-label={`Editar grupo ${currentGroup.name}`}
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 {currentGroup.description && (
                   <p className="text-xs text-slate-500 mt-1">{currentGroup.description}</p>
                 )}
@@ -523,6 +884,7 @@ export const PurchaseListView: React.FC = () => {
                     <th className="py-3 px-4 text-right">Total Pesquisado</th>
                     <th className="py-3 px-4 text-right">Total Contabilizado</th>
                     <th className="py-3 px-4 text-center">Status</th>
+                    <th className="py-3 px-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -561,10 +923,37 @@ export const PurchaseListView: React.FC = () => {
                           <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700">
                             {formatKwanza(totals.totalAccountedKz)}
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                              {list.status}
-                            </span>
+                          <td className="py-3 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <StatusBadgeDropdown
+                              status={list.status}
+                              onChangeStatus={(newStatus) => handleQuickStatusChange(list.id, newStatus)}
+                              listName={list.name}
+                            />
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="inline-flex items-center gap-1 justify-end">
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenEditList(list, e)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                                title="Editar lista"
+                                aria-label={`Editar lista ${list.name}`}
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setListToDelete(list);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                title="Eliminar lista"
+                                aria-label={`Eliminar lista ${list.name}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -596,10 +985,9 @@ export const PurchaseListView: React.FC = () => {
               type="button"
               id="btn-add-source"
               onClick={() => setShowNewSourceModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium shadow-xs"
+              className="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow-xs transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Adicionar Fonte / Loja</span>
+              <span>Adicionar Fonte / Loja</span>
             </button>
           </div>
 
@@ -621,13 +1009,37 @@ export const PurchaseListView: React.FC = () => {
                     <span className="text-[10px] uppercase font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                       {currentList.category}
                     </span>
-                    <span className="text-[10px] uppercase font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                      {currentList.status}
-                    </span>
+                    <StatusBadgeDropdown
+                      status={currentList.status}
+                      onChangeStatus={(newStatus) => handleQuickStatusChange(currentList.id, newStatus)}
+                      listName={currentList.name}
+                    />
                   </div>
-                  <h3 className="text-base font-semibold text-slate-900 mt-1">
-                    {currentList.name}
-                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <h3 className="text-base font-semibold text-slate-900">
+                      {currentList.name}
+                    </h3>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenEditList(currentList, e)}
+                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors inline-flex items-center"
+                        title="Editar lista"
+                        aria-label={`Editar lista ${currentList.name}`}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setListToDelete(currentList)}
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors inline-flex items-center"
+                        title="Eliminar lista"
+                        aria-label={`Eliminar lista ${currentList.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                   {currentList.notes && (
                     <p className="text-xs text-slate-500 mt-0.5">
                       Observações: {currentList.notes}
@@ -680,7 +1092,7 @@ export const PurchaseListView: React.FC = () => {
                   onClick={() => setShowNewSourceModal(true)}
                   className="text-xs text-slate-900 font-semibold underline mt-2 inline-block"
                 >
-                  + Adicionar cotação (Alibaba, Amazon, Temu...)
+                  Adicionar cotação (Alibaba, Amazon, Temu...)
                 </button>
               </div>
             ) : (
@@ -705,9 +1117,19 @@ export const PurchaseListView: React.FC = () => {
                         {/* Checkbox "Contabilizar" */}
                         <button
                           type="button"
+                          id={`btn-toggle-accounted-${src.id}`}
                           onClick={() => toggleSourceAccounted(src.id)}
-                          className="text-slate-700 hover:text-slate-950 p-1"
-                          title="Marcar para contabilizar no total"
+                          className="text-slate-700 hover:text-slate-950 p-1 transition-colors"
+                          aria-label={
+                            src.isAccounted
+                              ? `Remover cotação de ${src.storeName} da contabilização total`
+                              : `Incluir cotação de ${src.storeName} na contabilização total`
+                          }
+                          title={
+                            src.isAccounted
+                              ? 'Contabilizado no total (clique para desmarcar)'
+                              : 'Não contabilizado (clique para incluir no total)'
+                          }
                         >
                           {src.isAccounted ? (
                             <CheckSquare className="w-5 h-5 text-emerald-600" />
@@ -748,7 +1170,7 @@ export const PurchaseListView: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         <div className="text-right">
                           <span className="text-xs font-mono font-bold text-slate-900 block">
                             {src.totalPrice.toLocaleString()} {src.originalCurrency}
@@ -757,6 +1179,15 @@ export const PurchaseListView: React.FC = () => {
                             ≈ {formatKwanza(approxTotalKz)}
                           </span>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenEditSource(src, e)}
+                          className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                          title="Editar Fonte / Loja"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
 
                         <button
                           type="button"
@@ -812,14 +1243,24 @@ export const PurchaseListView: React.FC = () => {
                             </span>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => deletePurchaseSource(src.id)}
-                            className="text-slate-400 hover:text-rose-600 p-1"
-                            title="Excluir fonte"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenEditSource(src, e)}
+                              className="text-slate-400 hover:text-slate-700 p-1 rounded hover:bg-slate-200/50"
+                              title="Editar fonte"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deletePurchaseSource(src.id)}
+                              className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50"
+                              title="Excluir fonte"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         {src.notes && (
@@ -1117,6 +1558,410 @@ export const PurchaseListView: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* MODAL: Editar Grupo */}
+      {editingGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-md w-full space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">Editar Grupo de Compra</h4>
+            <form onSubmit={handleUpdateGroup} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Nome do Grupo
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={editGroupName}
+                  onChange={(e) => setEditGroupName(e.target.value)}
+                  placeholder="Ex: Produto Vencedor"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Descrição (Opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={editGroupDescription}
+                  onChange={(e) => setEditGroupDescription(e.target.value)}
+                  placeholder="Objetivo da cotação, prazos..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingGroup(null)}
+                  className="px-3 py-1.5 text-slate-600 hover:text-slate-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
+                >
+                  Atualizar Grupo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Editar Lista */}
+      {editingList && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-md w-full space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">Editar Lista de Produto</h4>
+            <form onSubmit={handleUpdateList} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Nome do Produto a Cotar
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={editListName}
+                  onChange={(e) => setEditListName(e.target.value)}
+                  placeholder="Ex: Cooler magnético para telefone."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Categoria
+                </label>
+                <select
+                  value={editListCategory}
+                  onChange={(e) => setEditListCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                >
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Pertence ao Grupo
+                </label>
+                <select
+                  value={editListGroupId}
+                  onChange={(e) => setEditListGroupId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                >
+                  <option value="">Sem grupo (Lista Avulsa)</option>
+                  {purchaseGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Status
+                </label>
+                <select
+                  value={editListStatus}
+                  onChange={(e) => setEditListStatus(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                >
+                  <option value="em_pesquisa">Em Pesquisa</option>
+                  <option value="concluido">Concluído</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Observações
+                </label>
+                <input
+                  type="text"
+                  value={editListNotes}
+                  onChange={(e) => setEditListNotes(e.target.value)}
+                  placeholder="Critérios de qualidade, notas..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingList(null)}
+                  className="px-3 py-1.5 text-slate-600 hover:text-slate-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
+                >
+                  Atualizar Lista
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Editar Fonte / Cotação */}
+      {editingSource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-lg w-full space-y-3">
+            <h4 className="text-xs font-semibold text-slate-800">
+              Editar Fonte / Loja de Cotação
+            </h4>
+            <form onSubmit={handleUpdateSource} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    Nome da Loja / Plataforma
+                  </label>
+                  <input
+                    type="text"
+                    value={editStoreName}
+                    onChange={(e) => setEditStoreName(e.target.value)}
+                    placeholder="Ex: Alibaba, Amazon, 1688, ChatGPT..."
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    Moeda Original
+                  </label>
+                  <select
+                    value={editCurrency}
+                    onChange={(e) => setEditCurrency(e.target.value as any)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white font-mono"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="CNY">CNY (¥)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="KZ">Kwanza (Kz)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                  Link / URL do Produto
+                </label>
+                <input
+                  type="url"
+                  value={editStoreLink}
+                  onChange={(e) => setEditStoreLink(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Preço Unitário ({editCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editUnitPrice}
+                    onChange={(e) => setEditUnitPrice(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="0.00"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Quantidade
+                  </label>
+                  <input
+                    type="number"
+                    value={editQuantity}
+                    onChange={(e) => setEditQuantity(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="100"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Frete ({editCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editShippingCost}
+                    onChange={(e) => setEditShippingCost(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="0.00"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Outros Custos ({editCurrency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editOtherCosts}
+                    onChange={(e) => setEditOtherCosts(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="0.00"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Fornecedor / Loja
+                  </label>
+                  <input
+                    type="text"
+                    value={editSupplierName}
+                    onChange={(e) => setEditSupplierName(e.target.value)}
+                    placeholder="Nome do vendedor"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-0.5">
+                    Disponibilidade
+                  </label>
+                  <select
+                    value={editAvailability}
+                    onChange={(e) => setEditAvailability(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md bg-white"
+                  >
+                    <option value="em_estoque">Em Estoque</option>
+                    <option value="sob_encomenda">Sob Encomenda</option>
+                    <option value="esgotado">Esgotado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-500 mb-0.5">
+                  Observações
+                </label>
+                <input
+                  type="text"
+                  value={editSourceNotes}
+                  onChange={(e) => setEditSourceNotes(e.target.value)}
+                  placeholder="Notas, prazos..."
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="chk-contabilizar-edit"
+                  checked={editSourceAccounted}
+                  onChange={(e) => setEditSourceAccounted(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                <label htmlFor="chk-contabilizar-edit" className="text-slate-700 font-medium cursor-pointer">
+                  Marcar como "Contabilizar" (somar ao valor selecionado)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingSource(null)}
+                  className="px-3 py-1.5 text-slate-600 hover:text-slate-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800"
+                >
+                  Atualizar Fonte
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Confirmação de Eliminar Lista */}
+      {listToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xl max-w-md w-full space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-rose-100 text-rose-600 rounded-lg shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900">
+                  Eliminar Lista de Cotação
+                </h4>
+                <p className="text-xs text-slate-500 mt-1">
+                  Tem certeza que deseja eliminar a lista <strong className="text-slate-800">{listToDelete.name}</strong>?
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-lg text-xs text-amber-900 space-y-1">
+              <span className="font-semibold block">Efeito sobre as fontes associadas:</span>
+              <p className="text-amber-800 leading-relaxed">
+                Esta lista possui <strong>{purchaseSources.filter((s) => s.listId === listToDelete.id).length}</strong> fonte(s) / loja(s) vinculada(s). Ao eliminar a lista, todas as cotações e fontes associadas serão permanentemente excluídas e os totais e contadores do grupo serão recalculados imediatamente.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setListToDelete(null)}
+                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteList}
+                className="px-4 py-1.5 text-xs font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors shadow-xs"
+              >
+                Eliminar Lista
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notificação de Erro */}
+      {actionError && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-3 shadow-lg flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label="Fechar"
+            title="Fechar"
+            className="text-rose-500 hover:text-rose-800 p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

@@ -78,7 +78,11 @@ export const AgendaModal: React.FC<AgendaModalProps> = ({
             {initialAgenda ? 'Editar Agenda' : 'Nova Agenda'}
           </h3>
           <button
+            type="button"
+            id="btn-close-agenda-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />

@@ -149,6 +149,7 @@ export const INITIAL_CLIENTS: Client[] = [
   {
     id: 'cli-1',
     name: 'Manuel Gonçalves de Carvalho',
+    type: 'individual',
     phone: '+244 923 881 223',
     whatsapp: '+244 923 881 223',
     address: 'Condomínio Vila Flor, Casa 14B, Talatona, Luanda',
@@ -158,6 +159,8 @@ export const INITIAL_CLIENTS: Client[] = [
   {
     id: 'cli-2',
     name: 'Nova Horizonte Consultoria, Lda.',
+    type: 'empresa',
+    document: '5419902341',
     phone: '+244 912 400 900',
     whatsapp: '+244 934 556 778',
     address: 'Edifício Kilamba, 4º Andar, Escritório 402, Marginal de Luanda',
@@ -167,6 +170,7 @@ export const INITIAL_CLIENTS: Client[] = [
   {
     id: 'cli-3',
     name: 'Dra. Teresa Van-Dúnem',
+    type: 'individual',
     phone: '+244 928 654 321',
     whatsapp: '+244 928 654 321',
     address: 'Rua Comandante Gika nº 45, Alvalade, Luanda',
@@ -176,6 +180,7 @@ export const INITIAL_CLIENTS: Client[] = [
   {
     id: 'cli-4',
     name: 'António Pedro Silva',
+    type: 'individual',
     phone: '+244 945 112 334',
     whatsapp: '+244 945 112 334',
     address: 'Bairro Miramar, Rua 12, Vivenda 8, Luanda',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Building2,
   Calendar,
@@ -25,14 +25,38 @@ export const DashboardView: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('semana');
   const [selectedCurrency, setSelectedCurrency] = useState<string>('Kz');
 
-  // Detect distinct currencies available in the company/sales scope
+  // Empresas visíveis no seletor:
+  // - Empresa Desativada: não aparece na lista de opções (excluída por completo)
+  // - Empresa Parada: aparece em cinza com a indicação "Parada", não selecionável
+  const visibleCompanies = useMemo(() => {
+    return companies.filter((c) => c.status !== 'desativada');
+  }, [companies]);
+
+  // Se a empresa atualmente selecionada for desativada ou parada, reverte para 'todas'
+  useEffect(() => {
+    if (selectedCompanyId !== 'todas') {
+      const current = companies.find((c) => c.id === selectedCompanyId);
+      if (!current || current.status === 'desativada' || current.status === 'parada') {
+        setSelectedCompanyId('todas');
+      }
+    }
+  }, [companies, selectedCompanyId]);
+
+  // Detect distinct currencies available in the company/sales scope (only non-disabled companies)
   const availableCurrencies = useMemo(() => {
     const set = new Set<string>();
-    companies.forEach((c) => {
-      if (c.status === 'ativa') set.add(c.currency);
+    visibleCompanies.forEach((c) => {
+      set.add(c.currency);
     });
     return Array.from(set);
-  }, [companies]);
+  }, [visibleCompanies]);
+
+  // Ensure selectedCurrency is valid
+  useEffect(() => {
+    if (availableCurrencies.length > 0 && !availableCurrencies.includes(selectedCurrency)) {
+      setSelectedCurrency(availableCurrencies[0]);
+    }
+  }, [availableCurrencies, selectedCurrency]);
 
   // Compute Dashboard Data
   const {
@@ -113,15 +137,32 @@ export const DashboardView: React.FC = () => {
             <select
               id="dashboard-company-select"
               value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                const comp = companies.find((c) => c.id === val);
+                if (comp && comp.status === 'parada') return;
+                setSelectedCompanyId(val);
+              }}
               className="w-full pl-8 pr-8 py-1.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer appearance-none"
             >
               <option value="todas">Todas as empresas</option>
-              {companies.map((comp) => (
-                <option key={comp.id} value={comp.id}>
-                  {comp.name} ({comp.currency})
-                </option>
-              ))}
+              {visibleCompanies.map((comp) => {
+                const isParada = comp.status === 'parada';
+                return (
+                  <option
+                    key={comp.id}
+                    value={comp.id}
+                    disabled={isParada}
+                    className={
+                      isParada
+                        ? 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'
+                        : 'text-slate-800'
+                    }
+                  >
+                    {comp.name} ({comp.currency}){isParada ? ' — Parada' : ''}
+                  </option>
+                );
+              })}
             </select>
             <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
               <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">

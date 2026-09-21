@@ -28,6 +28,7 @@ export const DefectiveView: React.FC = () => {
     defectiveRecords,
     products,
     warehouses,
+    companies,
     recordDefective,
     updateDefectiveResolution,
     getCurrentStock,
@@ -37,9 +38,17 @@ export const DefectiveView: React.FC = () => {
   const [filterDecision, setFilterDecision] = useState<string>('all');
   const [filterReason, setFilterReason] = useState<string>('all');
 
+  // Warehouses excluding disabled companies
+  const operationalWarehouses = useMemo(() => {
+    return warehouses.filter((w) => {
+      const comp = companies.find((c) => c.id === w.companyId);
+      return comp?.status !== 'desativada';
+    });
+  }, [warehouses, companies]);
+
   // Form states
   const [productId, setProductId] = useState<string>(products[0]?.id || '');
-  const [warehouseId, setWarehouseId] = useState<string>(warehouses[0]?.id || '');
+  const [warehouseId, setWarehouseId] = useState<string>(operationalWarehouses[0]?.id || warehouses[0]?.id || '');
   const [quantity, setQuantity] = useState<number | ''>('');
   const [reason, setReason] = useState<DefectReason>('defeito_fabrica');
   const [decision, setDecision] = useState<DefectDecision>('descartar');
@@ -52,16 +61,20 @@ export const DefectiveView: React.FC = () => {
     ? getCurrentStock(selectedProduct.id, warehouseId)
     : 0;
 
-  // Filtered Defective List
+  // Filtered Defective List (excludes desativada companies)
   const filteredList = useMemo(() => {
     return defectiveRecords.filter((item) => {
+      const wh = warehouses.find((w) => w.id === item.warehouseId);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      if (comp?.status === 'desativada') return false;
+
       if (filterDecision !== 'all' && item.decision !== filterDecision) return false;
       if (filterReason !== 'all' && item.reason !== filterReason) return false;
       return true;
     });
-  }, [defectiveRecords, filterDecision, filterReason]);
+  }, [defectiveRecords, warehouses, companies, filterDecision, filterReason]);
 
-  // High-level metrics
+  // High-level metrics (excludes desativada companies)
   const metrics = useMemo(() => {
     let totalQty = 0;
     let totalLossKz = 0;
@@ -69,6 +82,10 @@ export const DefectiveView: React.FC = () => {
     let discardedCount = 0;
 
     defectiveRecords.forEach((d) => {
+      const wh = warehouses.find((w) => w.id === d.warehouseId);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      if (comp?.status === 'desativada') return;
+
       totalQty += d.quantity;
       const p = products.find((prod) => prod.id === d.productId);
       if (p) {
@@ -79,11 +96,24 @@ export const DefectiveView: React.FC = () => {
     });
 
     return { totalQty, totalLossKz, pendingCount, discardedCount };
-  }, [defectiveRecords, products]);
+  }, [defectiveRecords, warehouses, companies, products]);
 
   const handleSaveDefective = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    const targetWh = warehouses.find((w) => w.id === warehouseId);
+    const targetComp = companies.find((c) => c.id === targetWh?.companyId);
+
+    if (targetComp?.status === 'desativada') {
+      setFormError(`Operação bloqueada: A empresa "${targetComp.name}" está desativada.`);
+      return;
+    }
+
+    if (targetComp?.status === 'parada') {
+      setFormError(`Operação bloqueada: A empresa "${targetComp.name}" está com status Parada. Não é possível registrar avarias.`);
+      return;
+    }
 
     if (!selectedProduct) {
       setFormError('Selecione um produto.');
@@ -103,19 +133,23 @@ export const DefectiveView: React.FC = () => {
       return;
     }
 
-    recordDefective({
-      productId: selectedProduct.id,
-      warehouseId,
-      quantity: qty,
-      reason,
-      decision,
-      responsible: responsible.trim() || 'Controle de Qualidade',
-      notes: notes.trim() || undefined,
-    });
+    try {
+      recordDefective({
+        productId: selectedProduct.id,
+        warehouseId,
+        quantity: qty,
+        reason,
+        decision,
+        responsible: responsible.trim() || 'Controle de Qualidade',
+        notes: notes.trim() || undefined,
+      });
 
-    setShowModal(false);
-    setQuantity('');
-    setNotes('');
+      setShowModal(false);
+      setQuantity('');
+      setNotes('');
+    } catch (err: any) {
+      setFormError(err?.message || 'Erro ao registrar defeito.');
+    }
   };
 
   const getDefectReasonLabel = (r: DefectReason) => {
@@ -296,6 +330,8 @@ export const DefectiveView: React.FC = () => {
                 filteredList.map((item) => {
                   const product = products.find((p) => p.id === item.productId);
                   const warehouse = warehouses.find((w) => w.id === item.warehouseId);
+                  const comp = companies.find((c) => c.id === warehouse?.companyId);
+                  const isParada = comp?.status === 'parada';
 
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
@@ -326,7 +362,15 @@ export const DefectiveView: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                        {warehouse?.name || 'Armazém Geral'}
+                        <span className="font-medium text-slate-800 block">{warehouse?.name || 'Armazém Geral'}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-slate-400">{comp?.name || 'Empresa'}</span>
+                          {isParada && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                              Parada
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3 px-4 whitespace-nowrap">
@@ -342,6 +386,7 @@ export const DefectiveView: React.FC = () => {
                           {/* Inline change decision */}
                           <select
                             value={item.decision}
+                            disabled={isParada}
                             onChange={(e) =>
                               updateDefectiveResolution(
                                 item.id,
@@ -349,8 +394,8 @@ export const DefectiveView: React.FC = () => {
                                 item.status
                               )
                             }
-                            className="text-[10px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-slate-600 font-medium cursor-pointer"
-                            title="Atualizar decisão"
+                            className="text-[10px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-slate-600 font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={isParada ? 'Operação bloqueada: Empresa Parada' : 'Atualizar decisão'}
                           >
                             <option value="descartar">Descarte</option>
                             <option value="reparar">Reparo</option>
@@ -363,18 +408,23 @@ export const DefectiveView: React.FC = () => {
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         <button
                           type="button"
-                          onClick={() =>
+                          disabled={isParada}
+                          onClick={() => {
+                            if (isParada) return;
                             updateDefectiveResolution(
                               item.id,
                               item.decision,
                               item.status === 'pendente' ? 'resolvido' : 'pendente'
-                            )
-                          }
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded cursor-pointer ${
+                            );
+                          }}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                            isParada ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                          } ${
                             item.status === 'resolvido'
                               ? 'bg-emerald-50 text-emerald-700'
                               : 'bg-amber-50 text-amber-700'
                           }`}
+                          title={isParada ? 'Operação bloqueada: Empresa Parada' : undefined}
                         >
                           {item.status === 'resolvido' ? 'Resolvido' : 'Pendente'}
                         </button>
@@ -420,7 +470,10 @@ export const DefectiveView: React.FC = () => {
 
               <button
                 type="button"
+                id="btn-close-defective-modal"
                 onClick={() => setShowModal(false)}
+                aria-label="Fechar"
+                title="Fechar"
                 className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
               >
                 <X className="w-4 h-4" />
@@ -466,11 +519,15 @@ export const DefectiveView: React.FC = () => {
                     onChange={(e) => setWarehouseId(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
                   >
-                    {warehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
+                    {operationalWarehouses.map((w) => {
+                      const comp = companies.find((c) => c.id === w.companyId);
+                      const isParada = comp?.status === 'parada';
+                      return (
+                        <option key={w.id} value={w.id} disabled={isParada}>
+                          {w.name} ({comp?.name || 'Empresa'}){isParada ? ' — [PARADA]' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Disponível no armazém: <strong>{currentAvailableStock}</strong> {selectedProduct?.unitOfMeasure}

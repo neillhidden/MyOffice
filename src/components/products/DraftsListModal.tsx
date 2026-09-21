@@ -71,6 +71,8 @@ export const DraftsListModal: React.FC<DraftsListModalProps> = ({
             type="button"
             id="btn-close-drafts-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />

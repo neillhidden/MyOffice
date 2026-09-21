@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserRound, Building2, Phone, Mail, MapPin, FileText, AlignLeft } from 'lucide-react';
+import { X, UserRound, Building2, Phone, Mail, MapPin, FileText, AlignLeft, AlertTriangle } from 'lucide-react';
 import { Client } from '../../types/client';
 import { useStock } from '../../context/StockContext';
 
@@ -26,9 +26,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const [status, setStatus] = useState<'ativo' | 'inativo'>('ativo');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setShowDiscardConfirm(false);
       if (clientToEdit) {
         setName(clientToEdit.name || '');
         setType(clientToEdit.type || 'individual');
@@ -53,6 +55,38 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       setError(null);
     }
   }, [isOpen, clientToEdit]);
+
+  const hasDirtyData = React.useMemo(() => {
+    if (clientToEdit) {
+      return (
+        name !== (clientToEdit.name || '') ||
+        type !== (clientToEdit.type || 'individual') ||
+        document !== (clientToEdit.document || '') ||
+        phone !== (clientToEdit.phone || '') ||
+        whatsapp !== (clientToEdit.whatsapp || '') ||
+        email !== (clientToEdit.email || '') ||
+        address !== (clientToEdit.address || '') ||
+        notes !== (clientToEdit.notes || '')
+      );
+    }
+    return Boolean(
+      name.trim() ||
+      document.trim() ||
+      phone.trim() ||
+      whatsapp.trim() ||
+      email.trim() ||
+      address.trim() ||
+      notes.trim()
+    );
+  }, [clientToEdit, name, type, document, phone, whatsapp, email, address, notes]);
+
+  const handleRequestClose = () => {
+    if (hasDirtyData) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -103,7 +137,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     <div
       id="modal-client-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
     >
       <div
         id="modal-client-card"
@@ -127,12 +160,48 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            id="btn-close-client-modal"
+            onClick={handleRequestClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Discard changes confirmation dialog */}
+        {showDiscardConfirm && (
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 flex flex-col gap-2 animate-in fade-in">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold text-xs">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>Descartar alterações?</span>
+            </div>
+            <p className="text-[11px] text-amber-700 dark:text-amber-400">
+              Tem dados preenchidos no formulário. Se fechar agora, as informações não salvas serão perdidas.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDiscardConfirm(false)}
+                className="px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50"
+              >
+                Continuar a editar
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-discard-client"
+                onClick={() => {
+                  setShowDiscardConfirm(false);
+                  onClose();
+                }}
+                className="px-3 py-1 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg"
+              >
+                Descartar e fechar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
@@ -330,7 +399,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleRequestClose}
               className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
             >
               Cancelar

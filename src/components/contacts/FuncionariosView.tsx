@@ -13,6 +13,7 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Employee } from '../../types/employee';
@@ -442,25 +443,36 @@ export const FuncionariosView: React.FC = () => {
         <div
           id="modal-delete-employee-overlay"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setEmployeeToDelete(null)}
         >
           <div
             id="modal-delete-employee-card"
             className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-800 p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Eliminar Funcionário
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Deseja realmente remover "{employeeToDelete.name}"?
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Eliminar Funcionário
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Deseja realmente remover "{employeeToDelete.name}"?
-                </p>
-              </div>
+              <button
+                type="button"
+                id="btn-close-delete-employee-modal"
+                onClick={() => setEmployeeToDelete(null)}
+                aria-label="Fechar"
+                title="Fechar"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors -mr-1 -mt-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60">

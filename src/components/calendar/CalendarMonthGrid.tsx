@@ -37,8 +37,14 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
     return map;
   }, [events]);
 
-  // Today string (fixed to 2026-09-13 or client today)
-  const todayStr = '2026-09-13';
+  // Today string in local time
+  const todayStr = React.useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
 
   // Build grid calendar days
   const calendarDays = React.useMemo(() => {
@@ -60,11 +66,18 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
       isToday: boolean;
     }> = [];
 
+    const formatLocalDate = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
     // 1. Previous month trailing days
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = mondayOffset - 1; i >= 0; i--) {
       const d = new Date(year, month - 1, prevMonthLastDay - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(d);
       days.push({
         date: d,
         dateStr,
@@ -76,7 +89,7 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
     // 2. Current month days
     for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
       const d = new Date(year, month, day);
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = formatLocalDate(d);
       days.push({
         date: d,
         dateStr,
@@ -89,7 +102,7 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
     const remaining = (7 - (days.length % 7)) % 7;
     for (let day = 1; day <= remaining; day++) {
       const d = new Date(year, month + 1, day);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(d);
       days.push({
         date: d,
         dateStr,
@@ -117,7 +130,7 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
 
       {/* Grid of days */}
       <div className="flex-1 grid grid-cols-7 grid-rows-5 sm:grid-rows-6 divide-x divide-y divide-slate-100 dark:divide-slate-800/80 border-b border-slate-200 dark:border-slate-800 overflow-y-auto">
-        {calendarDays.map((day) => {
+        {calendarDays.map((day, idx) => {
           const dayEvents = eventsByDate.get(day.dateStr) || [];
           const maxDisplay = 3;
           const visibleEvents = dayEvents.slice(0, maxDisplay);
@@ -125,7 +138,7 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
 
           return (
             <div
-              key={day.dateStr}
+              key={`calendar-day-${day.dateStr}-${idx}`}
               id={`calendar-day-${day.dateStr}`}
               onClick={() => onSelectDate(day.dateStr)}
               className={`min-h-[100px] sm:min-h-[120px] p-1.5 flex flex-col transition-colors group cursor-pointer ${

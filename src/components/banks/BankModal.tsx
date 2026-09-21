@@ -70,7 +70,6 @@ export const BankModal: React.FC<BankModalProps> = ({
     <div
       id="modal-bank-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-bank-card"
@@ -98,6 +97,8 @@ export const BankModal: React.FC<BankModalProps> = ({
             type="button"
             id="btn-close-bank-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -147,6 +148,9 @@ export const BankModal: React.FC<BankModalProps> = ({
                 <option value="corrente">Conta Corrente</option>
                 <option value="poupanca">Conta Poupança</option>
                 <option value="caixa_fisico">Caixa Físico / Numerário</option>
+                <option value="banco_padrao">Banco padrão da empresa</option>
+                <option value="carteira_digital">Carteira Digital</option>
+                <option value="outro">Outro</option>
               </select>
             </div>
 

@@ -11,11 +11,13 @@ import {
   ExternalLink,
   Filter,
 } from 'lucide-react';
-import { Agenda, CalendarEvent, EventStatus } from '../../types/calendar';
+import { Agenda, CalendarEvent, EventStatus, CalendarViewMode } from '../../types/calendar';
 
 interface CalendarListViewProps {
   events: CalendarEvent[];
   agendas: Agenda[];
+  currentDate?: Date;
+  viewMode?: CalendarViewMode;
   onSelectEvent: (event: CalendarEvent) => void;
   onToggleEventStatus: (eventId: string, e: React.MouseEvent) => void;
   onDeleteEvent: (eventId: string) => void;
@@ -25,6 +27,8 @@ interface CalendarListViewProps {
 export const CalendarListView: React.FC<CalendarListViewProps> = ({
   events,
   agendas,
+  currentDate = new Date(2026, 8, 13),
+  viewMode = 'mes',
   onSelectEvent,
   onToggleEventStatus,
   onDeleteEvent,
@@ -33,6 +37,56 @@ export const CalendarListView: React.FC<CalendarListViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendente' | 'concluido'>('todos');
   const [selectedAgendaFilter, setSelectedAgendaFilter] = useState<string>('todas');
+  const [filterByPeriod, setFilterByPeriod] = useState<boolean>(true);
+
+  // Period label and date range calculation
+  const periodInfo = useMemo(() => {
+    const monthsPt = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    if (viewMode === 'ano') {
+      return {
+        label: `Ano ${year}`,
+        filterFn: (dateStr: string) => dateStr.startsWith(String(year)),
+      };
+    }
+
+    if (viewMode === 'mes') {
+      const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+      return {
+        label: `${monthsPt[month]} de ${year}`,
+        filterFn: (dateStr: string) => dateStr.startsWith(monthPrefix),
+      };
+    }
+
+    // semana
+    const d = new Date(currentDate);
+    const dayOfWeek = d.getDay(); // 0 is Sunday
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const formatLocalDate = (dt: Date) => {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const monStr = formatLocalDate(monday);
+    const sunStr = formatLocalDate(sunday);
+
+    return {
+      label: `Semana (${monStr.slice(8)}/${monStr.slice(5, 7)} a ${sunStr.slice(8)}/${sunStr.slice(5, 7)})`,
+      filterFn: (dateStr: string) => dateStr >= monStr && dateStr <= sunStr,
+    };
+  }, [currentDate, viewMode]);
 
   const agendaMap = useMemo(() => {
     const map = new Map<string, Agenda>();
@@ -43,6 +97,9 @@ export const CalendarListView: React.FC<CalendarListViewProps> = ({
   const filteredEvents = useMemo(() => {
     return events
       .filter((ev) => {
+        // Period filter (default active)
+        if (filterByPeriod && !periodInfo.filterFn(ev.date)) return false;
+
         // Status filter
         if (statusFilter !== 'todos' && ev.status !== statusFilter) return false;
 
@@ -67,7 +124,7 @@ export const CalendarListView: React.FC<CalendarListViewProps> = ({
         if (dateCompare !== 0) return dateCompare;
         return (a.time || '').localeCompare(b.time || '');
       });
-  }, [events, statusFilter, selectedAgendaFilter, searchTerm]);
+  }, [events, filterByPeriod, periodInfo, statusFilter, selectedAgendaFilter, searchTerm]);
 
   return (
     <div id="calendar-list-view" className="flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
@@ -90,6 +147,22 @@ export const CalendarListView: React.FC<CalendarListViewProps> = ({
 
         {/* Status Filters & Agenda Filter */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Period Filter Toggle */}
+          <button
+            type="button"
+            id="calendar-list-toggle-period"
+            onClick={() => setFilterByPeriod(!filterByPeriod)}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
+              filterByPeriod
+                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-semibold'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-900'
+            }`}
+            title={filterByPeriod ? 'A filtrar pelo período selecionado. Clique para ver todos' : 'A ver todos os períodos. Clique para filtrar'}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{filterByPeriod ? periodInfo.label : 'Todos os períodos'}</span>
+          </button>
+
           {/* Agenda Filter Dropdown */}
           <select
             id="calendar-list-agenda-filter"

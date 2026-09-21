@@ -65,7 +65,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             )}
           </div>
           <button
+            type="button"
+            id="btn-close-event-detail-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />

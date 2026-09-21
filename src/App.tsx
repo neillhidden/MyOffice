@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { StockProvider } from './context/StockContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { WarehouseFilterProvider, useWarehouseFilters } from './context/WarehouseFilterContext';
 import {
   Sidebar,
   MainModule,
   EstoqueSubmodule,
   CaixaSubmodule,
   ContactosSubmodule,
+  FinanceiroSubmodule,
 } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { OutOfServiceView } from './components/layout/OutOfServiceView';
@@ -16,6 +18,7 @@ import { ProductAnalyticsView } from './components/analytics/ProductAnalyticsVie
 import { PurchaseListView } from './components/purchases/PurchaseListView';
 import { DefectiveView } from './components/defective/DefectiveView';
 import { BankView } from './components/banks/BankView';
+import { FinanceiroView } from './components/financeiro/FinanceiroView';
 import { VendaView } from './components/caixa/VendaView';
 import { TransporteView } from './components/caixa/TransporteView';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -39,10 +42,25 @@ function AppContent() {
   const [activeSubmodule, setActiveSubmodule] = useState<EstoqueSubmodule>('Armazém');
   const [activeCaixaSubmodule, setActiveCaixaSubmodule] = useState<CaixaSubmodule>('Venda');
   const [activeContactosSubmodule, setActiveContactosSubmodule] = useState<ContactosSubmodule>('Funcionários');
+  const [activeFinanceiroSubmodule, setActiveFinanceiroSubmodule] = useState<FinanceiroSubmodule>('Contas');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
-  // Search state passed to views
+  // Search state passed to views (for non-Armazém modules)
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Persisted warehouse filter state
+  const { searchQuery: warehouseSearchQuery, setSearchQuery: setWarehouseSearchQuery } =
+    useWarehouseFilters();
+
+  const isArmazem = activeModule === 'Estoque' && activeSubmodule === 'Armazém';
+  const currentSearchQuery = isArmazem ? warehouseSearchQuery : searchQuery;
+  const handleSearchChange = (q: string) => {
+    if (isArmazem) {
+      setWarehouseSearchQuery(q);
+    } else {
+      setSearchQuery(q);
+    }
+  };
 
   // Modals state
   const [isAddProductOpen, setIsAddProductOpen] = useState<boolean>(false);
@@ -53,6 +71,8 @@ function AppContent() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState<boolean>(false);
   const [movementProductId, setMovementProductId] = useState<string | null>(null);
+  const [movementWarehouseId, setMovementWarehouseId] = useState<string | null>(null);
+  const [movementVariationId, setMovementVariationId] = useState<string | null>(null);
 
   const handleOpenNewProduct = () => {
     setProductToEdit(null);
@@ -73,8 +93,14 @@ function AppContent() {
     setIsAddProductOpen(true);
   };
 
-  const handleOpenMovementModal = (productId?: string) => {
+  const handleOpenMovementModal = (
+    productId?: string,
+    warehouseId?: string,
+    variationId?: string
+  ) => {
     setMovementProductId(productId || null);
+    setMovementWarehouseId(warehouseId || null);
+    setMovementVariationId(variationId || null);
     setIsMovementModalOpen(true);
   };
 
@@ -93,8 +119,11 @@ function AppContent() {
       setActiveModule('Calendário');
     } else if (module === 'Dashboard') {
       setActiveModule('Dashboard');
-    } else if (module === 'Banco') {
-      setActiveModule('Banco');
+    } else if (module === 'Financeiro' || module === 'Banco') {
+      setActiveModule('Financeiro');
+      if (submodule) {
+        setActiveFinanceiroSubmodule(submodule as FinanceiroSubmodule);
+      }
     } else if (module === 'Definições') {
       setActiveModule('Definições');
     } else if (module === 'Contactos' || module === 'Empregado') {
@@ -114,6 +143,7 @@ function AppContent() {
         activeSubmodule={activeSubmodule}
         activeCaixaSubmodule={activeCaixaSubmodule}
         activeContactosSubmodule={activeContactosSubmodule}
+        activeFinanceiroSubmodule={activeFinanceiroSubmodule}
         onSelectModule={(mod) => {
           setActiveModule(mod);
           setSearchQuery('');
@@ -133,6 +163,11 @@ function AppContent() {
           setActiveContactosSubmodule(sub);
           setSearchQuery('');
         }}
+        onSelectFinanceiroSubmodule={(sub) => {
+          setActiveModule('Financeiro');
+          setActiveFinanceiroSubmodule(sub);
+          setSearchQuery('');
+        }}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
@@ -149,13 +184,15 @@ function AppContent() {
               ? activeCaixaSubmodule
               : activeModule === 'Contactos'
               ? activeContactosSubmodule
+              : activeModule === 'Financeiro' || activeModule === 'Banco'
+              ? activeFinanceiroSubmodule
               : ''
           }
           onOpenAddProduct={handleOpenNewProduct}
           onOpenDrafts={() => setIsDraftsModalOpen(true)}
           onSelectProduct={(id) => setSelectedProductId(id)}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          searchQuery={currentSearchQuery}
+          onSearchChange={handleSearchChange}
           onNavigateToModule={handleNavigateToModule}
         />
 
@@ -169,8 +206,11 @@ function AppContent() {
             <div className="max-w-7xl mx-auto">
               {activeModule === 'Definições' ? (
                 <SettingsView />
-              ) : activeModule === 'Banco' ? (
-                <BankView />
+              ) : activeModule === 'Financeiro' || activeModule === 'Banco' ? (
+                <FinanceiroView
+                  activeSubmodule={activeFinanceiroSubmodule}
+                  onSelectSubmodule={setActiveFinanceiroSubmodule}
+                />
               ) : activeModule === 'Dashboard' ? (
                 <DashboardView />
               ) : activeModule === 'Caixa' ? (
@@ -205,7 +245,7 @@ function AppContent() {
                     onEditProduct={handleEditProduct}
                     onOpenDrafts={() => setIsDraftsModalOpen(true)}
                     onSelectProduct={(id) => setSelectedProductId(id)}
-                    searchQuery={searchQuery}
+                    searchQuery={warehouseSearchQuery}
                   />
                 )}
 
@@ -244,7 +284,7 @@ function AppContent() {
         productToEdit={productToEdit}
         draftToResume={draftToResume}
         onViewProduct={(id) => setSelectedProductId(id)}
-        onCreateMovement={(id) => handleOpenMovementModal(id)}
+        onCreateMovement={(id, warehouseId) => handleOpenMovementModal(id, warehouseId)}
       />
 
       <DraftsListModal
@@ -256,7 +296,9 @@ function AppContent() {
       <ProductDetailModal
         productId={selectedProductId}
         onClose={() => setSelectedProductId(null)}
-        onOpenMovementModalForProduct={(id) => handleOpenMovementModal(id)}
+        onOpenMovementModalForProduct={(id, warehouseId, variationId) =>
+          handleOpenMovementModal(id, warehouseId, variationId)
+        }
         onEditProduct={handleEditProduct}
       />
 
@@ -265,8 +307,12 @@ function AppContent() {
         onClose={() => {
           setIsMovementModalOpen(false);
           setMovementProductId(null);
+          setMovementWarehouseId(null);
+          setMovementVariationId(null);
         }}
         preSelectedProductId={movementProductId}
+        preSelectedWarehouseId={movementWarehouseId}
+        preSelectedVariationId={movementVariationId}
       />
     </div>
   );
@@ -276,7 +322,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <StockProvider>
-        <AppContent />
+        <WarehouseFilterProvider>
+          <AppContent />
+        </WarehouseFilterProvider>
       </StockProvider>
     </ThemeProvider>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X,
   Package,
@@ -15,13 +15,18 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
+import { useWarehouseFilters } from '../../context/WarehouseFilterContext';
 import { formatKwanza, formatDate, formatDateTime } from '../../utils/formatters';
 import { Product } from '../../types/stock';
 
 interface ProductDetailModalProps {
   productId: string | null;
   onClose: () => void;
-  onOpenMovementModalForProduct?: (productId: string) => void;
+  onOpenMovementModalForProduct?: (
+    productId: string,
+    warehouseId?: string,
+    variationId?: string
+  ) => void;
   onEditProduct?: (product: Product) => void;
 }
 
@@ -35,12 +40,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     products,
     suppliers,
     warehouses,
+    companies,
     stockConfigs,
     getCurrentStock,
     getProductStockInfo,
     getProductMovements,
+    getProductWarehouses,
+    getProductCompanies,
     updateStockLimits,
   } = useStock();
+
+  const { selectedWarehouseIds } = useWarehouseFilters();
 
   const [activeTab, setActiveTab] = useState<'geral' | 'armazens' | 'historico' | 'variacoes'>('geral');
   const [editingLimitWarehouseId, setEditingLimitWarehouseId] = useState<string | null>(null);
@@ -48,9 +58,42 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [newMaxLimit, setNewMaxLimit] = useState<number>(0);
   const [newLocation, setNewLocation] = useState<string>('');
 
-  if (!productId) return null;
   const product = products.find((p) => p.id === productId);
-  if (!product) return null;
+
+  const prodWarehouses = useMemo(() => {
+    return product ? getProductWarehouses(product.id) : [];
+  }, [product, getProductWarehouses]);
+
+  const productCompanies = useMemo(() => {
+    return product ? getProductCompanies(product.id) : [];
+  }, [product, getProductCompanies]);
+
+  const isStoppedCompany = useMemo(() => {
+    if (productCompanies.length > 0) {
+      return productCompanies.every((c) => c.status === 'parada');
+    }
+    return false;
+  }, [productCompanies]);
+
+  // Contextual warehouse:
+  // 1. If currently filtering a single warehouse in the warehouse view and product is associated with it
+  // 2. Or the first warehouse where this product is registered
+  // 3. Or the first warehouse in the system
+  const contextWarehouseId = useMemo(() => {
+    if (
+      selectedWarehouseIds &&
+      selectedWarehouseIds.length === 1 &&
+      prodWarehouses.some((w) => w.id === selectedWarehouseIds[0])
+    ) {
+      return selectedWarehouseIds[0];
+    }
+    if (prodWarehouses.length > 0) {
+      return prodWarehouses[0].id;
+    }
+    return warehouses[0]?.id ?? '';
+  }, [selectedWarehouseIds, prodWarehouses, warehouses]);
+
+  if (!productId || !product) return null;
 
   const supplier = suppliers.find((s) => s.id === product.supplierId);
   const generalStock = getProductStockInfo(product.id);
@@ -81,6 +124,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         role="dialog"
         aria-modal="true"
       >
+        {/* Stopped Company Warning Banner */}
+        {isStoppedCompany && (
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center gap-2 text-xs text-amber-900">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Empresa parada — serviços indisponíveis:</strong> Esta empresa está temporariamente com as suas operações, movimentações e edição bloqueadas.
+            </span>
+          </div>
+        )}
+
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between bg-slate-50/50">
           <div className="flex items-start gap-3.5">
@@ -134,32 +187,51 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <button
                 type="button"
                 id="btn-product-detail-edit"
+                disabled={isStoppedCompany}
                 onClick={() => {
-                  onClose();
-                  onEditProduct(product);
+                  if (!isStoppedCompany) {
+                    onClose();
+                    onEditProduct(product);
+                  }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors shadow-2xs"
+                className={`p-1.5 border rounded-lg transition-colors shadow-2xs inline-flex items-center justify-center ${
+                  isStoppedCompany
+                    ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
+                    : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                }`}
+                title={isStoppedCompany ? 'Empresa parada — serviços indisponíveis' : 'Editar produto'}
+                aria-label="Editar produto"
               >
-                <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                <span>Editar</span>
+                <Edit3 className="w-3.5 h-3.5" />
               </button>
             )}
 
             <button
               type="button"
               id="btn-product-detail-move"
+              disabled={isStoppedCompany}
               onClick={() => {
-                onClose();
-                onOpenMovementModalForProduct?.(product.id);
+                if (!isStoppedCompany) {
+                  onClose();
+                  onOpenMovementModalForProduct?.(product.id, contextWarehouseId);
+                }
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-xs ${
+                isStoppedCompany
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'
+              }`}
+              title={isStoppedCompany ? 'Empresa parada — serviços indisponíveis' : 'Registrar Movimentação'}
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
               <span>Movimentar</span>
             </button>
             <button
               type="button"
+              id="btn-close-product-detail-modal"
               onClick={onClose}
+              aria-label="Fechar"
+              title="Fechar"
               className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
             >
               <X className="w-4 h-4" />
@@ -265,7 +337,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           >
             <span>Estoque por Armazém</span>
             <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
-              {warehouses.length}
+              {prodWarehouses.length}
             </span>
           </button>
 
@@ -363,36 +435,78 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {activeTab === 'armazens' && (
             <div className="space-y-3">
               <div className="text-xs text-slate-500 mb-2">
-                A quantidade em cada armazém é rigorosamente apurada pela soma de suas movimentações.
+                Apresenta apenas os armazéns vinculados a este produto. O saldo é apurado pelo histórico de movimentações.
               </div>
 
-              {warehouses.map((w) => {
-                const whStock = getCurrentStock(product.id, w.id);
-                const config = stockConfigs.find(
-                  (c) => c.productId === product.id && c.warehouseId === w.id
-                );
-                const isEditing = editingLimitWarehouseId === w.id;
-                const min = config?.minLimit ?? 0;
-                const max = config?.maxLimit ?? 0;
+              {prodWarehouses.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50 border border-slate-200/80 rounded-xl space-y-3">
+                  <Building className="w-8 h-8 text-slate-400 mx-auto" />
+                  <h4 className="text-xs font-semibold text-slate-700">
+                    Nenhum armazém vinculado a este produto
+                  </h4>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    Este produto não possui vínculo de estoque configurado em nenhum armazém. Edite o produto para selecionar os armazéns onde ele deve estar disponível.
+                  </p>
+                  {onEditProduct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onEditProduct(product);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Editar Armazéns Vinculados</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                prodWarehouses.map((w) => {
+                  const comp = companies.find((c) => c.id === w.companyId);
+                  const isWhStopped = comp?.status === 'parada';
+                  const whStock = getCurrentStock(product.id, w.id);
+                  const config = stockConfigs.find(
+                    (c) => c.productId === product.id && c.warehouseId === w.id
+                  );
+                  const isEditing = editingLimitWarehouseId === w.id;
+                  const min = config?.minLimit ?? 0;
+                  const max = config?.maxLimit ?? 0;
 
-                const isBelowMin = min > 0 && whStock < min;
-                const isAboveMax = max > 0 && whStock > max;
+                  const isBelowMin = min > 0 && whStock < min;
+                  const isAboveMax = max > 0 && whStock > max;
 
-                return (
-                  <div
-                    key={w.id}
-                    className="p-3.5 border border-slate-200 rounded-xl bg-white shadow-xs space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Building className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <h5 className="text-xs font-semibold text-slate-800">{w.name}</h5>
-                          <span className="text-[11px] text-slate-400">
-                            {w.type === 'loja_fisica' ? 'Loja Física' : 'Armazém'} • {w.address}
-                          </span>
+                  return (
+                    <div
+                      key={w.id}
+                      className={`p-3.5 border rounded-xl shadow-xs space-y-2 ${
+                        isWhStopped
+                          ? 'bg-amber-50/30 border-amber-200'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-slate-400 shrink-0" />
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h5 className="text-xs font-semibold text-slate-800">{w.name}</h5>
+                              {comp && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-medium border border-blue-100">
+                                  {comp.name}
+                                </span>
+                              )}
+                              {isWhStopped && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                                  Parada
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-slate-400">
+                              {w.type === 'loja_fisica' ? 'Loja Física' : 'Armazém'} • {w.address}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
                       <div className="text-right">
                         <span className="text-xs text-slate-400 block">Saldo Atual:</span>
@@ -427,13 +541,42 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       )}
 
                       {!isEditing ? (
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditLimits(w.id)}
-                          className="text-[11px] text-slate-600 hover:text-slate-900 font-medium ml-2 underline"
-                        >
-                          Configurar Limites
-                        </button>
+                        <div className="flex items-center gap-2 ml-auto">
+                          <button
+                            type="button"
+                            disabled={isWhStopped}
+                            onClick={() => {
+                              if (!isWhStopped) {
+                                onClose();
+                                onOpenMovementModalForProduct?.(product.id, w.id);
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded font-medium transition-colors ${
+                              isWhStopped
+                                ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 cursor-pointer'
+                            }`}
+                            title={isWhStopped ? 'Empresa parada — serviços indisponíveis' : `Movimentar em ${w.name}`}
+                          >
+                            <ArrowLeftRight className="w-3 h-3 text-slate-500" />
+                            <span>Movimentar</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isWhStopped}
+                            onClick={() => {
+                              if (!isWhStopped) handleStartEditLimits(w.id);
+                            }}
+                            className={`text-[11px] font-medium ${
+                              isWhStopped
+                                ? 'text-slate-300 cursor-not-allowed'
+                                : 'text-slate-600 hover:text-slate-900 underline cursor-pointer'
+                            }`}
+                            title={isWhStopped ? 'Empresa parada — serviços indisponíveis' : undefined}
+                          >
+                            Configurar Limites
+                          </button>
+                        </div>
                       ) : null}
                     </div>
 
@@ -494,7 +637,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     )}
                   </div>
                 );
-              })}
+              }))}
             </div>
           )}
 
@@ -537,16 +680,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-[11px] text-slate-400 block">Preço Final:</span>
-                      <span className="font-semibold font-mono text-slate-800">
-                        {formatKwanza(product.salePrice + v.additionalPrice)}
-                      </span>
-                      {v.additionalPrice > 0 && (
-                        <span className="text-[10px] text-emerald-600 block">
-                          (+{formatKwanza(v.additionalPrice)})
+                    <div className="text-right flex flex-col items-end gap-1.5">
+                      <div>
+                        <span className="text-[11px] text-slate-400 block">Preço Final:</span>
+                        <span className="font-semibold font-mono text-slate-800">
+                          {formatKwanza(product.salePrice + v.additionalPrice)}
                         </span>
-                      )}
+                        {v.additionalPrice > 0 && (
+                          <span className="text-[10px] text-emerald-600 block">
+                            (+{formatKwanza(v.additionalPrice)})
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenMovementModalForProduct?.(product.id, contextWarehouseId, v.id);
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer"
+                        title={`Movimentar variação`}
+                      >
+                        <ArrowLeftRight className="w-3 h-3 text-slate-500" />
+                        <span>Movimentar Variação</span>
+                      </button>
                     </div>
                   </div>
                 ))

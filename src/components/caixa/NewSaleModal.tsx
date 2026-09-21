@@ -78,11 +78,24 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
   const [error, setError] = useState<string | null>(null);
 
+  // Operational warehouses (excludes desativada companies)
+  const operationalWarehouses = useMemo(() => {
+    return warehouses.filter((w) => {
+      const comp = companies.find((c) => c.id === w.companyId);
+      return comp?.status !== 'desativada';
+    });
+  }, [warehouses, companies]);
+
   // Sync initial warehouse on open
   React.useEffect(() => {
     if (isOpen) {
-      if (!warehouseId && warehouses.length > 0) {
-        setWarehouseId(warehouses[0].id);
+      const firstActiveWh = operationalWarehouses.find((w) => {
+        const comp = companies.find((c) => c.id === w.companyId);
+        return comp?.status === 'ativa';
+      }) || operationalWarehouses[0];
+
+      if (firstActiveWh) {
+        setWarehouseId(firstActiveWh.id);
       }
       setCart([]);
       setSelectedProductId('');
@@ -99,7 +112,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
       setTransportNotes('');
       setError(null);
     }
-  }, [isOpen, warehouses]);
+  }, [isOpen, operationalWarehouses, companies]);
 
   // Derived current Warehouse, Company, and Principal Bank
   const currentWarehouse = warehouses.find((w) => w.id === warehouseId);
@@ -146,6 +159,15 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
   // Add item to cart with stock validation
   const handleAddToCart = () => {
+    if (currentCompany?.status === 'parada') {
+      setError(`Operação bloqueada: A empresa "${currentCompany.name}" está com status Parada. Não é possível vender produtos a partir deste armazém.`);
+      return;
+    }
+    if (currentCompany?.status === 'desativada') {
+      setError(`Operação bloqueada: A empresa "${currentCompany.name}" está desativada.`);
+      return;
+    }
+
     if (!selectedProduct) {
       setError('Selecione um artigo para adicionar.');
       return;
@@ -250,6 +272,16 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   // Complete Sale execution
   const handleSubmitSale = (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentCompany?.status === 'parada') {
+      setError(`Operação bloqueada: A empresa "${currentCompany.name}" está com status Parada. Não é possível realizar vendas ou faturar a partir dos seus armazéns.`);
+      return;
+    }
+
+    if (currentCompany?.status === 'desativada') {
+      setError(`Operação bloqueada: A empresa "${currentCompany.name}" está desativada.`);
+      return;
+    }
+
     if (cart.length === 0) {
       setError('O carrinho está vazio. Adicione pelo menos um produto antes de vender.');
       return;
@@ -305,7 +337,6 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     <div
       id="modal-new-sale-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-new-sale-card"
@@ -332,6 +363,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             type="button"
             id="btn-close-new-sale-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -364,11 +397,12 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   }}
                   className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 >
-                  {warehouses.map((w) => {
+                  {operationalWarehouses.map((w) => {
                     const comp = companies.find((c) => c.id === w.companyId);
+                    const isParada = comp?.status === 'parada';
                     return (
-                      <option key={w.id} value={w.id}>
-                        {w.name} ({comp?.name || 'Empresa'})
+                      <option key={w.id} value={w.id} disabled={isParada}>
+                        {w.name} ({comp?.name || 'Empresa'}){isParada ? ' — [PARADA - Vendas Bloqueadas]' : ''}
                       </option>
                     );
                   })}
@@ -385,6 +419,18 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               </span>
             </div>
           </div>
+
+          {currentCompany?.status === 'parada' && (
+            <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-3 text-xs text-amber-900">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Empresa Parada (Operações Bloqueadas)</p>
+                <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                  A empresa &ldquo;{currentCompany.name}&rdquo; encontra-se temporariamente Parada. O histórico e os dados de estoque estão preservados para consulta, porém a emissão de vendas, faturamento e saída de mercadorias estão bloqueados.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Section: Add Products to Cart */}
           <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
@@ -715,6 +761,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     type="checkbox"
                     checked={requiresTransport}
                     onChange={(e) => setRequiresTransport(e.target.checked)}
+                    aria-label="Requer transporte ou entrega ao domicílio"
                     className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 border-slate-300"
                   />
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
@@ -805,7 +852,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               type="button"
               id="btn-confirm-final-sale"
               onClick={handleSubmitSale}
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || currentCompany?.status === 'parada' || currentCompany?.status === 'desativada'}
               className="flex-1 sm:flex-initial px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />

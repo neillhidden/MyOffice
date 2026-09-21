@@ -52,7 +52,14 @@ export const EventModal: React.FC<EventModalProps> = ({
     } else {
       setAgendaId(defaultAgendaId);
       setTitle('');
-      setDate(defaultDate || '2026-09-13');
+      const fallbackDate = () => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      setDate(defaultDate || fallbackDate());
       setTime('');
       setDescription('');
       setStatus('pendente');
@@ -103,7 +110,11 @@ export const EventModal: React.FC<EventModalProps> = ({
             </h3>
           </div>
           <button
+            type="button"
+            id="btn-close-event-modal"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="p-1 rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-4 h-4" />

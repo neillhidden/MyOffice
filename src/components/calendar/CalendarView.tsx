@@ -186,6 +186,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
             <CalendarListView
               events={visibleEvents}
               agendas={agendas}
+              currentDate={currentDate}
+              viewMode={viewMode}
               onSelectEvent={setSelectedDetailEvent}
               onToggleEventStatus={(id, e) => {
                 e.stopPropagation();

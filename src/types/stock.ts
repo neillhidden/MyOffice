@@ -74,12 +74,8 @@ export interface ProductDraft {
   minLimit?: number;
   maxLimit?: number;
   physicalLocation?: string;
-  stockConfig?: {
-    warehouseId: string;
-    minLimit: number;
-    maxLimit: number;
-    physicalLocation?: string;
-  };
+  stockConfig?: StockConfigInput;
+  stockConfigs?: StockConfigInput[];
   currentStep: 1 | 2 | 3;
   savedAt: string;
 }
@@ -101,7 +97,7 @@ export type WarehouseType = 'armazem' | 'loja_fisica';
 export type WarehouseStatus = 'ativo' | 'inativo';
 
 export type CompanyCurrency = 'Kz' | 'USD';
-export type CompanyStatus = 'ativa' | 'inativa';
+export type CompanyStatus = 'ativa' | 'desativada' | 'parada';
 
 export interface Company {
   id: string;
@@ -112,7 +108,7 @@ export interface Company {
   logo?: string; // Logótipo (opcional)
   currency: CompanyCurrency; // Moeda padrão (Kz / USD)
   principalBankId?: string; // Banco principal vinculado à empresa
-  status: CompanyStatus; // Status: ativa / inativa
+  status: CompanyStatus; // Status: ativa / desativada / parada
   createdAt: string; // Data de criação
   updatedAt: string; // Última atualização
 }
@@ -135,6 +131,13 @@ export interface StockConfig {
   minLimit: number;
   maxLimit: number;
   physicalLocation?: string; // e.g. "Corredor 3, Prateleira B"
+}
+
+export interface StockConfigInput {
+  warehouseId: string;
+  minLimit: number;
+  maxLimit: number;
+  physicalLocation?: string;
 }
 
 export type MovementType = 
@@ -197,7 +200,19 @@ export interface PurchaseGroup {
   updatedAt: string;
 }
 
-export type PurchaseListStatus = 'cotando' | 'aprovado' | 'comprado' | 'cancelado';
+export type PurchaseListStatus = 'em_pesquisa' | 'concluido' | 'cancelado';
+
+export function normalizePurchaseListStatus(status?: string | null): PurchaseListStatus {
+  if (!status) return 'em_pesquisa';
+  const s = status.toLowerCase().trim();
+  if (s === 'concluido' || s === 'concluído' || s === 'comprado' || s === 'aprovado') {
+    return 'concluido';
+  }
+  if (s === 'cancelado') {
+    return 'cancelado';
+  }
+  return 'em_pesquisa';
+}
 
 export interface PurchaseList {
   id: string;
@@ -237,7 +252,7 @@ export interface PurchaseSource {
 // MÓDULO BANCO (Contas Financeiras e Auditoria)
 // ==========================================
 
-export type BankType = 'banco_fisico' | 'carteira_digital' | 'corrente' | 'poupanca' | 'caixa_fisico' | 'outro';
+export type BankType = 'banco_padrao' | 'banco_fisico' | 'carteira_digital' | 'corrente' | 'poupanca' | 'caixa_fisico' | 'outro';
 export type BankStatus = 'ativo' | 'inativo' | 'ativa' | 'inativa';
 
 export interface Bank {
@@ -256,16 +271,77 @@ export interface Bank {
 
 export type BankMovementType = 'entrada' | 'saida' | 'transferencia' | 'ajuste';
 
+export type FinancialCategory =
+  | 'Salário'
+  | 'Bónus'
+  | 'Compra de estoque'
+  | 'Dívida'
+  | 'Venda'
+  | 'Ajuste'
+  | 'Transferência'
+  | 'Serviços'
+  | 'Aluguer'
+  | 'Impostos'
+  | 'Transporte'
+  | 'Alimentação'
+  | 'Marketing'
+  | 'Outro';
+
 export interface BankMovement {
   id: string;
   bankId: string;
   destinationBankId?: string;
   type: BankMovementType;
+  category?: FinancialCategory | string;
   amount: number;
   date: string; // ISO
   responsible: string; // relação com Empregado ("Administrador")
+  employeeId?: string; // relação opcional com Funcionário
   reason: string; // Motivo/justificativa
   reference?: string; // ex: "Venda #VND-001", "Aporte de Capital"
+  stockMovementId?: string; // Referência à Movimentação de Estoque de origem
+  debtId?: string; // Referência à Dívida
+  debtPaymentId?: string; // Referência ao Pagamento da Dívida
+  isRemoved?: boolean; // Auditoria: se foi removido do histórico
+  removedAt?: string;
+  removedReason?: string;
+  removedBy?: string;
+}
+
+export type FinancialMovement = BankMovement;
+
+// ==========================================
+// MÓDULO FINANCEIRO: DÍVIDAS
+// ==========================================
+
+export type DebtType = 'a_pagar' | 'a_receber';
+export type DebtStatus = 'pendente' | 'parcialmente_paga' | 'quitada';
+export type CounterpartyType = 'cliente' | 'fornecedor' | 'funcionario' | 'outro';
+
+export interface DebtPayment {
+  id: string;
+  debtId: string;
+  amount: number;
+  date: string; // ISO
+  bankId: string; // Conta financeira envolvida no pagamento
+  responsible?: string;
+  notes?: string;
+  createdAt: string; // ISO
+  movementId?: string; // ID da movimentação financeira gerada
+}
+
+export interface Debt {
+  id: string;
+  type: DebtType;
+  counterpartyType: CounterpartyType;
+  counterpartyId?: string;
+  counterpartyName: string;
+  companyId: string; // Relação com Empresa
+  totalAmount: number;
+  currency?: string; // Padrão 'Kz'
+  createdAt: string; // ISO
+  dueDate?: string; // Data de vencimento opcional
+  notes?: string;
 }
 
 // ==========================================

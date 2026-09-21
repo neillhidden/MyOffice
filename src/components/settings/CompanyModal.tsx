@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, AlertCircle } from 'lucide-react';
+import { X, Building2, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Company, CompanyCurrency, CompanyStatus } from '../../types/stock';
 import { useStock } from '../../context/StockContext';
 
@@ -16,7 +16,7 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
   onSave,
   companyToEdit,
 }) => {
-  const { banks } = useStock();
+  const { banks, addBank } = useStock();
   const [name, setName] = useState('');
   const [nif, setNif] = useState('');
   const [address, setAddress] = useState('');
@@ -25,6 +25,7 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
   const [currency, setCurrency] = useState<CompanyCurrency>('Kz');
   const [status, setStatus] = useState<CompanyStatus>('ativa');
   const [principalBankId, setPrincipalBankId] = useState<string>('');
+  const [autoBankCurrency, setAutoBankCurrency] = useState<string>('Kz');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
       setCurrency(companyToEdit.currency);
       setStatus(companyToEdit.status);
       setPrincipalBankId(companyToEdit.principalBankId || '');
+      setAutoBankCurrency(companyToEdit.currency || 'Kz');
     } else {
       setName('');
       setNif('');
@@ -45,10 +47,12 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
       setLogo('');
       setCurrency('Kz');
       setStatus('ativa');
-      setPrincipalBankId(banks[0]?.id || '');
+      // Por padrão nenhum banco selecionado, acionando a criação automática do banco padrão
+      setPrincipalBankId('');
+      setAutoBankCurrency('Kz');
     }
     setError(null);
-  }, [companyToEdit, isOpen, banks]);
+  }, [companyToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -71,6 +75,21 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
       return;
     }
 
+    let finalBankId = principalBankId;
+
+    // Se o utilizador não selecionar nenhum Banco existente, criar automaticamente um novo Banco ao salvar a Empresa
+    if (!finalBankId) {
+      const companyCleanName = name.trim();
+      const createdBank = addBank({
+        name: companyCleanName, // Mesmo nome da empresa
+        type: 'banco_padrao', // Tipo: "Banco padrão da empresa"
+        currency: autoBankCurrency || 'Kz', // Moeda escolhida pelo utilizador (Kz padrão, USD, EUR, etc.)
+        status: 'ativa',
+        notes: `Banco padrão criado automaticamente para a empresa "${companyCleanName}".`,
+      });
+      finalBankId = createdBank.id;
+    }
+
     onSave({
       name: name.trim(),
       nif: nif.trim(),
@@ -79,7 +98,7 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
       logo: logo.trim() || undefined,
       currency,
       status,
-      principalBankId: principalBankId || undefined,
+      principalBankId: finalBankId,
     });
     onClose();
   };
@@ -88,7 +107,6 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
     <div
       id="modal-company-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
     >
       <div
         id="modal-company-card"
@@ -114,8 +132,9 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
             type="button"
             id="btn-close-company-modal"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            aria-label="Fechar"
             title="Fechar"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -238,8 +257,9 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
                 onChange={(e) => setStatus(e.target.value as CompanyStatus)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
               >
-                <option value="ativa">Ativa</option>
-                <option value="inativa">Inativa</option>
+                <option value="ativa">Ativa (Disponível)</option>
+                <option value="desativada">Desativada (Fora de serviço / Oculta)</option>
+                <option value="parada">Parada (Serviços bloqueados)</option>
               </select>
             </div>
 
@@ -259,26 +279,119 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
           </div>
 
           {/* Banco Principal Vinculado */}
-          <div>
-            <label htmlFor="company-bank-select" className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Banco Principal de Liquidação
-            </label>
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="company-bank-select" className="block text-xs font-semibold text-slate-700">
+                Banco Principal de Liquidação
+              </label>
+              <span className="text-[11px] text-slate-400">
+                Vendas nos armazéns creditam nesta conta
+              </span>
+            </div>
+
             <select
               id="company-bank-select"
               value={principalBankId}
               onChange={(e) => setPrincipalBankId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-colors"
             >
-              <option value="">Nenhum banco selecionado</option>
-              {banks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} ({b.currency}) • {b.type === 'caixa_fisico' ? 'Caixa Físico' : 'Conta Bancária'}
-                </option>
-              ))}
+              <option value="">
+                Nenhum banco existente selecionado (Criar banco padrão automaticamente)
+              </option>
+              {banks.length > 0 && (
+                <optgroup label="Bancos Existentes Cadastrados">
+                  {banks.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} ({b.currency}) • {b.type === 'banco_padrao' ? 'Banco padrão da empresa' : b.type === 'caixa_fisico' ? 'Caixa Físico' : 'Conta Bancária'}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
-            <p className="text-[11px] text-slate-400 mt-1">
-              As vendas geradas nos armazéns desta empresa creditam automaticamente nesta conta bancária.
-            </p>
+
+            {/* Cenário 1: Nenhum Banco Existente Selecionado -> Painel de Criação Automática do Banco Padrão */}
+            {!principalBankId ? (
+              <div
+                id="auto-bank-creation-box"
+                className="mt-3 p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl space-y-3"
+              >
+                <div className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold text-blue-950 block">
+                      Novo Banco Padrão será criado automaticamente ao salvar
+                    </span>
+                    <p className="text-[11px] text-blue-800 mt-0.5 leading-relaxed">
+                      Como nenhum banco existente foi selecionado, o sistema criará este banco automaticamente e irá vinculá-lo como o Banco Principal desta empresa.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-blue-200/60">
+                  <div>
+                    <span className="block text-[11px] font-semibold text-blue-900 mb-1">
+                      Nome do Banco Gerado
+                    </span>
+                    <div className="px-3 py-2 bg-white/95 border border-blue-200 rounded-lg text-xs font-semibold text-slate-900 truncate">
+                      {name.trim() || '(Mesmo nome da empresa)'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="company-auto-bank-currency" className="block text-[11px] font-semibold text-blue-900 mb-1">
+                      Moeda do Banco Padrão <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      id="company-auto-bank-currency"
+                      value={autoBankCurrency}
+                      onChange={(e) => setAutoBankCurrency(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-colors"
+                    >
+                      <option value="Kz">Kz (Kwanza Angolano - Padrão)</option>
+                      <option value="USD">USD (Dólar Americano)</option>
+                      <option value="EUR">EUR (Euro)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-blue-900/90 pt-1">
+                  <span className="flex items-center gap-1">
+                    <span className="font-semibold text-blue-950">Tipo:</span> Banco padrão da empresa
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="font-semibold text-blue-950">Saldo inicial:</span> 0 {autoBankCurrency} (calculado)
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="font-semibold text-blue-950">Vínculo:</span> Banco Principal da Empresa
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Cenário 2: Banco Existente Selecionado */
+              <div
+                id="selected-existing-bank-box"
+                className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <div className="truncate">
+                    <span className="text-xs font-semibold text-slate-800 block truncate">
+                      {banks.find((b) => b.id === principalBankId)?.name}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Banco existente selecionado • Moeda: {banks.find((b) => b.id === principalBankId)?.currency}
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700 shrink-0">
+                  Vinculado
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Footer Actions */}
