@@ -17,7 +17,7 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Submodule Navigation Bar */}
-      <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -25,8 +25,8 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
             onClick={() => onSelectSubmodule('Contas')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               activeSubmodule === 'Contas'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <Landmark className="w-3.5 h-3.5" />
@@ -39,8 +39,8 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
             onClick={() => onSelectSubmodule('Lançamentos')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               activeSubmodule === 'Lançamentos'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -53,8 +53,8 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
             onClick={() => onSelectSubmodule('Dívidas')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               activeSubmodule === 'Dívidas'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <HandCoins className="w-3.5 h-3.5" />

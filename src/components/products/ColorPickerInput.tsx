@@ -72,8 +72,9 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
       <button
         type="button"
         id={id}
+        aria-label={activeColor ? `Cor selecionada: ${activeColor.name}` : placeholder}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs hover:border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 transition-colors text-left"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs hover:border-slate-300 dark:hover:border-slate-600 focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 transition-colors text-left cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
           {activeColor ? (
@@ -85,24 +86,24 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
               }}
             />
           ) : (
-            <span className="w-4 h-4 rounded-full shrink-0 border border-dashed border-slate-300 bg-slate-50" />
+            <span className="w-4 h-4 rounded-full shrink-0 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800" />
           )}
 
           <span
             className={`truncate font-medium ${
-              activeColor ? 'text-slate-800' : 'text-slate-400 font-normal'
+              activeColor ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 font-normal'
             }`}
           >
             {activeColor ? activeColor.name : placeholder}
           </span>
         </div>
 
-        <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 z-40 bg-white border border-slate-200 rounded-xl shadow-lg p-3 w-64">
-          <div className="text-[11px] font-medium text-slate-400 mb-2 px-1">
+        <div className="absolute top-full left-0 mt-1.5 z-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-3 w-64">
+          <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mb-2 px-1">
             Escolher cor predefinida
           </div>
 
@@ -117,11 +118,12 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
                   key={col.name}
                   type="button"
                   title={col.name}
+                  aria-label={col.name}
                   onClick={() => handleSelect(col)}
-                  className={`group relative flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all ${
+                  className={`group relative flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all cursor-pointer ${
                     isSelected
-                      ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
-                      : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
+                      ? 'border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-900 dark:ring-slate-100'
+                      : 'border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <span
@@ -141,7 +143,7 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
                       />
                     )}
                   </span>
-                  <span className="text-[9px] text-slate-600 mt-1 truncate max-w-full text-center">
+                  <span className="text-[9px] text-slate-600 dark:text-slate-300 mt-1 truncate max-w-full text-center">
                     {col.name}
                   </span>
                 </button>
@@ -150,9 +152,9 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
           </div>
 
           {activeColor && (
-            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] px-1">
-              <span className="text-slate-500">Selecionado:</span>
-              <span className="font-semibold text-slate-800">{activeColor.name}</span>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] px-1">
+              <span className="text-slate-500 dark:text-slate-400">Selecionado:</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{activeColor.name}</span>
             </div>
           )}
         </div>

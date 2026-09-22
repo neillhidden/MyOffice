@@ -1420,21 +1420,21 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs p-4 overflow-y-auto">
         <div
-          className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col overflow-hidden my-auto transition-all"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl h-[700px] max-h-[90vh] flex flex-col overflow-hidden my-auto transition-all"
           role="dialog"
           aria-modal="true"
         >
           {/* Modal Top Header */}
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-bold text-xs shadow-xs">
                 {productToEdit ? 'ED' : 'CD'}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold text-slate-900">
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {productToEdit
                       ? `Editar Produto: ${productToEdit.name}`
                       : draftToResume
@@ -1442,21 +1442,21 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                       : 'Novo Produto no Catálogo'}
                   </h2>
                   {productToEdit && (
-                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-medium rounded border border-blue-200">
+                    <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-[10px] font-medium rounded border border-blue-200 dark:border-blue-800">
                       Edição
                     </span>
                   )}
                   {draftToResume && (
-                    <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded border border-amber-200">
+                    <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-medium rounded border border-amber-200 dark:border-amber-800">
                       Rascunho
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
                   {currentStep === 1 && 'Passo 1 de 3: Identificação, Estado, Preços e Categoria'}
                   {currentStep === 2 && 'Passo 2 de 3: Variações (Cores, Tamanhos e Quantidades)'}
                   {currentStep === 3 && 'Passo 3 de 3: Configuração de Limites no Armazém'}
-                  {currentStep === 4 && 'Cadastro Concluído com Sucesso'}
+                  {currentStep === 4 && 'Registo Concluído com Sucesso'}
                 </p>
               </div>
             </div>
@@ -1477,15 +1477,15 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   }
                   aria-label={productToEdit ? 'Guardar alterações' : 'Guardar rascunho de artigo não terminado'}
                   disabled={isSavingDraft}
-                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors relative disabled:opacity-60"
+                  className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative disabled:opacity-60 cursor-pointer"
                 >
                   {productToEdit ? (
-                    <Save className="w-4 h-4 text-slate-600" />
+                    <Save className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                   ) : (
-                    <StickyNote className="w-4 h-4 text-amber-600" />
+                    <StickyNote className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   )}
                   {saveDraftFeedback && (
-                    <span className="absolute -bottom-7 right-0 text-[10px] bg-slate-900 text-white px-2 py-0.5 rounded shadow-sm whitespace-nowrap z-10">
+                    <span className="absolute -bottom-7 right-0 text-[10px] bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-2 py-0.5 rounded shadow-sm whitespace-nowrap z-10 font-medium">
                       {productToEdit
                         ? 'Alterações guardadas!'
                         : activeDraftId
@@ -1501,7 +1501,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-close-product-modal"
                 onClick={handleAttemptClose}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label="Fechar"
                 title="Fechar"
               >
@@ -1512,26 +1512,26 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
           {/* Stepper Progress Bar */}
           {currentStep !== 4 && (
-            <div className="bg-white border-b border-slate-100 px-6 py-3 shrink-0">
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-3 shrink-0">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
                 {/* Step 1 */}
                 <div
                   className={`flex items-center gap-2 text-xs font-medium cursor-pointer ${
                     currentStep === 1
-                      ? 'text-slate-900 font-semibold'
+                      ? 'text-slate-900 dark:text-slate-100 font-semibold'
                       : currentStep > 1
-                      ? 'text-emerald-600'
-                      : 'text-slate-400'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-slate-400 dark:text-slate-500'
                   }`}
                   onClick={() => setCurrentStep(1)}
                 >
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
                       currentStep === 1
-                        ? 'bg-slate-900 text-white'
+                        ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
                         : currentStep > 1
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-500'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     1
@@ -1541,7 +1541,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                 <div
                   className={`flex-1 h-0.5 mx-3 ${
-                    currentStep > 1 ? 'bg-emerald-500' : 'bg-slate-200'
+                    currentStep > 1 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'
                   }`}
                 />
 
@@ -1549,10 +1549,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 <div
                   className={`flex items-center gap-2 text-xs font-medium cursor-pointer ${
                     currentStep === 2
-                      ? 'text-slate-900 font-semibold'
+                      ? 'text-slate-900 dark:text-slate-100 font-semibold'
                       : currentStep > 2
-                      ? 'text-emerald-600'
-                      : 'text-slate-400'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-slate-400 dark:text-slate-500'
                   }`}
                   onClick={() => {
                     if (name.trim() && category.trim()) {
@@ -1569,10 +1569,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
                       currentStep === 2
-                        ? 'bg-slate-900 text-white'
+                        ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
                         : currentStep > 2
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-500'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     2
@@ -1582,18 +1582,18 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                 <div
                   className={`flex-1 h-0.5 mx-3 ${
-                    currentStep > 2 ? 'bg-emerald-500' : 'bg-slate-200'
+                    currentStep > 2 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'
                   }`}
                 />
 
-                {/* Step 3: Configuração de Estoque (Clicável) */}
+                {/* Step 3: Configuração de Armazém (Clicável) */}
                 <div
                   className={`flex items-center gap-2 text-xs font-medium cursor-pointer ${
                     currentStep === 3
-                      ? 'text-slate-900 font-semibold'
+                      ? 'text-slate-900 dark:text-slate-100 font-semibold'
                       : currentStep > 3
-                      ? 'text-emerald-600'
-                      : 'text-slate-500 hover:text-slate-900'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                   onClick={() => {
                     if (name.trim() && category.trim()) {
@@ -1610,15 +1610,15 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
                       currentStep === 3
-                        ? 'bg-slate-900 text-white'
+                        ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
                         : currentStep > 3
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-500'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     3
                   </span>
-                  <span>Configuração de Estoque</span>
+                  <span>Configuração de Armazém</span>
                 </div>
               </div>
             </div>
@@ -1627,8 +1627,8 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
           {/* Validation Error Banner */}
           {validationError && (
             <div className="px-6 pt-4 shrink-0">
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
                 <span>{validationError}</span>
               </div>
             </div>
@@ -1645,11 +1645,11 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-slate-700">
+                      <label htmlFor="input-product-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                         Nome do Produto <span className="text-rose-500">*</span>
                       </label>
                       {currentCompany && (
-                        <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                           Empresa: {currentCompany.name}
                         </span>
                       )}
@@ -1657,17 +1657,18 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     <input
                       type="text"
                       id="input-product-name"
+                      aria-label="Nome do Produto"
                       value={name}
                       onChange={(e) => handleNameChange(e.target.value)}
                       placeholder="Ex: Comando Sem Fios DualSense PS5 / Fritadeira Air Fryer 4.5L"
-                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800 placeholder:text-slate-400"
+                      className="w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     />
                     {nameDuplicateCandidate && (
-                      <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200/90 rounded-lg flex items-center justify-between gap-2 animate-in fade-in duration-150">
+                      <div className="mt-1.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/90 rounded-lg flex items-center justify-between gap-2 animate-in fade-in duration-150">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <Info className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span className="text-[11px] text-amber-800 truncate">
-                            Já existe um produto chamado <strong className="font-semibold text-slate-900">'{nameDuplicateCandidate.name}'</strong> nesta empresa.
+                          <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span className="text-[11px] text-amber-800 dark:text-amber-300 truncate">
+                            Já existe um produto chamado <strong className="font-semibold text-slate-900 dark:text-slate-100">'{nameDuplicateCandidate.name}'</strong> nesta empresa.
                           </span>
                         </div>
                         {onViewProduct && (
@@ -1677,7 +1678,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                               onClose();
                               onViewProduct(nameDuplicateCandidate.id);
                             }}
-                            className="text-[11px] font-semibold text-amber-900 hover:text-amber-950 underline shrink-0 cursor-pointer"
+                            className="text-[11px] font-semibold text-amber-900 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-200 underline shrink-0 cursor-pointer"
                           >
                             Ver produto existente
                           </button>
@@ -1688,14 +1689,15 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                   {/* NOVO CAMPO OBRIGATÓRIO: Estado do Artigo */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor="select-product-condition" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Estado do Artigo <span className="text-rose-500">*</span>
                     </label>
                     <select
                       id="select-product-condition"
+                      aria-label="Estado do Artigo"
                       value={condition}
                       onChange={(e) => handleConditionChange(e.target.value as ProductCondition)}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                     >
                       <option value="novo">Novo (de fábrica / lacrado)</option>
                       <option value="novo_usado">Novo-Usado (caixa aberta / demo)</option>
@@ -1710,13 +1712,13 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   {/* Categoria com as 5 principais */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-slate-700">
+                      <label htmlFor="select-product-category" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                         Categoria <span className="text-rose-500">*</span>
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowNewCategoryModal(true)}
-                        className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
                       >
                         + Nova
                       </button>
@@ -1724,9 +1726,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     <div className="relative">
                       <select
                         id="select-product-category"
+                        aria-label="Categoria do Produto"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                       >
                         {categories.map((cat) => (
                           <option key={cat} value={cat}>
@@ -1735,7 +1738,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                         ))}
                       </select>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                       {renderCategoryIcon(category)}
                       <span>Taxonomia do catálogo</span>
                     </div>
@@ -1743,29 +1746,31 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                   {/* Marca */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor="input-product-brand" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Marca
                     </label>
                     <input
                       type="text"
                       id="input-product-brand"
+                      aria-label="Marca"
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       placeholder="Ex: Sony, Philips, Apple, Nike, Purina"
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     />
                   </div>
 
                   {/* Unidade de Medida */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor="select-unit-of-measure" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Unidade de Medida
                     </label>
                     <select
                       id="select-unit-of-measure"
+                      aria-label="Unidade de Medida"
                       value={unitOfMeasure}
                       onChange={(e) => setUnitOfMeasure(e.target.value as UnitOfMeasure)}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 text-slate-800"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                     >
                       <option value="unidade">Unidade (un)</option>
                       <option value="caixa">Caixa (cx)</option>
@@ -1782,13 +1787,13 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-slate-700">
-                        Código SKU <span className="text-slate-400 font-normal">(Identificador Único)</span>
+                      <label htmlFor="input-product-sku" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Código SKU <span className="text-slate-400 dark:text-slate-500 font-normal">(Identificador Único)</span>
                       </label>
                       <button
                         type="button"
                         onClick={handleAutoGenerateSku}
-                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1"
+                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Sparkles className="w-3 h-3" /> Gerar automático
                       </button>
@@ -1796,49 +1801,52 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     <input
                       type="text"
                       id="input-product-sku"
+                      aria-label="Código SKU"
                       value={sku}
                       onChange={(e) => handleSkuChange(e.target.value)}
                       placeholder="Ex: GAME-PS5-001"
-                      className={`w-full px-3 py-2 text-xs font-mono uppercase bg-white border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 ${
+                      className={`w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-slate-800 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 ${
                         skuDuplicateCandidate || skuError
-                          ? 'border-rose-400 ring-2 ring-rose-500/15 bg-rose-50/20'
-                          : 'border-slate-200 focus:ring-slate-900/10'
+                          ? 'border-rose-400 ring-2 ring-rose-500/15 bg-rose-50/20 dark:bg-rose-950/20'
+                          : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10'
                       }`}
                     />
                     {(skuDuplicateCandidate || skuError) && (
-                      <div className="mt-1.5 text-[11px] text-rose-600 flex items-center gap-1.5 font-medium animate-in fade-in duration-150">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                        <span>Já existe um produto cadastrado com este SKU.</span>
+                      <div className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium animate-in fade-in duration-150">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                        <span>Já existe um produto registado com este SKU.</span>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Código de Barras EAN-13 <span className="text-slate-400 font-normal">(Opcional)</span>
+                    <label htmlFor="input-product-barcode" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Código de Barras EAN-13 <span className="text-slate-400 dark:text-slate-500 font-normal">(Opcional)</span>
                     </label>
                     <input
                       type="text"
                       id="input-product-barcode"
+                      aria-label="Código de Barras EAN-13"
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
                       placeholder="Ex: 5601234567890"
-                      className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                      className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100"
                     />
                   </div>
                 </div>
 
                 {/* Preços e Fornecedor */}
-                <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3">
+                <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 rounded-xl space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {/* Preço de Custo */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label htmlFor="input-cost-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Preço de Custo (Kz)
                       </label>
                       <input
                         type="number"
                         id="input-cost-price"
+                        aria-label="Preço de Custo em Kwanzas"
                         min="0"
                         step="100"
                         value={costPrice}
@@ -1846,18 +1854,19 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                           setCostPrice(e.target.value === '' ? '' : Number(e.target.value))
                         }
                         placeholder="0.00"
-                        className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                        className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100"
                       />
                     </div>
 
                     {/* Preço de Venda */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label htmlFor="input-sale-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Preço de Venda (Kz)
                       </label>
                       <input
                         type="number"
                         id="input-sale-price"
+                        aria-label="Preço de Venda em Kwanzas"
                         min="0"
                         step="100"
                         value={salePrice}
@@ -1865,29 +1874,30 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                           setSalePrice(e.target.value === '' ? '' : Number(e.target.value))
                         }
                         placeholder="0.00"
-                        className="w-full px-3 py-2 text-xs font-mono font-semibold bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-900"
+                        className="w-full px-3 py-2 text-xs font-mono font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-900 dark:text-slate-100"
                       />
                     </div>
 
                     {/* Fornecedor */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-semibold text-slate-700">
+                        <label htmlFor="select-supplier" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                           Fornecedor
                         </label>
                         <button
                           type="button"
                           onClick={() => setShowNewSupplierModal(true)}
-                          className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
                         >
                           + Novo
                         </button>
                       </div>
                       <select
                         id="select-supplier"
+                        aria-label="Fornecedor do Produto"
                         value={supplierId}
                         onChange={(e) => setSupplierId(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                       >
                         {suppliers.map((s) => (
                           <option key={s.id} value={s.id}>
@@ -1900,18 +1910,18 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                   {/* Margem Calculada & Alertas por Estado */}
                   {Number(costPrice) > 0 && Number(salePrice) > 0 && (
-                    <div className="pt-2 border-t border-slate-200/60 space-y-2">
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Margem Bruta Estimada:</span>
+                        <span className="text-slate-500 dark:text-slate-400">Margem Bruta Estimada:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-medium text-slate-700">
+                          <span className="font-mono font-medium text-slate-700 dark:text-slate-200">
                             {formatKwanza(Number(salePrice) - Number(costPrice))}
                           </span>
                           <span
                             className={`font-semibold px-2 py-0.5 rounded text-[11px] ${
                               Number(salePrice) >= Number(costPrice)
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-rose-100 text-rose-800'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                                : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
                             }`}
                           >
                             {Math.round(
@@ -1923,22 +1933,22 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                       </div>
 
                       {condition === 'novo' && Number(salePrice) < Number(costPrice) && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[11px]">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px]">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
                           <span>Alerta (Novo): O preço de venda é inferior ao preço de custo.</span>
                         </div>
                       )}
 
                       {condition === 'usado' && Number(salePrice) > Number(costPrice) && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px]">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                           <span>Aviso (Usado): O preço de venda é superior ao preço de custo.</span>
                         </div>
                       )}
 
                       {condition === 'novo_usado' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px]">
-                          <Info className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[11px]">
+                          <Info className="w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
                           <span>Novo-Usado: Preço livre (pode ser inferior ou superior ao custo).</span>
                         </div>
                       )}
@@ -1948,12 +1958,12 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                 {/* Imagens (Principal e Galeria com Presets das 5 Categorias) */}
                 <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label htmlFor="input-main-image-url" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Imagem do Produto
                   </label>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-20 h-20 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shrink-0 shadow-2xs">
+                    <div className="w-20 h-20 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 shadow-2xs">
                       <img
                         src={mainImage}
                         alt="Pré-visualização"
@@ -1965,15 +1975,16 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                       <input
                         type="url"
                         id="input-main-image-url"
+                        aria-label="URL da imagem principal"
                         value={mainImage}
                         onChange={(e) => setMainImage(e.target.value)}
                         placeholder="URL da imagem (https://...)"
-                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400"
+                        className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                       />
 
                       {/* Presets adaptados para a categoria selecionada */}
                       <div>
-                        <span className="text-[11px] font-medium text-slate-500 block mb-1">
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                           Fotos sugeridas para {category}:
                         </span>
                         <div className="flex flex-wrap gap-1.5">
@@ -1983,10 +1994,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                 key={preset.label}
                                 type="button"
                                 onClick={() => setMainImage(preset.url)}
-                                className={`px-2.5 py-1 text-[11px] rounded-lg border transition-all ${
+                                className={`px-2.5 py-1 text-[11px] rounded-lg border transition-all cursor-pointer ${
                                   mainImage === preset.url
-                                    ? 'bg-slate-900 text-white border-slate-900 font-medium'
-                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100 font-medium'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                 }`}
                               >
                                 {preset.label}
@@ -2001,16 +2012,17 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                 {/* Descrição */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="textarea-description" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Descrição Detalhada & Especificações
                   </label>
                   <textarea
                     id="textarea-description"
+                    aria-label="Descrição Detalhada e Especificações"
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Detalhes técnicos, garantia, dimensões, voltagem, especificações..."
-                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 text-slate-800 placeholder:text-slate-400"
+                    className="w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
               </div>
@@ -2023,10 +2035,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xs font-semibold text-slate-800">
+                    <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                       Grade de Variações do Produto
                     </h3>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
                       Configure combinações como Cor, Tamanho, Capacidade e Quantidade por variação.
                     </p>
                   </div>
@@ -2035,7 +2047,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     type="button"
                     id="btn-add-variation-row"
                     onClick={handleAddVariation}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Adicionar Variação</span>
@@ -2043,18 +2055,18 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 </div>
 
                 {variations.length === 0 ? (
-                  <div className="p-8 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-2">
+                  <div className="p-8 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/40">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mx-auto mb-2">
                       <Palette className="w-5 h-5" />
                     </div>
-                    <h4 className="text-xs font-medium text-slate-700">Sem variações configuradas</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm mx-auto">
+                    <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300">Sem variações configuradas</h4>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 max-w-sm mx-auto">
                       Se o produto não tiver tamanhos ou cores diferentes, pode avançar diretamente para o próximo passo.
                     </p>
                     <button
                       type="button"
                       onClick={handleAddVariation}
-                      className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                      className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Adicionar Primeira Variação</span>
@@ -2065,14 +2077,14 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     {variations.map((v, index) => (
                       <div
                         key={v.id}
-                        className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-2xs space-y-3"
+                        className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-2xs space-y-3"
                       >
-                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
                           <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-[10px] font-bold">
                               {index + 1}
                             </span>
-                            <span className="text-xs font-semibold text-slate-800">
+                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                               Variação #{index + 1}
                             </span>
                           </div>
@@ -2081,18 +2093,20 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleDuplicateVariation(index)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition-colors cursor-pointer"
                               title="Duplicar variação mantendo o mesmo tamanho"
+                              aria-label={`Duplicar variação ${index + 1}`}
                             >
-                              <Copy className="w-3 h-3 text-slate-500" />
+                              <Copy className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                               <span>Manter tamanho</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleRemoveVariation(index)}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                              className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                               title="Remover variação"
+                              aria-label={`Remover variação ${index + 1}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -2102,7 +2116,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
                           {/* Campo Cor com Seletor Visual ColorPickerInput */}
                           <div className="sm:col-span-1">
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                               Cor (Seletor)
                             </label>
                             <ColorPickerInput
@@ -2118,42 +2132,45 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                           {/* Tamanho / Especificação */}
                           <div className="sm:col-span-1">
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                               Tamanho / Versão
                             </label>
                             <input
                               type="text"
+                              aria-label={`Tamanho ou versão da variação ${index + 1}`}
                               value={v.size}
                               onChange={(e) =>
                                 handleUpdateVariation(index, 'size', e.target.value)
                               }
                               placeholder="Ex: M / 42 / 1TB"
-                              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400"
+                              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             />
                           </div>
 
                           {/* SKU Específico */}
                           <div className="sm:col-span-1">
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                               SKU da Variação
                             </label>
                             <input
                               type="text"
+                              aria-label={`SKU da variação ${index + 1}`}
                               value={v.sku}
                               onChange={(e) =>
                                 handleUpdateVariation(index, 'sku', e.target.value.toUpperCase())
                               }
-                              className="w-full px-3 py-2 text-xs font-mono uppercase bg-white border border-slate-200 rounded-lg text-slate-800"
+                              className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
                             />
                           </div>
 
                           {/* Acréscimo Preço (Kz) */}
                           <div className="sm:col-span-1">
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                               + Preço (Kz)
                             </label>
                             <input
                               type="number"
+                              aria-label={`Acréscimo de preço da variação ${index + 1}`}
                               min="0"
                               step="500"
                               value={v.additionalPrice || ''}
@@ -2165,17 +2182,18 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                 )
                               }
                               placeholder="0"
-                              className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800"
+                              className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
                             />
                           </div>
 
                           {/* NOVO CAMPO: Quantidade por Variação */}
                           <div className="sm:col-span-1">
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                               Qtd. Esperada
                             </label>
                             <input
                               type="number"
+                              aria-label={`Quantidade esperada da variação ${index + 1}`}
                               min="0"
                               step="1"
                               value={v.quantity ?? ''}
@@ -2187,7 +2205,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                 )
                               }
                               placeholder="0"
-                              className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold"
+                              className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 font-semibold"
                             />
                           </div>
                         </div>
@@ -2195,15 +2213,15 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     ))}
 
                     {/* Resumo visual das variações */}
-                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
                       <div className="flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-slate-500" />
+                        <Palette className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                         <span>
-                          Total de variações cadastradas: <strong>{variations.length}</strong>
+                          Total de variações registadas: <strong>{variations.length}</strong>
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400">•</span>
+                        <span className="text-slate-400 dark:text-slate-500">•</span>
                         <span>
                           Soma das variações: <strong>{totalVariationsQuantity}</strong> unidades
                         </span>

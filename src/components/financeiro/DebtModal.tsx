@@ -133,24 +133,24 @@ export const DebtModal: React.FC<DebtModalProps> = ({
   return (
     <div
       id="modal-debt-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
         id="modal-debt-card"
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shadow-xs">
               <HandCoins className="w-4 h-4" />
             </div>
             <div>
-              <h3 id="modal-debt-title" className="text-sm font-semibold text-slate-900">
+              <h3 id="modal-debt-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {debtToEdit ? 'Editar Dívida' : 'Registar Nova Dívida'}
               </h3>
-              <p className="text-[11px] text-slate-500">
-                Controle de compromisso a pagar ou a receber
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Controlo de compromisso a pagar ou a receber
               </p>
             </div>
           </div>
@@ -158,7 +158,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -166,7 +166,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-rose-700 text-xs">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-lg flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -174,7 +174,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
 
           {/* Tipo de Dívida */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Tipo de Dívida <span className="text-rose-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -185,10 +185,10 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                   setType('a_pagar');
                   if (counterpartyType === 'cliente') setCounterpartyType('fornecedor');
                 }}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'a_pagar'
-                    ? 'bg-rose-50 border-rose-300 text-rose-800 ring-1 ring-rose-300'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
                 Conta a Pagar (Saída futura)
@@ -200,10 +200,10 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                   setType('a_receber');
                   if (counterpartyType === 'fornecedor') setCounterpartyType('cliente');
                 }}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'a_receber'
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 ring-1 ring-emerald-300'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
                 Conta a Receber (Entrada futura)
@@ -214,7 +214,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
           {/* Contraparte & Tipo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="select-debt-counterparty-type" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="select-debt-counterparty-type" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Tipo de Contraparte
               </label>
               <select
@@ -224,7 +224,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                   setCounterpartyType(e.target.value as CounterpartyType);
                   setCounterpartyId('');
                 }}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
               >
                 <option value="fornecedor">Fornecedor</option>
                 <option value="cliente">Cliente</option>
@@ -234,14 +234,14 @@ export const DebtModal: React.FC<DebtModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="select-predefined-counterparty" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="select-predefined-counterparty" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Selecionar Cadastrado (Opcional)
               </label>
               <select
                 id="select-predefined-counterparty"
                 value={counterpartyId}
                 onChange={handleSelectPredefinedCounterparty}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
               >
                 <option value="">Digitar nome manualmente...</option>
                 {counterpartyType === 'fornecedor' &&
@@ -266,7 +266,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
             </div>
 
             <div className="sm:col-span-2">
-              <label htmlFor="input-debt-counterparty-name" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-debt-counterparty-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Nome da Entidade / Contraparte <span className="text-rose-500">*</span>
               </label>
               <input
@@ -275,7 +275,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 value={counterpartyName}
                 onChange={(e) => setCounterpartyName(e.target.value)}
                 placeholder="Ex: Fornecedor Central, João Silva, etc."
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
                 required
               />
             </div>
@@ -284,14 +284,14 @@ export const DebtModal: React.FC<DebtModalProps> = ({
           {/* Empresa & Valor Total */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="select-debt-company" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="select-debt-company" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Empresa do MyOffice <span className="text-rose-500">*</span>
               </label>
               <select
                 id="select-debt-company"
                 value={companyId}
                 onChange={(e) => setCompanyId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                 required
               >
                 {companies.map((c) => (
@@ -303,7 +303,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="input-debt-total-amount" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-debt-total-amount" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Valor Total da Dívida <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -315,10 +315,10 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                   value={totalAmount}
                   onChange={(e) => setTotalAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 font-mono"
                   required
                 />
-                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400">
+                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
                   Kz
                 </span>
               </div>
@@ -327,7 +327,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
 
           {/* Data de Vencimento */}
           <div>
-            <label htmlFor="input-debt-due-date" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="input-debt-due-date" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Data de Vencimento (Opcional)
             </label>
             <input
@@ -335,13 +335,13 @@ export const DebtModal: React.FC<DebtModalProps> = ({
               id="input-debt-due-date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
             />
           </div>
 
           {/* Observações */}
           <div>
-            <label htmlFor="textarea-debt-notes" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="textarea-debt-notes" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Observações / Condições
             </label>
             <textarea
@@ -350,25 +350,25 @@ export const DebtModal: React.FC<DebtModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ex: Fatura #300, pagamento parcelado em 2x..."
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
             />
           </div>
 
           {/* Footer */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               id="btn-submit-debt"
-              className="px-5 py-2 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+              className="px-5 py-2 text-xs font-medium bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
             >
-              {debtToEdit ? 'Salvar Alterações' : 'Confirmar Dívida'}
+              {debtToEdit ? 'Guardar alterações' : 'Confirmar Dívida'}
             </button>
           </div>
         </form>

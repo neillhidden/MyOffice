@@ -1,21 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Building2,
-  Calendar,
   DollarSign,
   Receipt,
   ShoppingCart,
-  TrendingUp,
   Layers,
-  ArrowUpRight,
-  Sparkles,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { DashboardPeriod, computeDashboardData, computeTopProducts } from './dashboardUtils';
 import { DashboardMetricCard } from './DashboardMetricCard';
 import { DashboardChart } from './DashboardChart';
 import { TopProductsList } from './TopProductsList';
-import { formatCurrencyValue } from '../../utils/formatters';
 
 export const DashboardView: React.FC = () => {
   const { sales, warehouses, companies, products } = useStock();
@@ -102,27 +97,20 @@ export const DashboardView: React.FC = () => {
     }
   }, [selectedPeriod]);
 
-  // Selected company name
-  const selectedCompanyName = useMemo(() => {
-    if (selectedCompanyId === 'todas') return 'Todas as Empresas';
-    const comp = companies.find((c) => c.id === selectedCompanyId);
-    return comp ? comp.name : 'Empresa';
-  }, [selectedCompanyId, companies]);
-
   return (
     <div id="dashboard-container" className="space-y-6 pb-12">
       {/* Top Header & Filters Bar */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         {/* Left Title & Status */}
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dashboard de Vendas</h1>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard de Vendas</h1>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
               Tempo Real
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Visão consolidada de desempenho comercial e análise comparativa de períodos.
           </p>
         </div>
@@ -131,7 +119,7 @@ export const DashboardView: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           {/* Company Selector Dropdown */}
           <div className="relative min-w-[200px]">
-            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
               <Building2 className="w-4 h-4" />
             </div>
             <select
@@ -143,7 +131,7 @@ export const DashboardView: React.FC = () => {
                 if (comp && comp.status === 'parada') return;
                 setSelectedCompanyId(val);
               }}
-              className="w-full pl-8 pr-8 py-1.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer appearance-none"
+              className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/70 dark:hover:bg-slate-700/70 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-100 transition-colors cursor-pointer appearance-none [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
               <option value="todas">Todas as empresas</option>
               {visibleCompanies.map((comp) => {
@@ -156,7 +144,7 @@ export const DashboardView: React.FC = () => {
                     className={
                       isParada
                         ? 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'
-                        : 'text-slate-800'
+                        : 'text-slate-800 dark:text-slate-100'
                     }
                   >
                     {comp.name} ({comp.currency}){isParada ? ' — Parada' : ''}
@@ -164,7 +152,7 @@ export const DashboardView: React.FC = () => {
                 );
               })}
             </select>
-            <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
               <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
@@ -178,7 +166,7 @@ export const DashboardView: React.FC = () => {
           {/* Period Selector Segmented Control */}
           <div
             id="dashboard-period-selector"
-            className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200/60"
+            className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-lg border border-slate-200/60 dark:border-slate-700"
           >
             {(['semana', 'mes', 'ano'] as DashboardPeriod[]).map((period) => {
               const isActive = selectedPeriod === period;
@@ -194,10 +182,10 @@ export const DashboardView: React.FC = () => {
                   type="button"
                   id={`dashboard-period-btn-${period}`}
                   onClick={() => setSelectedPeriod(period)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
-                      : 'text-slate-500 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
                 >
                   {labels[period]}
@@ -212,29 +200,29 @@ export const DashboardView: React.FC = () => {
       {metrics.isMultiCurrency && (
         <div
           id="dashboard-currency-banner"
-          className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+          className="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-xl p-3 px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
         >
-          <div className="flex items-center gap-2 text-amber-900">
-            <Layers className="w-4 h-4 text-amber-700 shrink-0" />
+          <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+            <Layers className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
             <span>
               As empresas cadastradas utilizam moedas diferentes. Os totais são calculados
-              separadamente por moeda para preservar a precisão contábil.
+              separadamente por moeda para preservar a precisão contabilística.
             </span>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-            <span className="text-[11px] font-medium text-amber-800">Visualizar moeda:</span>
-            <div className="inline-flex bg-white rounded-lg p-0.5 border border-amber-200 shadow-2xs">
+            <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300">Visualizar moeda:</span>
+            <div className="inline-flex bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-amber-200 dark:border-amber-900/60 shadow-2xs">
               {availableCurrencies.map((curr) => (
                 <button
                   key={curr}
                   type="button"
                   id={`dashboard-currency-toggle-${curr}`}
                   onClick={() => setSelectedCurrency(curr)}
-                  className={`px-2.5 py-0.5 text-xs font-semibold rounded-md transition-colors ${
+                  className={`px-2.5 py-0.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
                     metrics.currency === curr
-                      ? 'bg-amber-800 text-white'
-                      : 'text-amber-800 hover:bg-amber-100/60'
+                      ? 'bg-amber-800 text-white dark:bg-amber-700'
+                      : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/40'
                   }`}
                 >
                   {curr}

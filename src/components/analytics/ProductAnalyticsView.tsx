@@ -4,13 +4,7 @@ import {
   TrendingDown,
   Clock,
   AlertTriangle,
-  DollarSign,
-  BarChart3,
-  Calendar,
   ArrowRight,
-  PackageX,
-  Sparkles,
-  Layers,
   Percent,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
@@ -160,62 +154,62 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
     <div className="space-y-6">
       {/* Top High-Level Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Faturamento Realizado
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Faturação Realizada
           </span>
-          <div className="text-lg font-bold font-mono text-slate-900 mt-1 truncate">
+          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100 mt-1 truncate">
             {formatKwanza(
               salesAnalysis.all.reduce((acc, curr) => acc + curr.totalRevenueKz, 0)
             )}
           </div>
-          <span className="text-[11px] text-emerald-600 font-medium block mt-0.5">
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium block mt-0.5">
             Baseado em saídas auditadas
           </span>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Capital Parado ({deadStockPeriodDays} dias)
           </span>
-          <div className="text-lg font-bold font-mono text-amber-600 mt-1 truncate">
+          <div className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400 mt-1 truncate">
             {formatKwanza(totalDeadStockCapital)}
           </div>
-          <span className="text-[11px] text-slate-500 block mt-0.5">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
             {deadStock.length} produtos sem saída
           </span>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Itens para Reposição
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-rose-600">
+            <span className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
               {replenishmentList.length}
             </span>
-            <span className="text-xs text-rose-500">em alerta</span>
+            <span className="text-xs text-rose-500 dark:text-rose-400">em alerta</span>
           </div>
-          <span className="text-[11px] text-slate-500 block mt-0.5">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
             Abaixo do limite mínimo
           </span>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Fluxo Entradas vs. Saídas
           </span>
           <div className="flex items-center gap-3 mt-1.5 font-mono text-xs">
-            <div className="flex items-center gap-1 text-emerald-700">
+            <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>+{movementVolume.totalEntradas} un</span>
             </div>
-            <div className="flex items-center gap-1 text-blue-700">
+            <div className="flex items-center gap-1 text-blue-700 dark:text-blue-400">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
               <span>-{movementVolume.totalSaidas} un</span>
             </div>
           </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden flex mt-2">
+          <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex mt-2">
             <div
               className="bg-emerald-500 h-full"
               style={{
@@ -241,15 +235,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border border-slate-200/80 rounded-xl px-4 flex items-center justify-between shadow-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-6 text-xs font-medium">
           <button
             type="button"
             onClick={() => setActiveTab('ranking')}
-            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'ranking'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100 font-semibold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -259,15 +253,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('parados')}
-            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'parados'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100 font-semibold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
             <span>Produtos Parados</span>
-            <span className="text-[10px] px-1.5 py-0.2 bg-amber-50 text-amber-700 font-medium rounded">
+            <span className="text-[10px] px-1.5 py-0.2 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-medium rounded">
               {deadStock.length}
             </span>
           </button>
@@ -275,15 +269,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('reposicao')}
-            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'reposicao'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100 font-semibold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
             <span>Reposição Prioritária</span>
-            <span className="text-[10px] px-1.5 py-0.2 bg-rose-50 text-rose-700 font-medium rounded">
+            <span className="text-[10px] px-1.5 py-0.2 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-medium rounded">
               {replenishmentList.length}
             </span>
           </button>
@@ -291,10 +285,10 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('margens')}
-            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`py-3.5 border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'margens'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100 font-semibold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Percent className="w-3.5 h-3.5" />
@@ -304,12 +298,12 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
 
         {/* Configuration for Dead stock */}
         {activeTab === 'parados' && (
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>Período sem saídas:</span>
             <select
               value={deadStockPeriodDays}
               onChange={(e) => setDeadStockPeriodDays(Number(e.target.value))}
-              className="text-xs px-2 py-1 bg-slate-50 border border-slate-200 rounded font-medium text-slate-800"
+              className="text-xs px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded font-medium text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
               <option value={30}>Últimos 30 dias</option>
               <option value={60}>Últimos 60 dias</option>
@@ -323,15 +317,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       {activeTab === 'ranking' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Mais Vendidos */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <h4 className="text-xs font-semibold text-slate-800">
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                   Mais Vendidos (Por Quantidade & Valor)
                 </h4>
               </div>
-              <span className="text-[11px] text-slate-400">Top saídas</span>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">Top saídas</span>
             </div>
 
             <div className="space-y-2">
@@ -339,27 +333,27 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                 <div
                   key={item.product.id}
                   onClick={() => onSelectProduct(item.product.id)}
-                  className="p-2.5 bg-slate-50/70 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors flex items-center justify-between text-xs"
+                  className="p-2.5 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-5 h-5 rounded-full bg-slate-200 font-mono text-[10px] font-bold text-slate-700 flex items-center justify-center">
+                    <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 font-mono text-[10px] font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center">
                       {idx + 1}
                     </span>
                     <div>
-                      <span className="font-semibold text-slate-900 block line-clamp-1">
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 block line-clamp-1">
                         {item.product.name}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                         {item.product.category}
                       </span>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <span className="font-bold font-mono text-slate-800 block">
+                    <span className="font-bold font-mono text-slate-800 dark:text-slate-200 block">
                       {item.totalQtySold} {item.product.unitOfMeasure} vendidos
                     </span>
-                    <span className="text-[11px] text-slate-500 font-mono">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                       {formatKwanza(item.totalRevenueKz)}
                     </span>
                   </div>
@@ -369,15 +363,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           </div>
 
           {/* Menos Vendidos / Baixa Rotatividade */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-slate-400" />
-                <h4 className="text-xs font-semibold text-slate-800">
+                <TrendingDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                   Menor Rotatividade de Vendas
                 </h4>
               </div>
-              <span className="text-[11px] text-slate-400">Candidatos a promoção</span>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">Candidatos a promoção</span>
             </div>
 
             <div className="space-y-2">
@@ -385,22 +379,22 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                 <div
                   key={item.product.id}
                   onClick={() => onSelectProduct(item.product.id)}
-                  className="p-2.5 bg-slate-50/70 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors flex items-center justify-between text-xs"
+                  className="p-2.5 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors flex items-center justify-between text-xs"
                 >
                   <div>
-                    <span className="font-semibold text-slate-800 block line-clamp-1">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 block line-clamp-1">
                       {item.product.name}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                       Estoque em depósito: {item.currentStock} {item.product.unitOfMeasure}
                     </span>
                   </div>
 
                   <div className="text-right">
-                    <span className="text-xs text-slate-500 font-mono block">
-                      {item.totalQtySold} saídas registradas
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono block">
+                      {item.totalQtySold} saídas registadas
                     </span>
-                    <span className="text-[10px] text-amber-600">Baixa procura</span>
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400">Baixa procura</span>
                   </div>
                 </div>
               ))}
@@ -411,22 +405,22 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
 
       {/* Tab 2: Produtos Parados (Dead Stock) */}
       {activeTab === 'parados' && (
-        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-100 bg-amber-50/40 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-amber-50/40 dark:bg-amber-950/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <div>
-                <h4 className="text-xs font-semibold text-slate-800">
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                   Produtos Sem Saída nos Últimos {deadStockPeriodDays} Dias
                 </h4>
-                <p className="text-[11px] text-slate-500">
-                  Estes itens não tiveram nenhuma movimentação de venda ou saída registrada no período.
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Estes itens não tiveram nenhuma movimentação de venda ou saída registada no período.
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-slate-400 uppercase font-semibold">Total Imobilizado</span>
-              <div className="font-mono font-bold text-amber-700 text-sm">
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Total Imobilizado</span>
+              <div className="font-mono font-bold text-amber-700 dark:text-amber-400 text-sm">
                 {formatKwanza(totalDeadStockCapital)}
               </div>
             </div>
@@ -435,7 +429,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                   <th className="py-3 px-4">Produto</th>
                   <th className="py-3 px-4">Categoria</th>
                   <th className="py-3 px-4 text-right">Estoque Parado</th>
@@ -444,10 +438,10 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                   <th className="py-3 px-4 text-center">Ações Sugeridas</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {deadStock.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-slate-400">
+                    <td colSpan={6} className="py-10 text-center text-slate-400 dark:text-slate-500">
                       Excelente! Nenhum produto estagnado no período de {deadStockPeriodDays} dias.
                     </td>
                   </tr>
@@ -456,23 +450,23 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                     <tr
                       key={item.product.id}
                       onClick={() => onSelectProduct(item.product.id)}
-                      className="hover:bg-slate-50 cursor-pointer"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                     >
-                      <td className="py-3 px-4 font-semibold text-slate-900">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         {item.product.name}
                       </td>
-                      <td className="py-3 px-4 text-slate-500">{item.product.category}</td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{item.product.category}</td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
                         {item.currentStock} {item.product.unitOfMeasure}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-600">
+                      <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">
                         {formatKwanza(item.product.costPrice)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-amber-700">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-amber-700 dark:text-amber-400">
                         {formatKwanza(item.capitalTiedUp)}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-medium">
+                        <span className="text-[10px] bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded font-medium">
                           Criar Promoção / Campanha
                         </span>
                       </td>
@@ -487,15 +481,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
 
       {/* Tab 3: Reposição Prioritária */}
       {activeTab === 'reposicao' && (
-        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-100 bg-rose-50/40 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-rose-50/40 dark:bg-rose-950/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
+              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
               <div>
-                <h4 className="text-xs font-semibold text-slate-800">
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                   Produtos Abaixo do Limite Mínimo de Segurança
                 </h4>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Priorize ordens de compra para evitar perda de vendas por rutura de estoque.
                 </p>
               </div>
@@ -505,7 +499,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
               <button
                 type="button"
                 onClick={onGoToPurchaseList}
-                className="px-3 py-1.5 text-xs font-medium text-slate-800 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-xs flex items-center gap-1"
+                className="px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs flex items-center gap-1 cursor-pointer"
               >
                 <span>Ir para Lista de Compras</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -516,20 +510,20 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                   <th className="py-3 px-4">Produto</th>
                   <th className="py-3 px-4">Categoria</th>
                   <th className="py-3 px-4 text-right">Estoque Atual</th>
                   <th className="py-3 px-4 text-right">Limite Mínimo</th>
-                  <th className="py-3 px-4 text-right">Déficit a Comprar</th>
+                  <th className="py-3 px-4 text-right">Défice a Comprar</th>
                   <th className="py-3 px-4 text-right">Custo Est. Reposição</th>
-                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-center">Situação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {replenishmentList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center text-slate-400">
+                    <td colSpan={7} className="py-10 text-center text-slate-400 dark:text-slate-500">
                       Nenhum produto abaixo do limite de segurança no momento.
                     </td>
                   </tr>
@@ -538,26 +532,26 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                     <tr
                       key={item.product.id}
                       onClick={() => onSelectProduct(item.product.id)}
-                      className="hover:bg-slate-50 cursor-pointer"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                     >
-                      <td className="py-3 px-4 font-semibold text-slate-900">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         {item.product.name}
                       </td>
-                      <td className="py-3 px-4 text-slate-500">{item.product.category}</td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-rose-600">
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{item.product.category}</td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
                         {item.currentStock} {item.product.unitOfMeasure}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-600">
+                      <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">
                         {item.minLimit} {item.product.unitOfMeasure}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                         +{item.deficit} {item.product.unitOfMeasure}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-800">
+                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-800 dark:text-slate-200">
                         {formatKwanza(item.estimatedRestockCost)}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50">
                           Reposição Urgente
                         </span>
                       </td>
@@ -572,13 +566,13 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
 
       {/* Tab 4: Margem de Lucro por Produto */}
       {activeTab === 'margens' && (
-        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-semibold text-slate-800">
+              <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100">
                 Análise de Margens de Lucro por Produto (Kz & %)
               </h4>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Identifique produtos com menor margem para renegociação com fornecedores ou reajuste de preço.
               </p>
             </div>
@@ -587,7 +581,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                   <th className="py-3 px-4">Produto</th>
                   <th className="py-3 px-4 text-right">Preço de Custo</th>
                   <th className="py-3 px-4 text-right">Preço de Venda</th>
@@ -596,7 +590,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                   <th className="py-3 px-4 text-center">Classificação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {marginRankings.map((item) => {
                   const isLowMargin = item.marginPercent < 25;
                   const isHighMargin = item.marginPercent >= 40;
@@ -605,28 +599,28 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                     <tr
                       key={item.product.id}
                       onClick={() => onSelectProduct(item.product.id)}
-                      className="hover:bg-slate-50 cursor-pointer"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                     >
-                      <td className="py-3 px-4 font-semibold text-slate-900">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         {item.product.name}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-600">
+                      <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">
                         {formatKwanza(item.product.costPrice)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
+                      <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900 dark:text-slate-100">
                         {formatKwanza(item.product.salePrice)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
                         {formatKwanza(item.unitMarginKz)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold">
                         <span
                           className={
                             isLowMargin
-                              ? 'text-amber-600'
+                              ? 'text-amber-600 dark:text-amber-400'
                               : isHighMargin
-                              ? 'text-emerald-600'
-                              : 'text-slate-800'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-slate-800 dark:text-slate-200'
                           }
                         >
                           {item.marginPercent.toFixed(1)}%
@@ -634,15 +628,15 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                       </td>
                       <td className="py-3 px-4 text-center">
                         {isLowMargin ? (
-                          <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-medium">
+                          <span className="text-[10px] bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-medium">
                             Margem Estreita
                           </span>
                         ) : isHighMargin ? (
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">
+                          <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded font-medium">
                             Alta Margem
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-500">Média</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">Média</span>
                         )}
                       </td>
                     </tr>

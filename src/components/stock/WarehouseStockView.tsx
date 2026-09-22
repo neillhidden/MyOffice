@@ -422,17 +422,17 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
     <div className="space-y-6">
       {/* Top Banner / Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Total de Unidades em Estoque
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-slate-900">
+            <span className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100">
               {metrics.totalItemsStock}
             </span>
-            <span className="text-xs text-slate-400">itens</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">itens</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1 truncate" title={bannerSubtitle}>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate" title={bannerSubtitle}>
             {bannerSubtitle}
           </p>
         </div>
@@ -441,23 +441,23 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
           onClick={() => setStockLevelFilter(stockLevelFilter === 'baixo' ? 'all' : 'baixo')}
           className={`p-4 border rounded-xl shadow-xs cursor-pointer transition-colors ${
             stockLevelFilter === 'baixo'
-              ? 'bg-rose-50/80 border-rose-300 ring-1 ring-rose-300'
-              : 'bg-white border-slate-200/80 hover:border-rose-200'
+              ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 ring-1 ring-rose-300'
+              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/50'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
               Estoque Crítico (Abaixo Mín.)
             </span>
-            <AlertTriangle className="w-4 h-4 text-rose-500" />
+            <AlertTriangle className="w-4 h-4 text-rose-500 dark:text-rose-400" />
           </div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-rose-600">
+            <span className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
               {metrics.criticalCount}
             </span>
-            <span className="text-xs text-rose-500">produtos</span>
+            <span className="text-xs text-rose-500 dark:text-rose-400">produtos</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             {stockLevelFilter === 'baixo' ? 'Filtro ativo • Clique para limpar' : 'Requer reposição urgente'}
           </p>
         </div>
@@ -466,42 +466,42 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
           onClick={() => setStockLevelFilter(stockLevelFilter === 'excesso' ? 'all' : 'excesso')}
           className={`p-4 border rounded-xl shadow-xs cursor-pointer transition-colors ${
             stockLevelFilter === 'excesso'
-              ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300'
-              : 'bg-white border-slate-200/80 hover:border-amber-200'
+              ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 ring-1 ring-amber-300'
+              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/50'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
               Excesso de Estoque
             </span>
-            <TrendingUp className="w-4 h-4 text-amber-500" />
+            <TrendingUp className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           </div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-amber-700">
+            <span className="text-2xl font-bold font-mono text-amber-700 dark:text-amber-300">
               {metrics.excessCount}
             </span>
-            <span className="text-xs text-amber-600">produtos</span>
+            <span className="text-xs text-amber-600 dark:text-amber-400">produtos</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             {stockLevelFilter === 'excesso' ? 'Filtro ativo • Clique para limpar' : 'Acima da capacidade máxima'}
           </p>
         </div>
 
-        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Valor em Estoque (Custo)
           </span>
-          <div className="text-lg font-bold font-mono text-slate-900 mt-1 truncate">
+          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100 mt-1 truncate">
             {formatKwanza(metrics.totalStockValueKz)}
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             Capital imobilizado apurado
           </p>
         </div>
       </div>
 
       {/* Filter Toolbar (Caixas de seleção interativas para todos os filtros) */}
-      <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
           {/* Empresa Filter (Caixa de seleção multi-select com checkboxes) */}
           <FilterCheckboxDropdown
@@ -557,10 +557,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             }}
           />
 
-          {/* Status Selector (Caixa de seleção) */}
+          {/* Status / Estado Selector (Caixa de seleção) */}
           <FilterCheckboxDropdown
             id="status"
-            label="Status"
+            label="Estado"
             icon={<CheckCircle2 className="w-3.5 h-3.5" />}
             options={statusOptions}
             selectedIds={selectedStatuses}
@@ -574,10 +574,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             }}
           />
 
-          {/* Condição / Estado Selector (Caixa de seleção) */}
+          {/* Condição / Estado do artigo Selector (Caixa de seleção) */}
           <FilterCheckboxDropdown
             id="condition"
-            label="Estado"
+            label="Estado do artigo"
             icon={<Boxes className="w-3.5 h-3.5" />}
             options={conditionOptions}
             selectedIds={selectedConditions}
@@ -598,8 +598,8 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             onClick={() => setHideZeroStock((prev) => !prev)}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-colors font-medium border shadow-2xs cursor-pointer ${
               !hideZeroStock
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
             title={
               !hideZeroStock
@@ -608,9 +608,9 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             }
           >
             {!hideZeroStock ? (
-              <Eye className="w-3.5 h-3.5 text-emerald-600" />
+              <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             ) : (
-              <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+              <EyeOff className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
             )}
             <span>{!hideZeroStock ? 'Estoque zero: Visível' : 'Estoque zero: Oculto'}</span>
           </button>
@@ -621,7 +621,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
               type="button"
               id="btn-clear-all-stock-filters"
               onClick={resetAllFilters}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors font-medium shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-lg transition-colors font-medium shadow-2xs cursor-pointer"
               title="Redefinir todos os filtros para o padrão"
             >
               <RotateCcw className="w-3 h-3" />
@@ -637,10 +637,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
               type="button"
               id="btn-stock-open-drafts"
               onClick={onOpenDrafts}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-medium transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 rounded-lg text-xs font-medium transition-colors shadow-2xs"
               title="Ver produtos não concluídos guardados como rascunho"
             >
-              <FileEdit className="w-3.5 h-3.5 text-amber-600" />
+              <FileEdit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Não Concluídos ({productDrafts.length})</span>
             </button>
           )}
@@ -649,7 +649,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             type="button"
             id="btn-stock-add-product"
             onClick={onOpenAddProduct}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
           >
             <span>Adicionar</span>
           </button>
@@ -657,11 +657,11 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
       </div>
 
       {/* Stock Table */}
-      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+              <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-4">Produto & SKU</th>
                 <th className="py-3 px-4">Categoria</th>
                 <th className="py-3 px-4">Empresa</th>
@@ -673,10 +673,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                 <th className="py-3 px-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhum produto encontrado com os filtros selecionados.
                   </td>
                 </tr>
@@ -713,14 +713,14 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                       onClick={() => onSelectProduct(product.id)}
                       className={`cursor-pointer transition-colors group ${
                         isCompanyStopped
-                          ? 'bg-amber-50/30 hover:bg-amber-50/60'
-                          : 'hover:bg-slate-50/80'
+                          ? 'bg-amber-50/30 hover:bg-amber-50/60 dark:bg-amber-950/20 dark:hover:bg-amber-950/40'
+                          : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
                       }`}
                     >
                       {/* Produto & SKU */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden bg-slate-50 shrink-0">
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0">
                             <img
                               src={product.mainImage}
                               alt={product.name}
@@ -728,10 +728,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                             />
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-900 group-hover:text-slate-950 block leading-tight">
+                            <span className="font-semibold text-slate-900 group-hover:text-slate-950 dark:text-slate-100 dark:group-hover:text-white block leading-tight">
                               {product.name}
                             </span>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
+                            <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
                               <span>SKU: {product.sku}</span>
                               {product.brand && (
                                 <>
@@ -740,7 +740,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                                 </>
                               )}
                               {product.variations.length > 0 && (
-                                <span className="text-[10px] bg-slate-100 text-slate-600 px-1 rounded">
+                                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1 rounded">
                                   {product.variations.length} var.
                                 </span>
                               )}
@@ -752,10 +752,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                       {/* Categoria & Estado */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex flex-col items-start gap-1">
-                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                             {product.category}
                           </span>
-                          <span className="text-[10px] text-slate-500 font-medium">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                             {product.condition === 'novo'
                               ? 'Novo'
                               : product.condition === 'novo_usado'
@@ -774,50 +774,50 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                         {productCompany ? (
                           <div className="flex flex-col items-start gap-0.5">
                             <div className="flex items-center gap-1.5">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="font-medium text-slate-800 text-xs">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                              <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
                                 {productCompany.name}
                               </span>
                             </div>
                             {isCompanyStopped && (
-                              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                                 Empresa Parada
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-slate-400 dark:text-slate-500">—</span>
                         )}
                       </td>
 
                       {/* Armazém */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600">
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
                         {selectedWarehouseIds.length === 1 ? (
-                          <span>{warehouses.find((w) => w.id === selectedWarehouseIds[0])?.name}</span>
+                          <span className="text-slate-800 dark:text-slate-200 font-medium">{warehouses.find((w) => w.id === selectedWarehouseIds[0])?.name}</span>
                         ) : prodWarehouses.length === 1 ? (
-                          <span className="text-slate-800 font-medium">
+                          <span className="text-slate-800 dark:text-slate-200 font-medium">
                             {prodWarehouses[0].name}
                           </span>
                         ) : prodWarehouses.length > 1 ? (
-                          <span className="text-slate-700 font-medium">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">
                             {prodWarehouses.length} armazéns vinculados
                           </span>
                         ) : selectedWarehouseIds.length < warehouses.length ? (
-                          <span className="text-slate-700 font-medium">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">
                             {selectedWarehouseIds.length} armazéns selecionados
                           </span>
                         ) : selectedCompanyIds.length === 1 ? (
-                          <span className="text-slate-700 font-medium">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">
                             {visibleWarehouses.length === 1
                               ? visibleWarehouses[0].name
                               : `${visibleWarehouses.length} armazéns da empresa`}
                           </span>
                         ) : selectedCompanyIds.length < companies.length ? (
-                          <span className="text-slate-700 font-medium">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">
                             {visibleWarehouses.length} armazéns filtrados
                           </span>
                         ) : (
-                          <span className="text-slate-500">
+                          <span className="text-slate-500 dark:text-slate-400">
                             Distribuído em {warehouses.length} armazéns
                           </span>
                         )}
@@ -826,54 +826,54 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                       {/* Quantidade Atual (Calculada, nunca editada diretamente) */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="flex items-baseline justify-end gap-1 font-mono">
-                          <span className="font-bold text-sm text-slate-900">
+                          <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
                             {stockInfo.currentStock}
                           </span>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">
                             {product.unitOfMeasure}
                           </span>
                         </div>
                       </td>
 
                       {/* Limites (Mín / Máx) */}
-                      <td className="py-3 px-4 text-center whitespace-nowrap font-mono text-[11px] text-slate-500">
+                      <td className="py-3 px-4 text-center whitespace-nowrap font-mono text-[11px] text-slate-500 dark:text-slate-400">
                         {stockInfo.minLimit > 0 || stockInfo.maxLimit > 0 ? (
                           <span>
                             {stockInfo.minLimit} / {stockInfo.maxLimit || '∞'}
                           </span>
                         ) : (
-                          <span className="text-slate-300">—</span>
+                          <span className="text-slate-300 dark:text-slate-600">—</span>
                         )}
                       </td>
 
                       {/* Indicador Visual Claro */}
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         {stockInfo.status === 'zerado' && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                             Sem estoque
                           </span>
                         )}
                         {stockInfo.status === 'critico_baixo' && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                            <AlertTriangle className="w-3 h-3 text-rose-600" />
-                            Abaixo do Mínimo
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                            <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                            Abaixo do limite mínimo
                           </span>
                         )}
                         {stockInfo.status === 'excesso' && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            Acima do Máximo
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                            Excesso de estoque
                           </span>
                         )}
                         {stockInfo.status === 'normal' && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             Normal
                           </span>
                         )}
                       </td>
 
                       {/* Preço de Venda */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-semibold text-slate-800">
+                      <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-semibold text-slate-800 dark:text-slate-200">
                         {formatKwanza(product.salePrice)}
                       </td>
 
@@ -892,8 +892,8 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                             disabled={isCompanyStopped}
                             className={`p-1.5 rounded-lg transition-colors shadow-2xs ${
                               isCompanyStopped
-                                ? 'text-slate-300 bg-slate-100 cursor-not-allowed opacity-50'
-                                : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80'
+                                ? 'text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
+                                : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:text-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 cursor-pointer'
                             }`}
                             title={isCompanyStopped ? 'Empresa parada — serviços indisponíveis' : 'Editar produto'}
                             aria-label="Editar produto"
@@ -910,8 +910,8 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                             disabled={isCompanyStopped}
                             className={`p-1.5 rounded-lg transition-colors shadow-2xs border border-transparent ${
                               isCompanyStopped
-                                ? 'text-slate-300 bg-slate-100 cursor-not-allowed opacity-50'
-                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100'
+                                ? 'text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
+                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 dark:text-slate-500 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 dark:hover:border-rose-900/50 cursor-pointer'
                             }`}
                             title={isCompanyStopped ? 'Empresa parada — serviços indisponíveis' : 'Eliminar produto'}
                             aria-label="Eliminar produto"
@@ -929,8 +929,8 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="px-4 py-2.5 bg-slate-50/50 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
-          <span>Mostrando {filteredProducts.length} de {products.length} produtos cadastrados</span>
+        <div className="px-4 py-2.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
+          <span>Mostrando {filteredProducts.length} de {products.length} produtos registados</span>
           <span>MyOffice • Gestão em Tempo Real</span>
         </div>
       </div>
@@ -938,22 +938,22 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
       {/* Delete Confirmation Modal */}
       {productToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-xs p-4"
         >
           <div
-            className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/60 flex items-center justify-center shrink-0">
                   <Trash2 className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-slate-900">Eliminar produto</h3>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Eliminar produto</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                     Tem certeza de que deseja eliminar o produto{' '}
-                    <strong className="text-slate-800 font-semibold">{productToDelete.name}</strong> (SKU: {productToDelete.sku})? Esta ação não pode ser desfeita.
+                    <strong className="text-slate-800 dark:text-slate-200 font-semibold">{productToDelete.name}</strong> (SKU: {productToDelete.sku})? Esta ação não pode ser desfeita.
                   </p>
                 </div>
               </div>
@@ -963,18 +963,18 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                 onClick={() => setProductToDelete(null)}
                 aria-label="Fechar"
                 title="Fechar"
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg transition-colors -mr-1 -mt-1"
+                className="text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 p-1.5 rounded-lg transition-colors -mr-1 -mt-1"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 id="btn-cancel-delete"
                 onClick={() => setProductToDelete(null)}
-                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 Cancelar
               </button>

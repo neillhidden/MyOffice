@@ -154,14 +154,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return 'Estoque';
   });
 
-  // Estado do submenu flutuante quando a barra está recolhida
-  const [floatingMenu, setFloatingMenu] = useState<{
+  // Estado único do submenu flutuante ativo quando a barra está recolhida
+  const [hoveredFlyout, setHoveredFlyout] = useState<{
     id: MainModule;
     top: number;
     left: number;
   } | null>(null);
 
-  // Temporizador para fecho com tolerância (250-350ms, usamos 300ms)
+  // Temporizador para fecho ao sair por completo da barra (100–150ms de tolerância diagonal)
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonsRef = useRef<Map<MainModule, HTMLElement>>(new Map());
 
@@ -173,34 +173,63 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // Agendar fecho com tolerância de 300ms
+  // Agendar fecho com pequeno atraso (120ms) ao sair completamente da barra/popup
   const scheduleClose = () => {
     cancelCloseTimer();
     closeTimeoutRef.current = setTimeout(() => {
-      setFloatingMenu(null);
+      setHoveredFlyout(null);
       closeTimeoutRef.current = null;
-    }, 300);
+    }, 120);
   };
 
-  // Abrir ou reposicionar o painel flutuante
-  const openFloatingMenu = (moduleId: MainModule, element: HTMLElement) => {
+  // Fechar imediatamente sem qualquer atraso
+  const closeImmediately = () => {
+    cancelCloseTimer();
+    setHoveredFlyout(null);
+  };
+
+  // Abrir ou reposicionar o painel flutuante imediatamente
+  const openFlyoutImmediately = (moduleId: MainModule, element: HTMLElement) => {
     cancelCloseTimer();
     const rect = element.getBoundingClientRect();
-    // Guardar referência para devolver foco em caso de Escape
     triggerButtonsRef.current.set(moduleId, element);
-
-    setFloatingMenu({
+    setHoveredFlyout({
       id: moduleId,
       top: rect.top,
       left: rect.right,
     });
   };
 
+  // Evento mouseenter num item de navegação
+  const handleMouseEnterItem = (moduleId: MainModule, element: HTMLElement) => {
+    if (!isCollapsed) return;
+
+    const hasSub = Boolean(MODULE_SUBMODULES[moduleId]?.length);
+    if (hasSub) {
+      // Ao mover o rato para outro item com submenu:
+      // O popup anterior fecha imediatamente e o novo abre NA MESMA HORA,
+      // cancelando qualquer timer pendente e atualizando o estado na hora!
+      openFlyoutImmediately(moduleId, element);
+    } else {
+      // Ao passar o rato num item sem submenu (ex: Dashboard, Definições, Agentes):
+      // Fecha o popup anterior IMEDIATAMENTE, sem atraso!
+      closeImmediately();
+    }
+  };
+
+  // Evento mouseleave num item de navegação
+  const handleMouseLeaveItem = () => {
+    if (!isCollapsed) return;
+    // Agenda fecho suave (120ms) caso o utilizador esteja a mover o cursor
+    // na diagonal em direção ao próprio popup flutuante
+    scheduleClose();
+  };
+
   // Limpeza de timers e fecho ao alternar colapso ou desmontar
   useEffect(() => {
     if (!isCollapsed) {
       cancelCloseTimer();
-      setFloatingMenu(null);
+      setHoveredFlyout(null);
     }
   }, [isCollapsed]);
 
@@ -212,10 +241,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Fechar o menu flutuante em scroll ou redimensionamento da janela
   useEffect(() => {
-    if (!floatingMenu) return;
+    if (!hoveredFlyout) return;
     const handleScrollOrResize = () => {
       cancelCloseTimer();
-      setFloatingMenu(null);
+      setHoveredFlyout(null);
     };
     window.addEventListener('scroll', handleScrollOrResize, true);
     window.addEventListener('resize', handleScrollOrResize);
@@ -223,7 +252,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       window.removeEventListener('scroll', handleScrollOrResize, true);
       window.removeEventListener('resize', handleScrollOrResize);
     };
-  }, [floatingMenu]);
+  }, [hoveredFlyout]);
 
   // Sincronizar o acordeão com alterações externas de módulo ativo
   useEffect(() => {
@@ -233,10 +262,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [activeModule]);
 
   // Manipulador do clique no item principal
-  const handleItemClick = (module: MainModule) => {
+  const handleItemClick = (module: MainModule, element: HTMLElement) => {
     onSelectModule(module);
-    if (!isCollapsed && MODULE_SUBMODULES[module]) {
-      setOpenSubmenu((prev) => (prev === module ? null : module));
+
+    if (isCollapsed) {
+      const hasSub = Boolean(MODULE_SUBMODULES[module]?.length);
+      if (hasSub) {
+        // Suporte para toque / clique com a barra recolhida
+        setHoveredFlyout((prev) => {
+          if (prev?.id === module) {
+            return null;
+          }
+          cancelCloseTimer();
+          const rect = element.getBoundingClientRect();
+          triggerButtonsRef.current.set(module, element);
+          return {
+            id: module,
+            top: rect.top,
+            left: rect.right,
+          };
+        });
+      } else {
+        closeImmediately();
+      }
+    } else {
+      if (MODULE_SUBMODULES[module]) {
+        setOpenSubmenu((prev) => (prev === module ? null : module));
+      }
     }
   };
 
@@ -253,7 +305,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       onSelectFinanceiroSubmodule?.(subId as FinanceiroSubmodule);
     }
     cancelCloseTimer();
-    setFloatingMenu(null);
+    setHoveredFlyout(null);
   };
 
   // Verificar se o subitem atual está ativo
@@ -281,45 +333,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col justify-between shrink-0 transition-all duration-200 z-40 relative select-none ${
+      id="app-sidebar"
+      onMouseLeave={() => {
+        if (isCollapsed) {
+          scheduleClose();
+        }
+      }}
+      className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col justify-between shrink-0 transition-[width] duration-200 ease-in-out z-40 relative select-none overflow-x-hidden ${
         isCollapsed ? 'w-16' : 'w-60'
       }`}
     >
       {/* Top Section: Brand & Navigation */}
       <div>
         {/* Brand Header: Logo/nome MyOffice expande/recolhe a barra lateral */}
-        <div
-          className={`h-14 flex items-center border-b border-slate-100 dark:border-slate-800 ${
-            isCollapsed ? 'justify-center px-2' : 'px-2.5'
-          }`}
-        >
+        <div className="h-14 flex items-center border-b border-slate-100 dark:border-slate-800 px-2 overflow-hidden">
           <button
             type="button"
             id="sidebar-brand-toggle"
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expandir barra lateral (MyOffice)' : 'Recolher barra lateral (MyOffice)'}
-            className={`flex items-center rounded-lg transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-slate-800/80 ${
-              isCollapsed ? 'w-10 h-10 justify-center p-0 shrink-0' : 'w-full gap-2.5 p-1.5'
-            }`}
+            aria-label={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+            className="w-full h-10 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-slate-800/80"
           >
+            {/* Ícone fixo: sem reposicionamento ou recriação de nós */}
             <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
               M
             </div>
-            {!isCollapsed && (
-              <div className="flex flex-col min-w-0 overflow-hidden">
-                <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate">
-                  MyOffice
-                </span>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 tracking-wider uppercase">
-                  Angola
-                </span>
-              </div>
-            )}
+
+            {/* Texto animado suavemente em opacidade e largura */}
+            <div
+              className={`flex flex-col min-w-0 ml-2.5 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[140px] opacity-100'
+              }`}
+            >
+              <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
+                MyOffice
+              </span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
+                Angola
+              </span>
+            </div>
           </button>
         </div>
 
-        {/* Navigation List */}
-        <nav className={`p-2 space-y-1 flex flex-col ${isCollapsed ? 'items-center' : 'items-stretch'}`}>
+        {/* Navigation List: estrutura estrita e contínua de nós DOM */}
+        <nav className="p-2 space-y-1 flex flex-col">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const submodules = MODULE_SUBMODULES[item.id];
@@ -328,92 +386,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const isAccordionOpen = !isCollapsed && openSubmenu === item.id;
 
             return (
-              <div
-                key={item.id}
-                className={isCollapsed ? 'w-10 relative flex justify-center' : 'w-full relative'}
-              >
-                {/* Main Navigation Item Button */}
+              <div key={item.id} className="w-full relative">
+                {/* Main Navigation Item Button: largura 100%, altura 40px (h-10), ícone centrado a 32px */}
                 <button
                   type="button"
                   id={`nav-item-${item.id.toLowerCase()}`}
-                  onClick={() => handleItemClick(item.id)}
+                  onClick={(e) => handleItemClick(item.id, e.currentTarget)}
                   title={isCollapsed ? item.label : undefined}
-                  onMouseEnter={(e) => {
-                    if (isCollapsed) {
-                      if (hasSubmodules) {
-                        openFloatingMenu(item.id, e.currentTarget);
-                      } else {
-                        // Ao passar o rato num item sem submenu, fecha qualquer submenu aberto anteriormente
-                        scheduleClose();
-                      }
-                    }
-                  }}
-                  onMouseLeave={() => {
-                    if (isCollapsed && hasSubmodules) {
-                      scheduleClose();
-                    }
-                  }}
+                  aria-label={item.label}
+                  aria-expanded={hasSubmodules ? (isCollapsed ? Boolean(hoveredFlyout?.id === item.id) : isAccordionOpen) : undefined}
+                  onMouseEnter={(e) => handleMouseEnterItem(item.id, e.currentTarget)}
+                  onMouseLeave={handleMouseLeaveItem}
                   onKeyDown={(e) => {
-                    if (e.key === 'Escape' && isCollapsed && floatingMenu) {
-                      cancelCloseTimer();
-                      setFloatingMenu(null);
+                    if (e.key === 'Escape' && isCollapsed && hoveredFlyout) {
+                      closeImmediately();
                     }
                   }}
-                  className={`cursor-pointer transition-colors ${
-                    isCollapsed
-                      ? `w-10 h-10 flex items-center justify-center rounded-lg p-0 shrink-0 ${
-                          isActiveModule
-                            ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
-                        }`
-                      : `w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium ${
-                          isActiveModule
-                            ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
-                        }`
+                  className={`w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium transition-colors cursor-pointer group ${
+                    isActiveModule
+                      ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
                   }`}
                 >
-                  {isCollapsed ? (
-                    /* Estado Recolhido: apenas o ícone perfeitamente centrado sem textos, setas ou espaçamentos */
+                  {/* Contentor de ícone com largura e posição fixa (32px de largura, centrado) */}
+                  <div className="w-8 h-8 shrink-0 flex items-center justify-center">
                     <Icon
-                      className={`w-4 h-4 shrink-0 ${
+                      className={`w-4 h-4 shrink-0 transition-colors ${
                         isActiveModule
                           ? 'text-white dark:text-slate-900'
-                          : 'text-slate-500 dark:text-slate-400'
+                          : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'
                       }`}
                     />
-                  ) : (
-                    /* Estado Expandido: ícone, texto e seta alinhados */
-                    <>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={`w-4 h-4 shrink-0 ${
-                            isActiveModule
-                              ? 'text-white dark:text-slate-900'
-                              : 'text-slate-500 dark:text-slate-400'
-                          }`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                      </div>
+                  </div>
 
-                      {hasSubmodules && (
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                            isAccordionOpen ? 'rotate-180' : ''
-                          } ${
-                            isActiveModule
-                              ? 'text-slate-300 dark:text-slate-600'
-                              : 'text-slate-400 dark:text-slate-500'
-                          }`}
-                        />
-                      )}
-                    </>
-                  )}
+                  {/* Texto e seta colapsam suavemente sem desmontar o DOM */}
+                  <div
+                    className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                      isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+                    }`}
+                  >
+                    <span className="truncate whitespace-nowrap">{item.label}</span>
+                    {hasSubmodules && (
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                          isAccordionOpen ? 'rotate-180' : ''
+                        } ${
+                          isActiveModule
+                            ? 'text-slate-300 dark:text-slate-600'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      />
+                    )}
+                  </div>
                 </button>
 
                 {/* Submenu Inline (Acordeão quando Expandido) */}
-                {!isCollapsed && hasSubmodules && isAccordionOpen && (
-                  <div className="mt-1 ml-4 pl-2 border-l border-slate-200 dark:border-slate-800 space-y-0.5">
+                {hasSubmodules && (
+                  <div
+                    className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out ${
+                      !isCollapsed && isAccordionOpen
+                        ? 'max-h-64 opacity-100 mt-1'
+                        : 'max-h-0 opacity-0 pointer-events-none'
+                    } ml-6 pl-2 border-l border-slate-200 dark:border-slate-800 space-y-0.5`}
+                  >
                     {submodules.map((sub) => {
                       const SubIcon = sub.icon;
                       const active = isSubActive(item.id, sub.id);
@@ -434,7 +469,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               active ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'
                             }`}
                           />
-                          <span className="truncate">{sub.label}</span>
+                          <span className="truncate whitespace-nowrap">{sub.label}</span>
                         </button>
                       );
                     })}
@@ -446,65 +481,60 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* Bottom Section */}
-      <div
-        className={`border-t border-slate-100 dark:border-slate-800 space-y-2 flex flex-col ${
-          isCollapsed ? 'p-2 items-center' : 'p-3 items-stretch'
-        }`}
-      >
+      {/* Bottom Section: Theme toggle & footer */}
+      <div className="border-t border-slate-100 dark:border-slate-800 p-2 space-y-1 overflow-hidden">
         {/* Quick Theme Toggle */}
         <button
           type="button"
           onClick={toggleTheme}
           title={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          className={`flex items-center rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
-            isCollapsed ? 'w-10 h-10 justify-center p-0 shrink-0' : 'w-full justify-between px-2.5 py-2'
-          }`}
+          aria-label={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+          className="w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
         >
-          {isCollapsed ? (
-            actualTheme === 'dark' ? (
+          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+            {actualTheme === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-400 shrink-0" />
             ) : (
-              <Moon className="w-4 h-4 text-slate-500 shrink-0" />
-            )
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                {actualTheme === 'dark' ? (
-                  <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-                ) : (
-                  <Moon className="w-4 h-4 text-slate-500 shrink-0" />
-                )}
-                <span>{actualTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
-              </div>
-              <span className="text-[10px] uppercase font-mono tracking-wider opacity-60">
-                {actualTheme}
-              </span>
-            </>
-          )}
+              <Moon className="w-4 h-4 text-slate-500 shrink-0 group-hover:text-slate-700 dark:group-hover:text-slate-300" />
+            )}
+          </div>
+          <div
+            className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+              isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+            }`}
+          >
+            <span className="truncate whitespace-nowrap">{actualTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider opacity-60 ml-1">
+              {actualTheme}
+            </span>
+          </div>
         </button>
 
-        {isCollapsed ? (
-          <div className="w-10 flex items-center justify-center py-1">
+        {/* Footer info: distintivo "AO" e versão */}
+        <div className="h-6 flex items-center px-2 overflow-hidden">
+          <div className="w-8 h-6 shrink-0 flex items-center justify-center">
             <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono px-1.5 py-0.5 rounded text-center">
               AO
             </span>
           </div>
-        ) : (
-          <div className="px-2 py-1 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
-            <span>MyOffice v1.0</span>
-            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono px-1.5 py-0.5 rounded">
-              AO
+          <div
+            className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+              isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+            }`}
+          >
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate whitespace-nowrap">
+              MyOffice v1.0
             </span>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Submenu Flutuante com Portal (Estado Recolhido) */}
-      {isCollapsed && floatingMenu && createPortal(
+      {isCollapsed && hoveredFlyout && createPortal(
         <div
+          key={hoveredFlyout.id}
           role="region"
-          aria-label={`Submenu ${floatingMenu.id}`}
+          aria-label={`Submenu ${hoveredFlyout.id}`}
           tabIndex={-1}
           onMouseEnter={cancelCloseTimer}
           onMouseLeave={scheduleClose}
@@ -517,53 +547,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               cancelCloseTimer();
-              const targetModule = floatingMenu.id;
-              setFloatingMenu(null);
+              const targetModule = hoveredFlyout.id;
+              setHoveredFlyout(null);
               triggerButtonsRef.current.get(targetModule)?.focus();
             }
           }}
           style={{
             position: 'fixed',
             // Clampar a posição vertical para impedir corte na margem inferior do ecrã
-            top: Math.max(8, Math.min(floatingMenu.top, window.innerHeight - 260)),
-            // Começa exatamente na borda direita da barra lateral / botão
-            left: floatingMenu.left,
+            top: Math.max(8, Math.min(hoveredFlyout.top, window.innerHeight - 260)),
+            // Começa exatamente na borda direita da barra lateral
+            left: hoveredFlyout.left,
             zIndex: 9999,
           }}
           className="pl-2 pt-0 pb-0 select-none outline-none group/portal pointer-events-auto"
         >
-          {/* Ponte de Hover: estende 6px para a esquerda sobrepondo a borda da barra lateral para eliminar qualquer zona morta */}
+          {/* Ponte de Hover entre o botão e o popup (sem transbordar verticalmente para itens adjacentes) */}
           <div
-            className="absolute -left-3 top-0 bottom-0 w-5 pointer-events-auto"
-            aria-hidden="true"
-          />
-
-          {/* Zona de proteção diagonal para movimentos rápidos e angulares até aos subitens */}
-          <div
-            className="absolute -left-6 -top-8 -bottom-8 w-8 pointer-events-auto"
+            className="absolute -left-2.5 top-0 bottom-0 w-3 pointer-events-auto"
             aria-hidden="true"
           />
 
           {/* Cartão visível do submenu flutuante */}
-          <div className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 backdrop-blur-xs relative z-10 animate-in fade-in zoom-in-95 duration-100">
+          <div className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 backdrop-blur-xs relative z-10 animate-in fade-in zoom-in-95 duration-75">
             <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 mb-1 flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                {floatingMenu.id}
+                {hoveredFlyout.id}
               </span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                 Esc
               </span>
             </div>
             <div className="space-y-0.5">
-              {MODULE_SUBMODULES[floatingMenu.id]?.map((sub) => {
+              {MODULE_SUBMODULES[hoveredFlyout.id]?.map((sub) => {
                 const SubIcon = sub.icon;
-                const active = isSubActive(floatingMenu.id, sub.id);
+                const active = isSubActive(hoveredFlyout.id, sub.id);
                 return (
                   <button
                     key={sub.id}
                     type="button"
-                    id={getSubnavId(floatingMenu.id, sub.id, true)}
-                    onClick={() => handleSelectSub(floatingMenu.id, sub.id)}
+                    id={getSubnavId(hoveredFlyout.id, sub.id, true)}
+                    onClick={() => handleSelectSub(hoveredFlyout.id, sub.id)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors text-left cursor-pointer ${
                       active
                         ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
@@ -589,5 +613,3 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
-
-

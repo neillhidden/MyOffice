@@ -51,7 +51,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({
     const diffPercent = previous > 0 ? (diff / previous) * 100 : current > 0 ? 100 : 0;
 
     return (
-      <div className="bg-slate-900 text-white rounded-lg p-3.5 shadow-xl border border-slate-800 text-xs min-w-[210px] space-y-2 z-50">
+      <div className="bg-slate-900 dark:bg-slate-950 text-white rounded-lg p-3.5 shadow-xl border border-slate-800 text-xs min-w-[210px] space-y-2 z-50">
         <div className="font-semibold text-slate-200 border-b border-slate-800 pb-1.5 flex items-center justify-between">
           <span>{pointData.tooltipLabel}</span>
         </div>
@@ -115,17 +115,17 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({
   return (
     <div
       id={id}
-      className="bg-white border border-slate-200/90 rounded-xl p-5 sm:p-6 shadow-xs"
+      className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-xs"
     >
       {/* Chart Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
             Comparação de Período
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Evolução de faturamento: <span className="font-medium text-slate-700">{currentRangeLabel}</span> vs.{' '}
-            <span className="font-medium text-slate-600">{previousRangeLabel}</span>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Evolução de faturação: <span className="font-medium text-slate-700 dark:text-slate-200">{currentRangeLabel}</span> vs.{' '}
+            <span className="font-medium text-slate-600 dark:text-slate-300">{previousRangeLabel}</span>
           </p>
         </div>
 
@@ -133,11 +133,11 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({
         <div className="flex items-center gap-4 text-xs shrink-0 self-start sm:self-auto">
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-1 rounded-full bg-blue-600 inline-block" />
-            <span className="font-medium text-slate-800">Período Atual</span>
+            <span className="font-medium text-slate-800 dark:text-slate-200">Período Atual</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-0.5 border-t-2 border-dashed border-slate-400 inline-block" />
-            <span className="text-slate-500">Período Anterior</span>
+            <span className="text-slate-500 dark:text-slate-400">Período Anterior</span>
           </div>
         </div>
       </div>
@@ -150,12 +150,12 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({
             margin={{ top: 12, right: 12, left: -14, bottom: 6 }}
           >
             {/* Clean, subtle grid lines */}
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.15} vertical={false} />
 
             <XAxis
               dataKey="label"
               tickLine={false}
-              axisLine={{ stroke: '#e2e8f0' }}
+              axisLine={{ stroke: '#64748b', strokeOpacity: 0.3 }}
               tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
               interval={period === 'mes' ? 2 : 0}
             />

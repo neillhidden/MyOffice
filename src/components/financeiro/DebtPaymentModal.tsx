@@ -91,23 +91,23 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
   return (
     <div
       id="modal-debt-payment-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
         id="modal-debt-payment-card"
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shadow-xs">
               <HandCoins className="w-4 h-4" />
             </div>
             <div>
-              <h3 id="modal-debt-payment-title" className="text-sm font-semibold text-slate-900">
+              <h3 id="modal-debt-payment-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {isAPagar ? 'Registar Pagamento de Dívida' : 'Registar Recebimento de Valor'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {isAPagar
                   ? 'Gera saída automática no Financeiro debitando a conta'
                   : 'Gera entrada automática no Financeiro creditando a conta'}
@@ -118,7 +118,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -126,34 +126,34 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-rose-700 text-xs">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-lg flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Resumo da Dívida */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2 text-xs">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/80 rounded-xl space-y-2 text-xs">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">Contraparte:</span>
-              <span className="font-semibold text-slate-900">{debt.counterpartyName}</span>
+              <span className="text-slate-500 dark:text-slate-400">Contraparte:</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{debt.counterpartyName}</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/60 text-center font-mono">
-              <div className="p-2 bg-white rounded-lg border border-slate-200/50">
-                <span className="text-[10px] uppercase text-slate-400 block font-sans">Total</span>
-                <span className="font-semibold text-slate-800 text-xs">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-center font-mono">
+              <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
+                <span className="text-[10px] uppercase text-slate-400 dark:text-slate-500 block font-sans">Total</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
                   {formatCurrencyValue(debt.totalAmount, 'Kz')}
                 </span>
               </div>
-              <div className="p-2 bg-white rounded-lg border border-slate-200/50">
-                <span className="text-[10px] uppercase text-slate-400 block font-sans">Já Pago</span>
-                <span className="font-semibold text-emerald-700 text-xs">
+              <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
+                <span className="text-[10px] uppercase text-slate-400 dark:text-slate-500 block font-sans">Já Pago</span>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-xs">
                   {formatCurrencyValue(calcs.paidAmount, 'Kz')}
                 </span>
               </div>
-              <div className="p-2 bg-white rounded-lg border border-slate-200/50">
-                <span className="text-[10px] uppercase text-slate-400 block font-sans">Restante</span>
-                <span className="font-bold text-rose-600 text-xs">
+              <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
+                <span className="text-[10px] uppercase text-slate-400 dark:text-slate-500 block font-sans">Restante</span>
+                <span className="font-bold text-rose-600 dark:text-rose-400 text-xs">
                   {formatCurrencyValue(calcs.remainingAmount, 'Kz')}
                 </span>
               </div>
@@ -163,7 +163,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
           {/* Valor a Pagar/Receber & Conta Financeira */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="input-debt-payment-amount" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-debt-payment-amount" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Valor Desta Operação <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -176,31 +176,31 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 font-mono"
                   required
                 />
-                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400">
+                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
                   Kz
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setAmount(String(calcs.remainingAmount))}
-                className="text-[10px] text-blue-600 hover:text-blue-800 font-medium mt-1 inline-block"
+                className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium mt-1 inline-block cursor-pointer"
               >
                 Preencher valor total restante
               </button>
             </div>
 
             <div>
-              <label htmlFor="select-debt-payment-bank" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="select-debt-payment-bank" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Conta Financeira <span className="text-rose-500">*</span>
               </label>
               <select
                 id="select-debt-payment-bank"
                 value={bankId}
                 onChange={(e) => setBankId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                 required
               >
                 {banks.map((b) => (
@@ -209,7 +209,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                   </option>
                 ))}
               </select>
-              <span className="text-[10px] text-slate-400 mt-1 block">
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                 {isAPagar ? 'O saldo sairá desta conta' : 'O valor entrará nesta conta'}
               </span>
             </div>
@@ -218,7 +218,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
           {/* Data & Responsável */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="input-debt-payment-date" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-debt-payment-date" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Data do Pagamento <span className="text-rose-500">*</span>
               </label>
               <input
@@ -226,13 +226,13 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                 id="input-debt-payment-date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="input-debt-payment-responsible" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-debt-payment-responsible" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Responsável
               </label>
               <input
@@ -241,14 +241,14 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                 value={responsible}
                 onChange={(e) => setResponsible(e.target.value)}
                 placeholder="Administrador"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
               />
             </div>
           </div>
 
           {/* Observações */}
           <div>
-            <label htmlFor="textarea-debt-payment-notes" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="textarea-debt-payment-notes" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Observação / Recibo
             </label>
             <textarea
@@ -257,23 +257,23 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ex: Quitação parcial, comprovativo de transferência..."
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
             />
           </div>
 
           {/* Footer */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               id="btn-confirmar-pagamento-divida"
-              className="px-5 py-2 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+              className="px-5 py-2 text-xs font-medium bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
             >
               Confirmar Operação
             </button>

@@ -42,6 +42,7 @@ export const DividasView: React.FC = () => {
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [ledgerTargetDebt, setLedgerTargetDebt] = useState<Debt | null>(null);
 
+  const [debtToDelete, setDebtToDelete] = useState<Debt | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Consolidated Metrics
@@ -121,11 +122,11 @@ export const DividasView: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
             Gestão de Dívidas
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Controle de contas a pagar a fornecedores e valores a receber de clientes
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Controlo de contas a pagar a fornecedores e valores a receber de clientes
           </p>
         </div>
 
@@ -137,7 +138,7 @@ export const DividasView: React.FC = () => {
               setDebtToEdit(null);
               setIsDebtModalOpen(true);
             }}
-            className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+            className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg text-xs font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
           >
             Registar dívida
           </button>
@@ -146,7 +147,7 @@ export const DividasView: React.FC = () => {
 
       {/* Error alert if any */}
       {errorMessage && (
-        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-xs text-rose-700">
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl flex items-center justify-between text-xs text-rose-700 dark:text-rose-300">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
@@ -154,7 +155,7 @@ export const DividasView: React.FC = () => {
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="text-rose-500 hover:text-rose-800 font-semibold text-xs"
+            className="text-rose-500 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-200 font-semibold text-xs cursor-pointer"
           >
             Dispensar
           </button>
@@ -164,77 +165,77 @@ export const DividasView: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Total a Receber */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-[11px] font-medium uppercase tracking-wider">A Receber</span>
-            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+            <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400">
               <ArrowUpRight className="w-4 h-4" />
             </span>
           </div>
           <div>
-            <span className="text-lg font-bold text-slate-900 font-mono">
+            <span className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
               {formatCurrencyValue(metrics.totalAReceberRestante, 'Kz')}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
               Saldo pendente de clientes e terceiros
             </span>
           </div>
         </div>
 
         {/* Total a Pagar */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-[11px] font-medium uppercase tracking-wider">A Pagar</span>
-            <span className="p-1.5 rounded-lg bg-rose-50 text-rose-700">
+            <span className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400">
               <ArrowDownRight className="w-4 h-4" />
             </span>
           </div>
           <div>
-            <span className="text-lg font-bold text-slate-900 font-mono">
+            <span className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono">
               {formatCurrencyValue(metrics.totalAPagarRestante, 'Kz')}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
               Obrigações com fornecedores e terceiros
             </span>
           </div>
         </div>
 
         {/* Saldo Líquido de Dívidas */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-[11px] font-medium uppercase tracking-wider">Saldo Previsional</span>
-            <span className="p-1.5 rounded-lg bg-slate-100 text-slate-700">
+            <span className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
               <HandCoins className="w-4 h-4" />
             </span>
           </div>
           <div>
             <span
               className={`text-lg font-bold font-mono ${
-                metrics.saldoLiquido >= 0 ? 'text-emerald-700' : 'text-rose-600'
+                metrics.saldoLiquido >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}
             >
               {metrics.saldoLiquido >= 0 ? '+' : ''}
               {formatCurrencyValue(metrics.saldoLiquido, 'Kz')}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
               Diferença líquida (A receber - A pagar)
             </span>
           </div>
         </div>
 
         {/* Total Vencido */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-[11px] font-medium uppercase tracking-wider">Vencido</span>
-            <span className="p-1.5 rounded-lg bg-amber-50 text-amber-700">
+            <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400">
               <Clock className="w-4 h-4" />
             </span>
           </div>
           <div>
-            <span className="text-lg font-bold text-amber-700 font-mono">
+            <span className="text-lg font-bold text-amber-700 dark:text-amber-400 font-mono">
               {formatCurrencyValue(metrics.totalVencido, 'Kz')}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
               Prazos ultrapassados pendentes de quitação
             </span>
           </div>
@@ -242,19 +243,19 @@ export const DividasView: React.FC = () => {
       </div>
 
       {/* Tabs & Filters */}
-      <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs space-y-3.5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 shadow-2xs space-y-3.5">
         {/* Row 1: Tabs & Search */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Quick Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs overflow-x-auto self-start md:self-auto">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-lg text-xs overflow-x-auto self-start md:self-auto">
             <button
               type="button"
               id="tab-dividas-todas"
               onClick={() => setActiveTab('todas')}
               className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === 'todas'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               Todas ({debts.length})
@@ -265,8 +266,8 @@ export const DividasView: React.FC = () => {
               onClick={() => setActiveTab('a_pagar')}
               className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === 'a_pagar'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               A Pagar ({debts.filter((d) => d.type === 'a_pagar').length})
@@ -277,8 +278,8 @@ export const DividasView: React.FC = () => {
               onClick={() => setActiveTab('a_receber')}
               className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === 'a_receber'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               A Receber ({debts.filter((d) => d.type === 'a_receber').length})
@@ -289,8 +290,8 @@ export const DividasView: React.FC = () => {
               onClick={() => setActiveTab('vencidas')}
               className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === 'vencidas'
-                  ? 'bg-white text-rose-700 shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-400 shadow-2xs font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               Vencidas ({debts.filter((d) => getDebtCalculations(d.id).isOverdue).length})
@@ -299,29 +300,29 @@ export const DividasView: React.FC = () => {
 
           {/* Search Input */}
           <div className="relative flex-1 max-w-xs">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
               id="input-busca-dividas"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por contraparte, empresa..."
-              className="w-full pl-9 pr-4 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800"
+              className="w-full pl-9 pr-4 py-1.5 text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
             />
           </div>
         </div>
 
         {/* Row 2: Select Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div>
-            <label htmlFor="filter-dividas-empresa" className="block text-[11px] font-medium text-slate-500 mb-1">
+            <label htmlFor="filter-dividas-empresa" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
               Empresa MyOffice
             </label>
             <select
               id="filter-dividas-empresa"
               value={companyFilter}
               onChange={(e) => setCompanyFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
               <option value="todas">Todas as Empresas</option>
               {companies.map((c) => (
@@ -333,14 +334,14 @@ export const DividasView: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="filter-dividas-status" className="block text-[11px] font-medium text-slate-500 mb-1">
+            <label htmlFor="filter-dividas-status" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
               Estado de Quitação
             </label>
             <select
               id="filter-dividas-status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
               <option value="todos">Todos os Estados</option>
               <option value="pendente">Pendente (nada pago)</option>
@@ -352,23 +353,23 @@ export const DividasView: React.FC = () => {
       </div>
 
       {/* Debts Table */}
-      <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-2xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
         {filteredDebts.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400 dark:text-slate-500">
               <HandCoins className="w-6 h-6" />
             </div>
-            <h4 className="text-sm font-semibold text-slate-800">
+            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               Nenhuma dívida encontrada
             </h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
               Não existem registros com os filtros aplicados.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-medium uppercase text-[10px] tracking-wider">
+              <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 font-medium uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Contraparte</th>
                   <th className="py-3 px-4">Tipo</th>
@@ -381,7 +382,7 @@ export const DividasView: React.FC = () => {
                   <th className="py-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredDebts.map((debt) => {
                   const calcs = getDebtCalculations(debt.id);
                   const isAPagar = debt.type === 'a_pagar';
@@ -392,13 +393,13 @@ export const DividasView: React.FC = () => {
                       : 0;
 
                   return (
-                    <tr key={debt.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={debt.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                       {/* Contraparte */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="font-semibold text-slate-900 block">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 block">
                           {debt.counterpartyName}
                         </span>
-                        <span className="text-[10px] text-slate-400 capitalize">
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 capitalize">
                           {debt.counterpartyType}
                         </span>
                       </td>
@@ -406,28 +407,28 @@ export const DividasView: React.FC = () => {
                       {/* Tipo */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {isAPagar ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200/60">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/60">
                             A Pagar
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/60">
                             A Receber
                           </span>
                         )}
                       </td>
 
                       {/* Empresa */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600">
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
                         {comp?.name || 'Empresa'}
                       </td>
 
                       {/* Valor Total */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono font-medium text-slate-800">
+                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono font-medium text-slate-800 dark:text-slate-200">
                         {formatCurrencyValue(debt.totalAmount, 'Kz')}
                       </td>
 
                       {/* Valor Pago */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono text-emerald-700 font-medium">
+                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono text-emerald-700 dark:text-emerald-400 font-medium">
                         {formatCurrencyValue(calcs.paidAmount, 'Kz')}
                       </td>
 
@@ -435,12 +436,12 @@ export const DividasView: React.FC = () => {
                       <td className="py-3 px-4 whitespace-nowrap text-right font-mono">
                         <span
                           className={`font-semibold ${
-                            calcs.remainingAmount === 0 ? 'text-slate-400' : 'text-slate-900'
+                            calcs.remainingAmount === 0 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-slate-100'
                           }`}
                         >
                           {formatCurrencyValue(calcs.remainingAmount, 'Kz')}
                         </span>
-                        <div className="w-16 ml-auto mt-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="w-16 ml-auto mt-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div
                             className={`h-full ${
                               progressPct === 100 ? 'bg-emerald-500' : 'bg-blue-600'
@@ -454,41 +455,41 @@ export const DividasView: React.FC = () => {
                       <td className="py-3 px-4 whitespace-nowrap">
                         {debt.dueDate ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-mono text-slate-600">
+                            <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
                               {formatDate(debt.dueDate)}
                             </span>
                             {calcs.isOverdue && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-rose-100 text-rose-700 uppercase">
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 uppercase">
                                 Vencida
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-[11px]">—</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px]">—</span>
                         )}
                       </td>
 
                       {/* Estado */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {calcs.status === 'quitada' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                             <CheckCircle2 className="w-3 h-3" />
                             Quitada
                           </span>
                         )}
                         {calcs.status === 'parcialmente_paga' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
                             Parcial ({progressPct}%)
                           </span>
                         )}
                         {calcs.status === 'pendente' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                             Pendente
                           </span>
                         )}
                       </td>
 
-                      {/* Ações (Apenas ícones, sem texto visível) */}
+                      {/* Ações (Apenas ícones, com aria-label descritivo) */}
                       <td className="py-3 px-4 whitespace-nowrap text-right">
                         <div className="inline-flex items-center gap-1 justify-end">
                           {/* Registar Pagamento (só se não quitada) */}
@@ -499,7 +500,7 @@ export const DividasView: React.FC = () => {
                                 setPaymentTargetDebt(debt);
                                 setIsPaymentModalOpen(true);
                               }}
-                              className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer"
                               title={isAPagar ? 'Registar pagamento' : 'Registar recebimento'}
                               aria-label={`Registar pagamento para ${debt.counterpartyName}`}
                             >
@@ -514,7 +515,7 @@ export const DividasView: React.FC = () => {
                               setLedgerTargetDebt(debt);
                               setIsLedgerModalOpen(true);
                             }}
-                            className="p-1.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
                             title="Histórico de pagamentos"
                             aria-label={`Ver histórico de pagamentos de ${debt.counterpartyName}`}
                           >
@@ -528,7 +529,7 @@ export const DividasView: React.FC = () => {
                               setDebtToEdit(debt);
                               setIsDebtModalOpen(true);
                             }}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                             title="Editar dívida"
                             aria-label={`Editar dívida de ${debt.counterpartyName}`}
                           >
@@ -538,12 +539,8 @@ export const DividasView: React.FC = () => {
                           {/* Eliminar Dívida (apenas ícone de lixeira) */}
                           <button
                             type="button"
-                            onClick={() => {
-                              if (window.confirm(`Deseja eliminar a dívida de "${debt.counterpartyName}"?`)) {
-                                handleDeleteDebt(debt);
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            onClick={() => setDebtToDelete(debt)}
+                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
                             title="Eliminar dívida"
                             aria-label={`Eliminar dívida de ${debt.counterpartyName}`}
                           >
@@ -559,6 +556,48 @@ export const DividasView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal to Delete Debt */}
+      {debtToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xl max-w-md w-full space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-lg shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Eliminar Dívida
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Tem a certeza que deseja eliminar a dívida de <strong className="text-slate-800 dark:text-slate-200">"{debtToDelete.counterpartyName}"</strong> no valor total de <strong className="text-slate-800 dark:text-slate-200">{formatCurrencyValue(debtToDelete.totalAmount, 'Kz')}</strong>?
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDebtToDelete(null)}
+                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const debt = debtToDelete;
+                  setDebtToDelete(null);
+                  handleDeleteDebt(debt);
+                }}
+                className="px-4 py-1.5 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+              >
+                Eliminar dívida
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <DebtModal

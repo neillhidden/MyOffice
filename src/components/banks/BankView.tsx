@@ -131,10 +131,10 @@ export const BankView: React.FC = () => {
       {/* View Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Gestão Bancária & Caixa
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Contas bancárias corporativas, saldos consolidados e histórico auditável de tesouraria
           </p>
         </div>
@@ -147,9 +147,9 @@ export const BankView: React.FC = () => {
               setMovementTargetBankId(null);
               setIsMovementModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-medium transition-colors shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium transition-colors shadow-xs cursor-pointer"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500" />
+            <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>Nova Movimentação</span>
           </button>
 
@@ -160,7 +160,7 @@ export const BankView: React.FC = () => {
               setBankToEdit(null);
               setIsBankModalOpen(true);
             }}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition-colors shadow-xs cursor-pointer"
+            className="px-3.5 py-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl text-xs font-medium transition-colors shadow-xs cursor-pointer"
           >
             <span>Registar conta</span>
           </button>
@@ -169,7 +169,7 @@ export const BankView: React.FC = () => {
 
       {/* Delete error notification if audit check blocked */}
       {deleteErrorMessage && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start justify-between gap-3 text-xs text-rose-800 animate-in fade-in">
+        <div className="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl flex items-start justify-between gap-3 text-xs text-rose-800 dark:text-rose-300 animate-in fade-in">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
             <span>{deleteErrorMessage}</span>
@@ -177,7 +177,7 @@ export const BankView: React.FC = () => {
           <button
             type="button"
             onClick={() => setDeleteErrorMessage(null)}
-            className="text-rose-500 hover:text-rose-700 font-semibold"
+            className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 font-semibold cursor-pointer"
           >
             Dispensar
           </button>
@@ -187,82 +187,82 @@ export const BankView: React.FC = () => {
       {/* Metric Cards Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Saldo Total Consolidado */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Saldo Consolidado</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Saldo Consolidado</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl font-bold text-slate-900">
+            <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
               {formatCurrencyValue(metrics.totalConsolidatedKz, 'Kz')}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Conversão global em Kwanza</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Conversão global em Kwanza</p>
         </div>
 
         {/* Contas Ativas */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Contas Ativas</span>
-            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Contas Ativas</span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
               <Building2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl font-bold text-slate-900">
+            <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
               {metrics.activeAccountsCount}
             </span>
-            <span className="text-xs text-slate-400">de {banks.length} contas</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">de {banks.length} contas</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Instituições e caixas configurados</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Instituições e caixas configurados</p>
         </div>
 
         {/* Entradas do Mês */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Entradas (Mês)</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Entradas (Mês)</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl font-bold text-emerald-600">
+            <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
               +{formatCurrencyValue(metrics.monthInflowKz, 'Kz')}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Vendas e depósitos do período</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Vendas e depósitos do período</p>
         </div>
 
         {/* Saídas do Mês */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Saídas (Mês)</span>
-            <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Saídas (Mês)</span>
+            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
               <ArrowDownRight className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xl font-bold text-rose-600">
+            <span className="text-xl font-bold text-rose-600 dark:text-rose-400">
               -{formatCurrencyValue(metrics.monthOutflowKz, 'Kz')}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Despesas e transferências</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Despesas e transferências</p>
         </div>
       </div>
 
       {/* Tabs / View Mode Navigation */}
-      <div className="flex items-center justify-between border-b border-slate-200">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
         <div className="flex gap-4">
           <button
             type="button"
             id="tab-bancos-contas"
             onClick={() => setActiveTab('contas')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors ${
+            className={`pb-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
               activeTab === 'contas'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             Contas & Saldos ({filteredBanks.length})
@@ -271,10 +271,10 @@ export const BankView: React.FC = () => {
             type="button"
             id="tab-bancos-historico"
             onClick={() => setActiveTab('historico')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors ${
+            className={`pb-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
               activeTab === 'historico'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             Extrato Geral Consolidado ({bankMovements.length})
@@ -286,15 +286,15 @@ export const BankView: React.FC = () => {
       {activeTab === 'contas' && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
             <div className="relative w-full sm:w-72">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filtrar por banco, conta ou IBAN..."
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
               />
             </div>
 
@@ -302,7 +302,7 @@ export const BankView: React.FC = () => {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
+                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
               >
                 <option value="todas">Todos os Tipos de Conta</option>
                 <option value="banco_padrao">Banco padrão da empresa</option>
@@ -323,8 +323,10 @@ export const BankView: React.FC = () => {
                 <div
                   key={bank.id}
                   id={`card-bank-${bank.id}`}
-                  className={`bg-white rounded-xl border p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all ${
-                    bank.type === 'banco_padrao' ? 'border-blue-200/80 bg-linear-to-b from-blue-50/20 to-white' : 'border-slate-200'
+                  className={`rounded-xl border p-4 shadow-xs flex flex-col justify-between transition-all ${
+                    bank.type === 'banco_padrao'
+                      ? 'border-blue-200/80 dark:border-blue-800/80 bg-linear-to-b from-blue-50/20 dark:from-blue-950/20 to-white dark:to-slate-900 hover:border-blue-300 dark:hover:border-blue-700'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <div>
@@ -333,8 +335,8 @@ export const BankView: React.FC = () => {
                       <div className="flex items-center gap-2.5">
                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                           bank.type === 'banco_padrao'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
+                            ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                         }`}>
                           {bank.type === 'caixa_fisico' ? (
                             <Wallet className="w-4 h-4" />
@@ -343,10 +345,10 @@ export const BankView: React.FC = () => {
                           )}
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900 leading-tight">
+                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                             {bank.name}
                           </h3>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
                             {bank.type === 'banco_padrao'
                               ? 'Banco padrão da empresa'
                               : bank.type === 'caixa_fisico'
@@ -362,15 +364,15 @@ export const BankView: React.FC = () => {
 
                       <div className="flex items-center gap-1.5">
                         {bank.type === 'banco_padrao' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                             Banco Padrão
                           </span>
                         )}
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
                             bank.status === 'ativa'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-slate-100 text-slate-600'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           {bank.status === 'ativa' ? 'Ativa' : 'Inativa'}
@@ -379,50 +381,50 @@ export const BankView: React.FC = () => {
                     </div>
 
                     {/* Account Details */}
-                    <div className="mt-3.5 space-y-1 bg-slate-50/70 p-2.5 rounded-lg border border-slate-100 text-[11px]">
+                    <div className="mt-3.5 space-y-1 bg-slate-50/70 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/80 text-[11px]">
                       {bank.accountNumber && (
-                        <div className="flex justify-between text-slate-600">
-                          <span className="text-slate-400">Nº Conta:</span>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                          <span className="text-slate-400 dark:text-slate-500">Nº Conta:</span>
                           <span className="font-mono">{bank.accountNumber}</span>
                         </div>
                       )}
                       {bank.iban && (
-                        <div className="flex justify-between text-slate-600">
-                          <span className="text-slate-400">IBAN:</span>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                          <span className="text-slate-400 dark:text-slate-500">IBAN:</span>
                           <span className="font-mono truncate max-w-[180px]" title={bank.iban}>
                             {bank.iban}
                           </span>
                         </div>
                       )}
                       {linkedCompany && (
-                        <div className="flex items-center gap-1 text-sky-700 font-medium pt-1 border-t border-slate-200/60 mt-1">
-                          <ShieldCheck className="w-3 h-3 text-sky-600 shrink-0" />
+                        <div className="flex items-center gap-1 text-sky-700 dark:text-sky-400 font-medium pt-1 border-t border-slate-200/60 dark:border-slate-700 mt-1">
+                          <ShieldCheck className="w-3 h-3 text-sky-600 dark:text-sky-400 shrink-0" />
                           <span>Banco Principal: {linkedCompany.name}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Live Balance Section */}
-                    <div className="mt-4 pt-3 border-t border-slate-100">
-                      <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 dark:text-slate-500 block">
                         Saldo Atual em Carteira
                       </span>
-                      <div className="text-lg font-bold text-slate-900 mt-0.5">
+                      <div className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                         {formatCurrencyValue(balance, bank.currency)}
                       </div>
                     </div>
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-1">
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1">
                     <button
                       type="button"
                       id={`btn-bank-ledger-${bank.id}`}
                       onClick={() => setLedgerBank(bank)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                       title="Ver histórico e extrato de lançamentos"
                     >
-                      <FileText className="w-3.5 h-3.5 text-slate-500" />
+                      <FileText className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                       <span>Extrato</span>
                     </button>
 
@@ -434,8 +436,9 @@ export const BankView: React.FC = () => {
                           setMovementTargetBankId(bank.id);
                           setIsMovementModalOpen(true);
                         }}
-                        className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                        title="Registrar movimentação nesta conta"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        title="Registar movimentação nesta conta"
+                        aria-label="Registar movimentação nesta conta"
                       >
                         <ArrowLeftRight className="w-3.5 h-3.5" />
                       </button>
@@ -447,8 +450,9 @@ export const BankView: React.FC = () => {
                           setBankToEdit(bank);
                           setIsBankModalOpen(true);
                         }}
-                        className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                         title="Editar conta"
+                        aria-label="Editar conta"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -457,8 +461,9 @@ export const BankView: React.FC = () => {
                         type="button"
                         id={`btn-bank-delete-${bank.id}`}
                         onClick={() => handleDeleteBank(bank.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="Excluir conta (sujeito a regras de auditoria)"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar conta (sujeito a regras de auditoria)"
+                        aria-label="Eliminar conta"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -473,9 +478,9 @@ export const BankView: React.FC = () => {
 
       {/* Tab 2: Global Movements Table */}
       {activeTab === 'historico' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
               Histórico Consolidado de Movimentações ({globalMovements.length})
             </h3>
 
@@ -485,7 +490,7 @@ export const BankView: React.FC = () => {
                 setMovementTargetBankId(null);
                 setIsMovementModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               <span>Lançamento Manual</span>
@@ -495,7 +500,7 @@ export const BankView: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   <th className="py-2.5 px-4">Data</th>
                   <th className="py-2.5 px-3">Conta Bancária</th>
                   <th className="py-2.5 px-3">Tipo</th>
@@ -505,7 +510,7 @@ export const BankView: React.FC = () => {
                   <th className="py-2.5 px-4 text-right">Valor</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {globalMovements.map((mov) => {
                   const bank = banks.find((b) => b.id === mov.bankId);
                   const isIncome = mov.type === 'entrada';
@@ -513,61 +518,61 @@ export const BankView: React.FC = () => {
                   const isTransfer = mov.type === 'transferencia';
 
                   return (
-                    <tr key={mov.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-2.5 px-4 text-slate-600 whitespace-nowrap">
+                    <tr key={mov.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         {formatDate(mov.date)}
                       </td>
 
-                      <td className="py-2.5 px-3 font-medium text-slate-900 whitespace-nowrap">
+                      <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
                         {bank?.name || 'Conta Removida'}
                       </td>
 
                       <td className="py-2.5 px-3 whitespace-nowrap">
                         {isIncome && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <ArrowUpRight className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                            <ArrowUpRight className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             Entrada
                           </span>
                         )}
                         {isExpense && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                            <ArrowDownRight className="w-3 h-3 text-rose-600" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                            <ArrowDownRight className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                             Saída
                           </span>
                         )}
                         {isTransfer && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-sky-50 text-sky-700 border border-sky-200">
-                            <ArrowLeftRight className="w-3 h-3 text-sky-600" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+                            <ArrowLeftRight className="w-3 h-3 text-sky-600 dark:text-sky-400" />
                             Transf.
                           </span>
                         )}
                         {mov.type === 'ajuste' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                            <SlidersHorizontal className="w-3 h-3 text-amber-600" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                            <SlidersHorizontal className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                             Ajuste
                           </span>
                         )}
                       </td>
 
-                      <td className="py-2.5 px-3 font-medium text-slate-800 max-w-sm truncate" title={mov.reason}>
+                      <td className="py-2.5 px-3 font-medium text-slate-800 dark:text-slate-200 max-w-sm truncate" title={mov.reason}>
                         {mov.reason}
                       </td>
 
-                      <td className="py-2.5 px-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">
+                      <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap font-mono text-[11px]">
                         {mov.reference || '—'}
                       </td>
 
-                      <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         {mov.responsible}
                       </td>
 
                       <td
                         className={`py-2.5 px-4 text-right font-semibold whitespace-nowrap ${
                           isIncome
-                            ? 'text-emerald-600'
+                            ? 'text-emerald-600 dark:text-emerald-400'
                             : isExpense
-                            ? 'text-rose-600'
-                            : 'text-slate-800'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-slate-800 dark:text-slate-200'
                         }`}
                       >
                         {isIncome ? '+' : isExpense ? '-' : ''}

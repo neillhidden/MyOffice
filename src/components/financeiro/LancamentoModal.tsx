@@ -102,24 +102,24 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
   return (
     <div
       id="modal-lancamento-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
         id="modal-lancamento-card"
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shadow-xs">
               <ArrowLeftRight className="w-4 h-4" />
             </div>
             <div>
-              <h3 id="modal-lancamento-title" className="text-sm font-semibold text-slate-900">
+              <h3 id="modal-lancamento-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Novo Lançamento Financeiro
               </h3>
-              <p className="text-[11px] text-slate-500">
-                Registro direto de entrada, saída ou ajuste em conta
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Registo direto de entrada, saída ou ajuste em conta
               </p>
             </div>
           </div>
@@ -127,7 +127,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -135,7 +135,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-rose-700 text-xs">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-lg flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -143,7 +143,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
 
           {/* Tipo de Lançamento */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Tipo de Operação <span className="text-rose-500">*</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -151,10 +151,10 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 type="button"
                 id="btn-lancamento-tipo-entrada"
                 onClick={() => setType('entrada')}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'entrada'
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 ring-1 ring-emerald-300'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
                 Entrada (+)
@@ -163,10 +163,10 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 type="button"
                 id="btn-lancamento-tipo-saida"
                 onClick={() => setType('saida')}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'saida'
-                    ? 'bg-rose-50 border-rose-300 text-rose-800 ring-1 ring-rose-300'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
                 Saída (-)
@@ -175,10 +175,10 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 type="button"
                 id="btn-lancamento-tipo-ajuste"
                 onClick={() => setType('ajuste')}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'ajuste'
-                    ? 'bg-slate-100 border-slate-400 text-slate-800 ring-1 ring-slate-400'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-600 text-slate-800 dark:text-slate-200 ring-1 ring-slate-400 dark:ring-slate-600'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
                 Ajuste
@@ -189,14 +189,14 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
           {/* Conta e Categoria */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="select-lancamento-conta" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="select-lancamento-conta" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Conta Financeira <span className="text-rose-500">*</span>
               </label>
               <select
                 id="select-lancamento-conta"
                 value={bankId}
                 onChange={(e) => setBankId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
               >
                 {banks.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -205,21 +205,21 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 ))}
               </select>
               {currentBank && (
-                <span className="text-[10px] text-slate-400 mt-1 block">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                   Saldo: {formatCurrencyValue(currentBalance, currentBank.currency)}
                 </span>
               )}
             </div>
 
             <div>
-              <label htmlFor="select-lancamento-categoria" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="select-lancamento-categoria" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Categoria Financeira <span className="text-rose-500">*</span>
               </label>
               <select
                 id="select-lancamento-categoria"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as FinancialCategory)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 bg-white"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
               >
                 {FINANCIAL_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -233,7 +233,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
           {/* Valor e Data */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="input-lancamento-valor" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-lancamento-valor" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Montante / Valor <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -245,17 +245,17 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800 font-mono"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 font-mono"
                   required
                 />
-                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400">
+                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
                   {currentBank?.currency || 'Kz'}
                 </span>
               </div>
             </div>
 
             <div>
-              <label htmlFor="input-lancamento-data" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-lancamento-data" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Data do Lançamento <span className="text-rose-500">*</span>
               </label>
               <input
@@ -263,7 +263,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 id="input-lancamento-data"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
                 required
               />
             </div>
@@ -272,7 +272,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
           {/* Responsável e Documento/Referência */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="input-lancamento-responsavel" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-lancamento-responsavel" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Responsável
               </label>
               <input
@@ -281,12 +281,12 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 value={responsible}
                 onChange={(e) => setResponsible(e.target.value)}
                 placeholder="Administrador"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
               />
             </div>
 
             <div>
-              <label htmlFor="input-lancamento-referencia" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="input-lancamento-referencia" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Documento / Referência
               </label>
               <input
@@ -295,14 +295,14 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="Ex: Fatura #402, Recibo #12"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
               />
             </div>
           </div>
 
           {/* Motivo / Justificativa */}
           <div>
-            <label htmlFor="textarea-lancamento-motivo" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="textarea-lancamento-motivo" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Motivo / Justificativa de Auditoria <span className="text-rose-500">*</span>
             </label>
             <textarea
@@ -310,25 +310,25 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
               rows={2}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Descreva a finalidade desta movimentação para registro contábil e de auditoria..."
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+              placeholder="Descreva a finalidade desta movimentação para registo contabilístico e de auditoria..."
+              className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
               required
             />
           </div>
 
           {/* Footer */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               id="btn-submit-lancamento"
-              className="px-5 py-2 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+              className="px-5 py-2 text-xs font-medium bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
             >
               Confirmar Lançamento
             </button>
