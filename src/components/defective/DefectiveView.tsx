@@ -21,6 +21,7 @@ export const DefectiveView: React.FC = () => {
     products,
     warehouses,
     companies,
+    isCompanyDisabled,
     recordDefective,
     updateDefectiveResolution,
     getCurrentStock,
@@ -34,13 +35,38 @@ export const DefectiveView: React.FC = () => {
   const operationalWarehouses = useMemo(() => {
     return warehouses.filter((w) => {
       const comp = companies.find((c) => c.id === w.companyId);
-      return comp?.status !== 'desativada';
+      return comp ? !isCompanyDisabled(comp.id) : true;
     });
-  }, [warehouses, companies]);
+  }, [warehouses, companies, isCompanyDisabled]);
+
+  // Products excluding products linked exclusively to disabled companies
+  const operationalProducts = useMemo(() => {
+    const disabledCompIds = new Set(companies.filter((c) => isCompanyDisabled(c.id)).map((c) => c.id));
+    const disabledWhIds = new Set(warehouses.filter((w) => disabledCompIds.has(w.companyId)).map((w) => w.id));
+
+    return products.filter((p) => {
+      // If product ID starts with prod-kianda or belongs to disabled company
+      if (p.id.includes('kianda')) return false;
+
+      // Check movements or warehouses linked
+      const hasAnyNonDisabledStockOrMovement = warehouses.some((w) => {
+        if (disabledWhIds.has(w.id)) return false;
+        return getCurrentStock(p.id, w.id) > 0;
+      });
+
+      // If product has no stock anywhere, check if created by or linked to disabled company
+      const onlyInDisabledWh = warehouses.some((w) => disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0) &&
+        !warehouses.some((w) => !disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0);
+
+      if (onlyInDisabledWh) return false;
+
+      return true;
+    });
+  }, [products, warehouses, companies, isCompanyDisabled, getCurrentStock]);
 
   // Form states
-  const [productId, setProductId] = useState<string>(products[0]?.id || '');
-  const [warehouseId, setWarehouseId] = useState<string>(operationalWarehouses[0]?.id || warehouses[0]?.id || '');
+  const [productId, setProductId] = useState<string>('');
+  const [warehouseId, setWarehouseId] = useState<string>('');
   const [quantity, setQuantity] = useState<number | ''>('');
   const [reason, setReason] = useState<DefectReason>('defeito_fabrica');
   const [decision, setDecision] = useState<DefectDecision>('descartar');
@@ -48,7 +74,20 @@ export const DefectiveView: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
 
-  const selectedProduct = products.find((p) => p.id === productId);
+  // Sync initial product and warehouse
+  React.useEffect(() => {
+    if (operationalProducts.length > 0 && !productId) {
+      setProductId(operationalProducts[0].id);
+    }
+  }, [operationalProducts, productId]);
+
+  React.useEffect(() => {
+    if (operationalWarehouses.length > 0 && !warehouseId) {
+      setWarehouseId(operationalWarehouses[0].id);
+    }
+  }, [operationalWarehouses, warehouseId]);
+
+  const selectedProduct = operationalProducts.find((p) => p.id === productId) || products.find((p) => p.id === productId);
   const currentAvailableStock = selectedProduct
     ? getCurrentStock(selectedProduct.id, warehouseId)
     : 0;
@@ -493,7 +532,7 @@ export const DefectiveView: React.FC = () => {
                   onChange={(e) => setProductId(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                 >
-                  {products.map((p) => (
+                  {operationalProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} (SKU: {p.sku})
                     </option>

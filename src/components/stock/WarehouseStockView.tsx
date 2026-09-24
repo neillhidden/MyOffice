@@ -340,11 +340,12 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         const compWhs = warehouses.filter((w) => w.companyId === c.id);
         return {
           id: c.id,
-          label: isParada ? `${c.name} [Parada]` : c.name,
+          label: isParada ? `${c.name} — Parada` : c.name,
           count,
           badge: isParada ? 'Parada' : undefined,
+          disabled: isParada,
           sublabel: isParada
-            ? 'Empresa parada — consulta somente leitura'
+            ? 'Empresa parada — serviços indisponíveis'
             : `${compWhs.length} armazém(ns) • NIF: ${c.nif}`,
         };
       });
@@ -370,10 +371,11 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         }).length;
         return {
           id: w.id,
-          label: isParada ? `${w.name} [Parada]` : w.name,
+          label: isParada ? `${w.name} — Parada` : w.name,
           count,
           badge: isParada ? 'Parada' : undefined,
-          sublabel: isParada ? 'Armazém de empresa parada — somente leitura' : comp?.name,
+          disabled: isParada,
+          sublabel: isParada ? 'Armazém de empresa parada — serviços indisponíveis' : comp?.name,
         };
       });
   }, [visibleWarehouses, products, companies, hideZeroStock, getProductWarehouses, getProductStockInfo]);

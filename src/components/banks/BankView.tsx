@@ -33,6 +33,7 @@ export const BankView: React.FC = () => {
     addBank,
     updateBank,
     deleteBank,
+    getCompanyForBank,
   } = useStock();
 
   // Search & Filter state
@@ -123,7 +124,7 @@ export const BankView: React.FC = () => {
   };
 
   const getCompanyLinkedToBank = (bankId: string) => {
-    return companies.find((c) => c.principalBankId === bankId);
+    return getCompanyForBank(bankId);
   };
 
   return (
@@ -363,6 +364,11 @@ export const BankView: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-1.5">
+                        {linkedCompany?.status === 'parada' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            Parada
+                          </span>
+                        )}
                         {bank.type === 'banco_padrao' && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                             Banco Padrão
@@ -397,9 +403,16 @@ export const BankView: React.FC = () => {
                         </div>
                       )}
                       {linkedCompany && (
-                        <div className="flex items-center gap-1 text-sky-700 dark:text-sky-400 font-medium pt-1 border-t border-slate-200/60 dark:border-slate-700 mt-1">
-                          <ShieldCheck className="w-3 h-3 text-sky-600 dark:text-sky-400 shrink-0" />
-                          <span>Banco Principal: {linkedCompany.name}</span>
+                        <div className={`flex items-center gap-1 font-medium pt-1 border-t border-slate-200/60 dark:border-slate-700 mt-1 ${
+                          linkedCompany.status === 'parada'
+                            ? 'text-amber-700 dark:text-amber-400'
+                            : 'text-sky-700 dark:text-sky-400'
+                        }`}>
+                          <ShieldCheck className="w-3 h-3 shrink-0" />
+                          <span>
+                            Banco Principal: {linkedCompany.name}
+                            {linkedCompany.status === 'parada' ? ' (Parada)' : ''}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -436,8 +449,16 @@ export const BankView: React.FC = () => {
                           setMovementTargetBankId(bank.id);
                           setIsMovementModalOpen(true);
                         }}
-                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                        title="Registar movimentação nesta conta"
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          linkedCompany?.status === 'parada'
+                            ? 'text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                        title={
+                          linkedCompany?.status === 'parada'
+                            ? 'Empresa parada — serviços indisponíveis'
+                            : 'Registar movimentação nesta conta'
+                        }
                         aria-label="Registar movimentação nesta conta"
                       >
                         <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -483,18 +504,6 @@ export const BankView: React.FC = () => {
             <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
               Histórico Consolidado de Movimentações ({globalMovements.length})
             </h3>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMovementTargetBankId(null);
-                setIsMovementModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Lançamento Manual</span>
-            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -612,7 +621,6 @@ export const BankView: React.FC = () => {
         isOpen={Boolean(ledgerBank)}
         onClose={() => setLedgerBank(null)}
         onOpenNewMovement={(bankId) => {
-          setLedgerBank(null);
           setMovementTargetBankId(bankId);
           setIsMovementModalOpen(true);
         }}

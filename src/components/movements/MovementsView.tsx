@@ -33,7 +33,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
   const visibleWarehouses = useMemo(() => {
     return warehouses.filter((w) => {
       const comp = companies.find((c) => c.id === w.companyId);
-      return !isCompanyDisabled(comp?.status);
+      return comp ? !isCompanyDisabled(comp.id) : true;
     });
   }, [warehouses, companies, isCompanyDisabled]);
 
@@ -42,12 +42,12 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
     return movements.filter((m) => {
       const wh = warehouses.find((w) => w.id === m.warehouseId);
       const comp = companies.find((c) => c.id === wh?.companyId);
-      if (isCompanyDisabled(comp?.status)) return false;
+      if (comp && isCompanyDisabled(comp.id)) return false;
 
       if (m.destinationWarehouseId) {
         const destWh = warehouses.find((w) => w.id === m.destinationWarehouseId);
         const destComp = companies.find((c) => c.id === destWh?.companyId);
-        if (isCompanyDisabled(destComp?.status)) return false;
+        if (destComp && isCompanyDisabled(destComp.id)) return false;
       }
       return true;
     });

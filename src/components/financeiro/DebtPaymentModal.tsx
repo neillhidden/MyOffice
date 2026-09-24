@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, HandCoins, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
+import { X, HandCoins, AlertCircle } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Debt } from '../../types/stock';
 import { formatCurrencyValue } from '../../utils/formatters';
@@ -15,77 +15,75 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
   onClose,
   debt,
 }) => {
-  const { banks, companies, recordDebtPayment, getDebtCalculations } = useStock();
+  const { banks, recordDebtPayment, getDebtCalculations } = useStock();
 
   const [amount, setAmount] = useState<string>('');
   const [bankId, setBankId] = useState<string>('');
-  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [responsible, setResponsible] = useState<string>('Administrador');
+  const [date, setDate] = useState<string>('');
+  const [responsible, setResponsible] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Suggested bank based on company's principal bank
+  // Reset fields clean whenever modal opens (Rule 7 & Rule 9)
   useEffect(() => {
-    if (debt) {
-      const calcs = getDebtCalculations(debt.id);
-      setAmount(String(calcs.remainingAmount > 0 ? calcs.remainingAmount : ''));
-
-      const comp = companies.find((c) => c.id === debt.companyId);
-      if (comp?.principalBankId) {
-        setBankId(comp.principalBankId);
-      } else if (banks.length > 0) {
-        setBankId(banks[0].id);
-      }
+    if (isOpen) {
+      setAmount('');
+      setBankId('');
       setDate(new Date().toISOString().slice(0, 10));
+      setResponsible('');
       setNotes('');
-      setError(null);
+      setErrors({});
     }
-  }, [debt, isOpen, companies, banks, getDebtCalculations]);
+  }, [isOpen]);
 
   if (!isOpen || !debt) return null;
 
   const calcs = getDebtCalculations(debt.id);
   const isAPagar = debt.type === 'a_pagar';
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const validate = () => {
+    const errs: Record<string, string> = {};
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Insira um valor de pagamento válido superior a zero.');
-      return;
-    }
-
-    if (numAmount > calcs.remainingAmount + 0.001) {
-      setError(
-        `O valor do pagamento não pode exceder o saldo restante da dívida (${formatCurrencyValue(
-          calcs.remainingAmount,
-          'Kz'
-        )}).`
-      );
-      return;
+    if (!amount.trim()) {
+      errs.amount = 'O montante do pagamento é obrigatório.';
+    } else if (isNaN(numAmount) || numAmount <= 0) {
+      errs.amount = 'Insira um valor numérico válido superior a zero.';
+    } else if (numAmount > calcs.remainingAmount + 0.001) {
+      errs.amount = `O valor não pode exceder o saldo restante da dívida (${formatCurrencyValue(
+        calcs.remainingAmount,
+        'Kz'
+      )}).`;
     }
 
     if (!bankId) {
-      setError('Selecione a conta financeira envolvida na transação.');
-      return;
+      errs.bankId = 'Selecione a conta financeira envolvida na transação.';
     }
 
-    try {
-      recordDebtPayment({
-        debtId: debt.id,
-        amount: numAmount,
-        bankId,
-        date: new Date(date).toISOString(),
-        responsible: responsible.trim() || 'Administrador',
-        notes: notes.trim() || undefined,
-      });
-
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Erro ao registrar pagamento.');
+    if (!date) {
+      errs.date = 'A data da operação é obrigatória.';
     }
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const numAmount = parseFloat(amount);
+
+    recordDebtPayment({
+      debtId: debt.id,
+      amount: numAmount,
+      bankId,
+      date: new Date(date).toISOString(),
+      responsible: responsible.trim() || 'Administrador',
+      notes: notes.trim() || undefined,
+    });
+
+    onClose();
   };
 
   return (
@@ -125,13 +123,6 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-lg flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
           {/* Resumo da Dívida */}
           <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/80 rounded-xl space-y-2 text-xs">
             <div className="flex justify-between items-center">
@@ -142,19 +133,19 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
               <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
                 <span className="text-[10px] uppercase text-slate-400 dark:text-slate-500 block font-sans">Total</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  {formatCurrencyValue(debt.totalAmount, 'Kz')}
+                  {formatCurrencyValue(debt.totalAmount, debt.currency || 'Kz')}
                 </span>
               </div>
               <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
                 <span className="text-[10px] uppercase text-slate-400 dark:text-slate-500 block font-sans">Já Pago</span>
                 <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-xs">
-                  {formatCurrencyValue(calcs.paidAmount, 'Kz')}
+                  {formatCurrencyValue(calcs.paidAmount, debt.currency || 'Kz')}
                 </span>
               </div>
               <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-700/60">
                 <span className="text-[10px] uppercase text-slate-400 dark:text-slate-500 block font-sans">Restante</span>
                 <span className="font-bold text-rose-600 dark:text-rose-400 text-xs">
-                  {formatCurrencyValue(calcs.remainingAmount, 'Kz')}
+                  {formatCurrencyValue(calcs.remainingAmount, debt.currency || 'Kz')}
                 </span>
               </div>
             </div>
@@ -174,21 +165,36 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                   max={calcs.remainingAmount}
                   id="input-debt-payment-amount"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (errors.amount) setErrors((prev) => ({ ...prev, amount: '' }));
+                  }}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 font-mono"
-                  required
+                  className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-mono ${
+                    errors.amount
+                      ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                  }`}
                 />
                 <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                  Kz
+                  {debt.currency || 'Kz'}
                 </span>
               </div>
+              {errors.amount && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.amount}</span>
+                </p>
+              )}
               <button
                 type="button"
-                onClick={() => setAmount(String(calcs.remainingAmount))}
+                onClick={() => {
+                  setAmount(String(calcs.remainingAmount));
+                  if (errors.amount) setErrors((prev) => ({ ...prev, amount: '' }));
+                }}
                 className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium mt-1 inline-block cursor-pointer"
               >
-                Preencher valor total restante
+                Preencher total restante ({formatCurrencyValue(calcs.remainingAmount, debt.currency || 'Kz')})
               </button>
             </div>
 
@@ -199,16 +205,29 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
               <select
                 id="select-debt-payment-bank"
                 value={bankId}
-                onChange={(e) => setBankId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                required
+                onChange={(e) => {
+                  setBankId(e.target.value);
+                  if (errors.bankId) setErrors((prev) => ({ ...prev, bankId: '' }));
+                }}
+                className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                  errors.bankId
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                }`}
               >
+                <option value="">Selecionar Conta Bancária...</option>
                 {banks.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name} ({b.currency})
                   </option>
                 ))}
               </select>
+              {errors.bankId && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.bankId}</span>
+                </p>
+              )}
               <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                 {isAPagar ? 'O saldo sairá desta conta' : 'O valor entrará nesta conta'}
               </span>
@@ -225,10 +244,22 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                 type="date"
                 id="input-debt-payment-date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-                required
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  if (errors.date) setErrors((prev) => ({ ...prev, date: '' }));
+                }}
+                className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 ${
+                  errors.date
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                }`}
               />
+              {errors.date && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.date}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -240,7 +271,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
                 id="input-debt-payment-responsible"
                 value={responsible}
                 onChange={(e) => setResponsible(e.target.value)}
-                placeholder="Administrador"
+                placeholder="Ex: Administrador"
                 className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
               />
             </div>

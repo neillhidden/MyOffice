@@ -2233,26 +2233,26 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
             )}
 
             {/* ========================================================================= */}
-            {/* STEP 3: CONFIGURAÇÃO DE ESTOQUE (SELEÇÃO MÚLTIPLA POR EMPRESA & LIMITES)  */}
+            {/* STEP 3: CONFIGURAÇÃO DE ARMAZÉM (SELEÇÃO MÚLTIPLA POR EMPRESA & LIMITES)  */}
             {/* ========================================================================= */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 {/* Audit & Compliance Banner */}
-                <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="p-4 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 rounded-xl text-xs text-blue-900 dark:text-blue-300 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                    <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="font-semibold text-blue-950">
+                      <h4 className="font-semibold text-blue-950 dark:text-blue-100">
                         Vínculo de Armazéns e Regra de Integridade MyOffice
                       </h4>
-                      <p className="text-[11px] text-blue-800 leading-relaxed">
+                      <p className="text-[11px] text-blue-800 dark:text-blue-300 leading-relaxed">
                         Selecione os armazéns onde este artigo estará disponível e configure os limites de reposição e localização física individualmente.
-                        Para manter a integridade contábil e fiscal, a quantidade física em estoque é inserida exclusivamente através de <strong>Movimentações de Entrada</strong>.
+                        Para manter a integridade contabilística e fiscal, a quantidade física em stock é inserida exclusivamente através de <strong>Movimentações de Entrada</strong>.
                       </p>
                     </div>
                   </div>
-                  <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-100/80 text-blue-950 rounded-lg text-xs font-semibold border border-blue-200 self-start sm:self-auto">
-                    <Warehouse className="w-3.5 h-3.5 text-blue-700" />
+                  <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-100/80 dark:bg-blue-900/60 text-blue-950 dark:text-blue-200 rounded-lg text-xs font-semibold border border-blue-200 dark:border-blue-700 self-start sm:self-auto">
+                    <Warehouse className="w-3.5 h-3.5 text-blue-700 dark:text-blue-300" />
                     <span>
                       {selectedWarehouseIds.length} {selectedWarehouseIds.length === 1 ? 'armazém vinculado' : 'armazéns vinculados'}
                     </span>
@@ -2261,13 +2261,13 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                 {/* Mensagem de Bloqueio de Desvinculação com Estoque > 0 */}
                 {warehouseBlockError && (
-                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 flex items-start gap-3 shadow-xs animate-in fade-in">
-                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-900 dark:text-rose-300 flex items-start gap-3 shadow-xs animate-in fade-in">
+                    <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <h4 className="font-bold text-rose-950">
+                      <h4 className="font-bold text-rose-950 dark:text-rose-100">
                         Não é possível desvincular este armazém
                       </h4>
-                      <p className="text-[11px] text-rose-800 leading-relaxed font-medium">
+                      <p className="text-[11px] text-rose-800 dark:text-rose-300 leading-relaxed font-medium">
                         {warehouseBlockError}
                       </p>
                     </div>
@@ -2276,8 +2276,8 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                 {/* Mensagem de Erro de Validação (Ex: nenhum armazém selecionado) */}
                 {validationError && (
-                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-900 dark:text-amber-300 flex items-center gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>{validationError}</span>
                   </div>
                 )}
@@ -2291,24 +2291,24 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     return (
                       <div
                         key={company.id}
-                        className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4"
+                        className="bg-white dark:bg-slate-805 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4"
                       >
                         {/* Header da Empresa */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold">
                               <Building className="w-4 h-4" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h4 className="text-xs font-bold text-slate-900">
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
                                   {company.name}
                                 </h4>
-                                <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-medium">
+                                <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full font-medium">
                                   {compSelectedCount} de {compWarehouses.length} {compWarehouses.length === 1 ? 'armazém vinculado' : 'armazéns vinculados'}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-slate-400">
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500">
                                 Marque os armazéns desta empresa onde o artigo estará disponível
                               </p>
                             </div>
@@ -2319,7 +2319,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleSelectAllInCompany(company.id)}
-                                className="px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                                className="px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors cursor-pointer"
                               >
                                 Marcar todos
                               </button>
@@ -2327,7 +2327,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleDeselectAllInCompany(company.id)}
-                                className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                                className="px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                               >
                                 Desmarcar todos
                               </button>
@@ -2353,8 +2353,8 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                 key={wh.id}
                                 className={`rounded-xl border transition-all ${
                                   isSelected
-                                    ? 'bg-slate-50/60 border-slate-300 shadow-2xs'
-                                    : 'bg-white border-slate-200/80 hover:border-slate-300'
+                                    ? 'bg-slate-50/60 dark:bg-slate-800/80 border-slate-300 dark:border-slate-600 shadow-2xs'
+                                    : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                                 }`}
                               >
                                 {/* Linha do Armazém com Checkbox */}
@@ -2366,8 +2366,8 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                     <div
                                       className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
                                         isSelected
-                                          ? 'bg-slate-900 border-slate-900 text-white'
-                                          : 'border-slate-300 bg-white hover:border-slate-400'
+                                          ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-900'
+                                          : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-slate-400'
                                       }`}
                                     >
                                       {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -2375,17 +2375,17 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-slate-800 truncate">
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                                           {wh.name}
                                         </span>
                                         {wh.code && (
-                                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-200/70 text-slate-600 font-mono rounded">
+                                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono rounded">
                                             {wh.code}
                                           </span>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
-                                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                        <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
                                         <span>{wh.address}</span>
                                       </div>
                                     </div>
@@ -2393,15 +2393,15 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                                   <div className="flex items-center gap-2 shrink-0">
                                     {productToEdit && currentStock > 0 && (
-                                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold rounded-md">
-                                        Estoque: {currentStock} un
+                                      <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-semibold rounded-md">
+                                        Stock: {currentStock} un
                                       </span>
                                     )}
                                     <span
                                       className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
                                         isSelected
-                                          ? 'bg-blue-50 text-blue-700 font-semibold'
-                                          : 'bg-slate-100 text-slate-500'
+                                          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold'
+                                          : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                                       }`}
                                     >
                                       {isSelected ? 'Vinculado' : 'Não vinculado'}
@@ -2411,15 +2411,16 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                                 {/* Configuração de Limites quando o armazém está selecionado */}
                                 {isSelected && (
-                                  <div className="px-4 pb-4 pt-1 border-t border-slate-200/70 bg-white/70 rounded-b-xl">
+                                  <div className="px-4 pb-4 pt-1 border-t border-slate-200/70 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 rounded-b-xl">
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
                                       <div>
-                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                        <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                           Limite Mínimo (Alerta)
                                         </label>
                                         <input
                                           type="number"
                                           min="0"
+                                          aria-label={`Limite Mínimo para ${wh.name}`}
                                           value={cfg.minLimit}
                                           onChange={(e) =>
                                             handleUpdateWarehouseConfig(
@@ -2429,20 +2430,21 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                             )
                                           }
                                           placeholder="10"
-                                          className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800"
+                                          className="w-full px-3 py-1.5 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
                                         />
-                                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
                                           Alerta de reposição
                                         </span>
                                       </div>
 
                                       <div>
-                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                        <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                           Limite Máximo
                                         </label>
                                         <input
                                           type="number"
                                           min="0"
+                                          aria-label={`Limite Máximo para ${wh.name}`}
                                           value={cfg.maxLimit}
                                           onChange={(e) =>
                                             handleUpdateWarehouseConfig(
@@ -2452,19 +2454,20 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                             )
                                           }
                                           placeholder="100"
-                                          className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg text-slate-800"
+                                          className="w-full px-3 py-1.5 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
                                         />
-                                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
                                           Capacidade recomendada
                                         </span>
                                       </div>
 
                                       <div>
-                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                        <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                           Localização Física
                                         </label>
                                         <input
                                           type="text"
+                                          aria-label={`Localização Física em ${wh.name}`}
                                           value={cfg.physicalLocation}
                                           onChange={(e) =>
                                             handleUpdateWarehouseConfig(
@@ -2474,9 +2477,9 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                                             )
                                           }
                                           placeholder="Ex: Corredor A • Prateleira 3"
-                                          className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400"
+                                          className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                         />
-                                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
                                           Prateleira / gaveta / estante
                                         </span>
                                       </div>
@@ -2495,47 +2498,47 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
             )}
 
             {/* ========================================================================= */}
-            {/* STEP 4: SUCESSO & RESUMO DO PRODUTO CADASTRADO / EDITADO                  */}
+            {/* STEP 4: SUCESSO & RESUMO DO PRODUTO REGISTADO / EDITADO                  */}
             {/* ========================================================================= */}
             {currentStep === 4 && createdProductResult && (
               <div className="py-6 text-center space-y-6 flex flex-col items-center justify-center h-full min-h-[440px]">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
 
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                     {productToEdit
                       ? 'Produto Atualizado com Sucesso!'
-                      : 'Produto Cadastrado com Sucesso!'}
+                      : 'Produto Registado com Sucesso!'}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
                     {productToEdit
-                      ? 'As informações do catálogo e regras de limites foram salvas.'
-                      : 'O item está ativo no catálogo. Para adicionar quantidade ao estoque físico, registre uma movimentação de entrada.'}
+                      ? 'As informações do catálogo e regras de limites foram guardadas.'
+                      : 'O artigo está ativo no catálogo. Para adicionar quantidade ao stock físico, registe uma movimentação de entrada.'}
                   </p>
                 </div>
 
                 {/* Card Resumo do Produto */}
-                <div className="max-w-md mx-auto p-4 bg-slate-50 border border-slate-200/80 rounded-2xl text-left flex items-start gap-4">
+                <div className="max-w-md mx-auto p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-2xl text-left flex items-start gap-4">
                   <img
                     src={createdProductResult.mainImage}
                     alt={createdProductResult.name}
-                    className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                    className="w-16 h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                   />
                   <div className="space-y-1 min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                       {createdProductResult.name}
                     </h4>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       SKU: <span className="font-mono">{createdProductResult.sku}</span> •{' '}
                       {createdProductResult.category}
                     </p>
                     <div className="flex items-center gap-2 pt-1 text-xs">
-                      <span className="font-mono font-semibold text-slate-900">
+                      <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
                         {formatKwanza(createdProductResult.salePrice)}
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium">
                         {createdProductResult.condition || 'Novo'}
                       </span>
                     </div>
@@ -2552,7 +2555,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                         onViewProduct(createdProductResult.id);
                         onClose();
                       }}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                      className="px-4 py-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
                     >
                       Ver Detalhes do Produto
                     </button>
@@ -2569,7 +2572,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                         );
                         onClose();
                       }}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-xs inline-flex items-center gap-1.5"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
                     >
                       <ArrowLeftRight className="w-3.5 h-3.5" />
                       Criar Movimento
@@ -2581,9 +2584,9 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                       type="button"
                       id="btn-create-another-product"
                       onClick={handleResetForAnother}
-                      className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                      className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                     >
-                      Cadastrar Outro Produto
+                      Registar Outro Produto
                     </button>
                   )}
 
@@ -2591,7 +2594,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     type="button"
                     id="btn-finish-modal"
                     onClick={onClose}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                   >
                     Concluir e Fechar
                   </button>
@@ -2602,27 +2605,27 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
           {/* Modal Bottom Footer (Navigation & Actions) */}
           {currentStep !== 4 && (
-            <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+            <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between shrink-0">
               {/* Left action: Cancel only (no duplicate save button) */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   id="btn-cancel-modal"
                   onClick={handleAttemptClose}
-                  className="px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                  className="px-3.5 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
               </div>
 
-              {/* Right actions: Voltar / Avançar / Salvar */}
+              {/* Right actions: Voltar / Avançar / Guardar */}
               <div className="flex items-center gap-2">
                 {currentStep > 1 && (
                   <button
                     type="button"
                     id="btn-wizard-prev"
                     onClick={() => setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3)}
-                    className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium transition-colors"
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                     <span>Voltar</span>
@@ -2648,7 +2651,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     type="button"
                     id="btn-wizard-next-step1"
                     onClick={handleProceedFromStep1}
-                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
                   >
                     <span>Avançar para Variações</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -2660,9 +2663,9 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     type="button"
                     id="btn-wizard-next-step2"
                     onClick={handleProceedFromStep2}
-                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
                   >
-                    <span>Avançar para Estoque</span>
+                    <span>Avançar para Armazém</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -2672,10 +2675,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     type="button"
                     id="btn-wizard-finish"
                     onClick={handleFinalSubmit}
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-semibold transition-colors shadow-xs cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{productToEdit ? 'Salvar Alterações' : 'Finalizar Cadastro'}</span>
+                    <span>{productToEdit ? 'Guardar Alterações' : 'Finalizar Registo'}</span>
                   </button>
                 )}
               </div>
@@ -2689,17 +2692,17 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       {/* ========================================================================= */}
       {showCloseConfirmation && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <FileEdit className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Deseja guardar o cadastro como rascunho?
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Deseja guardar o registo como rascunho?
                 </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Existem informações alteradas no formulário. Pode continuar editando, guardar o
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  Existem informações alteradas no formulário. Pode continuar a editar, guardar o
                   rascunho para retomar mais tarde ou sair sem guardar.
                 </p>
               </div>
@@ -2710,7 +2713,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-dialog-continue-editing"
                 onClick={() => setShowCloseConfirmation(false)}
-                className="w-full sm:w-auto px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                className="w-full sm:w-auto px-3.5 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
               >
                 Continuar
               </button>
@@ -2719,7 +2722,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-dialog-save-draft"
                 onClick={handleSaveFromHeader}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-semibold rounded-lg transition-colors shadow-xs cursor-pointer"
               >
                 {productToEdit ? (
                   <Save className="w-3.5 h-3.5" />
@@ -2733,7 +2736,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-dialog-discard"
                 onClick={handleDiscardAndClose}
-                className="w-full sm:w-auto px-3.5 py-1.5 text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg font-medium transition-colors"
+                className="w-full sm:w-auto px-3.5 py-1.5 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg font-medium transition-colors cursor-pointer"
               >
                 Sair
               </button>
@@ -2747,16 +2750,16 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       {/* ========================================================================= */}
       {showMarginWarningModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   {priceWarningDetails.title || 'Aviso de Preço'}
                 </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   {priceWarningDetails.message}
                 </p>
               </div>
@@ -2767,7 +2770,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-correct-prices"
                 onClick={() => setShowMarginWarningModal(false)}
-                className="px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                className="px-3.5 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
               >
                 Corrigir Preços
               </button>
@@ -2778,7 +2781,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   setShowMarginWarningModal(false);
                   setCurrentStep((priceWarningDetails.targetStep as 1 | 2 | 3) || 2);
                 }}
-                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition-colors"
+                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
               >
                 Ignorar e Avançar
               </button>
@@ -2792,53 +2795,53 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       {/* ========================================================================= */}
       {duplicateNameWarningProduct && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
             <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                     Aviso de Produto Duplicado
                   </h3>
                   {currentCompany && (
-                    <span className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">
                       {currentCompany.name}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed font-normal">
-                  Já existe um produto chamado <strong className="text-slate-900 font-semibold">'{duplicateNameWarningProduct.name}'</strong> cadastrado. Tens a certeza de que queres criar um novo produto, ou talvez devesses adicionar uma variação ao produto já existente?
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed font-normal">
+                  Já existe um produto chamado <strong className="text-slate-900 dark:text-slate-100 font-semibold">'{duplicateNameWarningProduct.name}'</strong> registado. Tem a certeza de que deseja criar um novo produto, ou adicionar uma variação ao produto já existente?
                 </p>
               </div>
             </div>
 
             {/* Preview do Produto Existente */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center gap-3">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl flex items-center gap-3">
               <img
                 src={duplicateNameWarningProduct.mainImage}
                 alt={duplicateNameWarningProduct.name}
-                className="w-12 h-12 rounded-lg object-cover bg-white border border-slate-200 shrink-0"
+                className="w-12 h-12 rounded-lg object-cover bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
                 referrerPolicy="no-referrer"
               />
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-semibold text-slate-800 truncate">
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                   {duplicateNameWarningProduct.name}
                 </h4>
-                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
-                  <span>SKU: <strong className="font-mono text-slate-700">{duplicateNameWarningProduct.sku}</strong></span>
+                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>SKU: <strong className="font-mono text-slate-700 dark:text-slate-300">{duplicateNameWarningProduct.sku}</strong></span>
                   <span>•</span>
                   <span>{duplicateNameWarningProduct.category}</span>
                   {duplicateNameWarningProduct.variations && duplicateNameWarningProduct.variations.length > 0 && (
                     <>
                       <span>•</span>
-                      <span className="text-indigo-600 font-medium">{duplicateNameWarningProduct.variations.length} variações</span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-medium">{duplicateNameWarningProduct.variations.length} variações</span>
                     </>
                   )}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Preço: <span className="font-semibold text-slate-800 font-mono">{formatKwanza(duplicateNameWarningProduct.salePrice)}</span>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Preço: <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">{formatKwanza(duplicateNameWarningProduct.salePrice)}</span>
                 </div>
               </div>
             </div>
@@ -2849,7 +2852,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-cancel-duplicate-warning"
                 onClick={handleCancelDuplicateNameWarning}
-                className="w-full sm:w-auto px-3.5 py-2 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                className="w-full sm:w-auto px-3.5 py-2 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
               >
                 Voltar e alterar nome
               </button>
@@ -2858,7 +2861,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-view-existing-product"
                 onClick={handleViewExistingProduct}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg transition-colors shadow-xs cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium rounded-lg transition-colors shadow-xs cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Ver produto existente</span>
@@ -2868,7 +2871,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 type="button"
                 id="btn-continue-duplicate-name"
                 onClick={handleContinueWithDuplicateName}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Continuar mesmo assim</span>
@@ -2883,28 +2886,29 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       {/* ========================================================================= */}
       {showNewCategoryModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-900">Adicionar Nova Categoria</h4>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Adicionar Nova Categoria</h4>
             <input
               type="text"
+              aria-label="Nome da Nova Categoria"
               value={newCategoryInput}
               onChange={(e) => setNewCategoryInput(e.target.value)}
               placeholder="Ex: Livros, Ferramentas, Bebidas..."
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               autoFocus
             />
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setShowNewCategoryModal(false)}
-                className="px-3 py-1.5 text-xs text-slate-600 font-medium"
+                className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleCreateNewCategory}
-                className="px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium"
+                className="px-3.5 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium cursor-pointer"
               >
                 Adicionar Categoria
               </button>
@@ -2918,46 +2922,49 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       {/* ========================================================================= */}
       {showNewSupplierModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-900">Cadastrar Fornecedor</h4>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Registar Fornecedor</h4>
             <div className="space-y-2">
               <input
                 type="text"
+                aria-label="Nome da Empresa ou Fornecedor"
                 value={newSupplierName}
                 onChange={(e) => setNewSupplierName(e.target.value)}
                 placeholder="Nome da Empresa / Fornecedor *"
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 autoFocus
               />
               <input
                 type="text"
+                aria-label="Contacto do Fornecedor"
                 value={newSupplierContact}
                 onChange={(e) => setNewSupplierContact(e.target.value)}
-                placeholder="Contato (Telefone / Email)"
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+                placeholder="Contacto (Telefone / Email)"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
               <input
                 type="text"
+                aria-label="Localização ou Província do Fornecedor"
                 value={newSupplierAddress}
                 onChange={(e) => setNewSupplierAddress(e.target.value)}
                 placeholder="Localização / Província (ex: Luanda - Viana)"
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setShowNewSupplierModal(false)}
-                className="px-3 py-1.5 text-xs text-slate-600 font-medium"
+                className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleCreateNewSupplier}
-                className="px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-medium"
+                className="px-3.5 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium cursor-pointer"
               >
-                Salvar Fornecedor
+                Guardar Fornecedor
               </button>
             </div>
           </div>

@@ -263,6 +263,7 @@ export interface Bank {
   accountNumber?: string;
   iban?: string;
   status: BankStatus;
+  companyId?: string; // Empresa vinculada
   notes?: string;
   createdAt: string; // ISO
   updatedAt: string; // ISO
@@ -330,6 +331,17 @@ export interface DebtPayment {
   movementId?: string; // ID da movimentação financeira gerada
 }
 
+export interface DebtIncrement {
+  id: string;
+  debtId: string;
+  amount: number;
+  date: string; // ISO
+  reason: string; // Motivo/justificativa do acréscimo rastreável
+  reference?: string; // e.g. "Fatura Proforma #502", "Nova Encomenda"
+  responsible?: string;
+  createdAt: string; // ISO
+}
+
 export interface Debt {
   id: string;
   type: DebtType;
@@ -338,10 +350,12 @@ export interface Debt {
   counterpartyName: string;
   companyId: string; // Relação com Empresa
   totalAmount: number;
+  initialAmount?: number; // Montante original antes de acréscimos
   currency?: string; // Padrão 'Kz'
   createdAt: string; // ISO
   dueDate?: string; // Data de vencimento opcional
   notes?: string;
+  increments?: DebtIncrement[]; // Histórico rastreável de incrementos/acréscimos
 }
 
 // ==========================================

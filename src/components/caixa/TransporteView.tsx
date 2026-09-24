@@ -23,7 +23,7 @@ interface TransporteViewProps {
 }
 
 export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceipt }) => {
-  const { transports, sales, warehouses, companies, updateTransport } = useStock();
+  const { transports, sales, warehouses, companies, isCompanyDisabled, updateTransport } = useStock();
 
   // Search & Filter state
   const [search, setSearch] = useState<string>('');
@@ -33,6 +33,17 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
   const [selectedTransport, setSelectedTransport] = useState<Transport | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
+  // Visible transports: excludes transports associated with disabled companies
+  const visibleTransports = useMemo(() => {
+    return transports.filter((t) => {
+      const sale = sales.find((s) => s.id === t.saleId);
+      const wh = warehouses.find((w) => w.id === sale?.warehouseId);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      if (comp && isCompanyDisabled(comp.id)) return false;
+      return true;
+    });
+  }, [transports, sales, warehouses, companies, isCompanyDisabled]);
+
   // Status metrics
   const metrics = useMemo(() => {
     let pending = 0;
@@ -40,7 +51,7 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
     let delivered = 0;
     let totalCost = 0;
 
-    transports.forEach((t) => {
+    visibleTransports.forEach((t) => {
       if (t.status === 'pendente') pending++;
       else if (t.status === 'em_transito') inTransit++;
       else if (t.status === 'entregue') delivered++;
@@ -48,17 +59,17 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
     });
 
     return {
-      total: transports.length,
+      total: visibleTransports.length,
       pending,
       inTransit,
       delivered,
       totalCost,
     };
-  }, [transports]);
+  }, [visibleTransports]);
 
   // Filtered transports sorted by creation desc
   const filteredTransports = useMemo(() => {
-    return transports
+    return visibleTransports
       .filter((t) => {
         if (statusFilter !== 'todos' && t.status !== statusFilter) return false;
         if (search.trim()) {
@@ -74,7 +85,7 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [transports, statusFilter, search]);
+  }, [visibleTransports, statusFilter, search]);
 
   const handleQuickAdvanceStatus = (transport: Transport) => {
     if (transport.status === 'pendente') {

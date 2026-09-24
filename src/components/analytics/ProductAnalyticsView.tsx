@@ -19,22 +19,48 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
   onSelectProduct,
   onGoToPurchaseList,
 }) => {
-  const { products, movements, getProductStockInfo, getCurrentStock } = useStock();
+  const { products, movements, warehouses, companies, isCompanyDisabled, getProductStockInfo, getCurrentStock } = useStock();
 
   const [deadStockPeriodDays, setDeadStockPeriodDays] = useState<number>(60);
   const [activeTab, setActiveTab] = useState<'ranking' | 'parados' | 'reposicao' | 'margens'>('ranking');
+
+  // Filter out products and movements belonging solely to disabled companies (e.g. Kianda)
+  const visibleProducts = useMemo(() => {
+    return products.filter((p) => {
+      // Find warehouses associated with this product's movements or stock
+      const prodMovements = movements.filter((m) => m.productId === p.id);
+      if (prodMovements.length > 0) {
+        // If all associated warehouses belong to disabled companies, exclude the product
+        const hasNonDisabledMovement = prodMovements.some((m) => {
+          const wh = warehouses.find((w) => w.id === m.warehouseId);
+          const comp = companies.find((c) => c.id === wh?.companyId);
+          return comp ? !isCompanyDisabled(comp.id) : true;
+        });
+        if (!hasNonDisabledMovement) return false;
+      }
+      return true;
+    });
+  }, [products, movements, warehouses, companies, isCompanyDisabled]);
+
+  const visibleMovements = useMemo(() => {
+    return movements.filter((m) => {
+      const wh = warehouses.find((w) => w.id === m.warehouseId);
+      const comp = companies.find((c) => c.id === wh?.companyId);
+      return comp ? !isCompanyDisabled(comp.id) : true;
+    });
+  }, [movements, warehouses, companies, isCompanyDisabled]);
 
   // 1. Calculate sales per product (movements of type 'saida')
   const salesAnalysis = useMemo(() => {
     const map = new Map<string, { totalQtySold: number; totalRevenueKz: number; totalProfitKz: number }>();
 
-    products.forEach((p) => {
+    visibleProducts.forEach((p) => {
       map.set(p.id, { totalQtySold: 0, totalRevenueKz: 0, totalProfitKz: 0 });
     });
 
-    movements.forEach((m) => {
+    visibleMovements.forEach((m) => {
       if (m.type === 'saida') {
-        const p = products.find((prod) => prod.id === m.productId);
+        const p = visibleProducts.find((prod) => prod.id === m.productId);
         if (p) {
           const current = map.get(p.id) || { totalQtySold: 0, totalRevenueKz: 0, totalProfitKz: 0 };
           const qty = m.quantity;
@@ -50,7 +76,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       }
     });
 
-    const list = products.map((p) => {
+    const list = visibleProducts.map((p) => {
       const stats = map.get(p.id) || { totalQtySold: 0, totalRevenueKz: 0, totalProfitKz: 0 };
       const currentStock = getCurrentStock(p.id);
       const marginPercent = p.salePrice > 0 ? ((p.salePrice - p.costPrice) / p.salePrice) * 100 : 0;
@@ -77,16 +103,16 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       byRevenueDesc,
       leastSelling,
     };
-  }, [products, movements, getCurrentStock]);
+  }, [visibleProducts, visibleMovements, getCurrentStock]);
 
   // 2. Produtos "Parados" (sem saídas nos últimos X dias)
   const deadStock = useMemo(() => {
     const thresholdDate = new Date();
     thresholdDate.setDate(thresholdDate.getDate() - deadStockPeriodDays);
 
-    return products
+    return visibleProducts
       .map((p) => {
-        const recentExitMovements = movements.filter(
+        const recentExitMovements = visibleMovements.filter(
           (m) =>
             m.productId === p.id &&
             m.type === 'saida' &&
@@ -105,13 +131,13 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       })
       .filter((item) => item.exitCountInPeriod === 0 && item.currentStock > 0)
       .sort((a, b) => b.capitalTiedUp - a.capitalTiedUp);
-  }, [products, movements, deadStockPeriodDays, getCurrentStock]);
+  }, [visibleProducts, visibleMovements, deadStockPeriodDays, getCurrentStock]);
 
   const totalDeadStockCapital = deadStock.reduce((sum, item) => sum + item.capitalTiedUp, 0);
 
   // 3. Produtos abaixo do limite mínimo (Prioridade de Reposição)
   const replenishmentList = useMemo(() => {
-    return products
+    return visibleProducts
       .map((p) => {
         const info = getProductStockInfo(p.id);
         const deficit = Math.max(0, info.minLimit - info.currentStock);
@@ -128,7 +154,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       })
       .filter((item) => item.status === 'critico_baixo' || item.status === 'zerado')
       .sort((a, b) => b.deficit - a.deficit);
-  }, [products, getProductStockInfo]);
+  }, [visibleProducts, getProductStockInfo]);
 
   // 4. Margens de Lucro
   const marginRankings = useMemo(() => {
@@ -141,14 +167,14 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
     let totalSaidas = 0;
     let totalDefeituosos = 0;
 
-    movements.forEach((m) => {
+    visibleMovements.forEach((m) => {
       if (m.type === 'entrada') totalEntradas += m.quantity;
       if (m.type === 'saida') totalSaidas += m.quantity;
       if (m.type === 'defeituoso') totalDefeituosos += m.quantity;
     });
 
     return { totalEntradas, totalSaidas, totalDefeituosos };
-  }, [movements]);
+  }, [visibleMovements]);
 
   return (
     <div className="space-y-6">

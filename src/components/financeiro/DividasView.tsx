@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Building2,
+  PlusCircle,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Debt, DebtType } from '../../types/stock';
@@ -20,6 +21,7 @@ import { formatCurrencyValue, formatDate } from '../../utils/formatters';
 import { DebtModal } from './DebtModal';
 import { DebtPaymentModal } from './DebtPaymentModal';
 import { DebtLedgerModal } from './DebtLedgerModal';
+import { DebtIncrementModal } from './DebtIncrementModal';
 
 type DebtFilterTab = 'todas' | 'a_pagar' | 'a_receber' | 'vencidas';
 
@@ -38,6 +40,9 @@ export const DividasView: React.FC = () => {
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentTargetDebt, setPaymentTargetDebt] = useState<Debt | null>(null);
+
+  const [isIncrementModalOpen, setIsIncrementModalOpen] = useState(false);
+  const [incrementTargetDebt, setIncrementTargetDebt] = useState<Debt | null>(null);
 
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [ledgerTargetDebt, setLedgerTargetDebt] = useState<Debt | null>(null);
@@ -508,6 +513,20 @@ export const DividasView: React.FC = () => {
                             </button>
                           )}
 
+                          {/* Acrescentar Valor à Dívida (Rule 6) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIncrementTargetDebt(debt);
+                              setIsIncrementModalOpen(true);
+                            }}
+                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors cursor-pointer"
+                            title={isAPagar ? 'Acrescentar valor a pagar' : 'Acrescentar valor a receber'}
+                            aria-label={`Acrescentar valor à dívida de ${debt.counterpartyName}`}
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Ver Histórico de Pagamentos */}
                           <button
                             type="button"
@@ -516,7 +535,7 @@ export const DividasView: React.FC = () => {
                               setIsLedgerModalOpen(true);
                             }}
                             className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
-                            title="Histórico de pagamentos"
+                            title="Histórico e extrato"
                             aria-label={`Ver histórico de pagamentos de ${debt.counterpartyName}`}
                           >
                             <History className="w-3.5 h-3.5" />
@@ -629,6 +648,19 @@ export const DividasView: React.FC = () => {
           setPaymentTargetDebt(d);
           setIsPaymentModalOpen(true);
         }}
+        onOpenIncrement={(d) => {
+          setIncrementTargetDebt(d);
+          setIsIncrementModalOpen(true);
+        }}
+      />
+
+      <DebtIncrementModal
+        isOpen={isIncrementModalOpen}
+        onClose={() => {
+          setIsIncrementModalOpen(false);
+          setIncrementTargetDebt(null);
+        }}
+        debt={incrementTargetDebt}
       />
     </div>
   );

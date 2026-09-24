@@ -100,7 +100,13 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
         if (company?.status === 'desativada') return false;
 
         if (statusFilter !== 'todas' && sale.status !== statusFilter) return false;
-        if (paymentFilter !== 'todos' && sale.paymentMethod !== paymentFilter) return false;
+        if (paymentFilter !== 'todos') {
+          if (paymentFilter === 'tpa' || paymentFilter === 'multicaixa') {
+            if (sale.paymentMethod !== 'tpa' && sale.paymentMethod !== 'multicaixa') return false;
+          } else if (sale.paymentMethod !== paymentFilter) {
+            return false;
+          }
+        }
         if (search.trim()) {
           const q = search.toLowerCase();
           const matchId = sale.id.toLowerCase().includes(q);
@@ -147,7 +153,8 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
       case 'dinheiro':
         return <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[11px] font-medium border border-emerald-200">Numerário</span>;
       case 'tpa':
-        return <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded text-[11px] font-medium border border-sky-200">TPA / Multicaixa</span>;
+      case 'multicaixa':
+        return <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded text-[11px] font-medium border border-sky-200">Multicaixa</span>;
       case 'transferencia':
         return <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded text-[11px] font-medium border border-indigo-200">Transferência</span>;
       case 'a_prazo':
@@ -304,7 +311,7 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
           >
             <option value="todos">Todos os Pagamentos</option>
             <option value="dinheiro">Numerário</option>
-            <option value="tpa">TPA / Multicaixa</option>
+            <option value="tpa">Multicaixa</option>
             <option value="transferencia">Transferência</option>
             <option value="a_prazo">A Prazo</option>
           </select>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, ArrowLeftRight, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ArrowLeftRight, AlertCircle, PlusCircle, MinusCircle, SlidersHorizontal } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { BankMovementType, FinancialCategory } from '../../types/stock';
 import { formatCurrencyValue } from '../../utils/formatters';
@@ -29,74 +29,106 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
   onClose,
   preSelectedBankId,
 }) => {
-  const { banks, recordBankMovement, getBankBalance } = useStock();
+  const { banks, recordBankMovement, getBankBalance, getCompanyForBank, isBankOperationBlocked } = useStock();
 
-  const [bankId, setBankId] = useState<string>(preSelectedBankId || banks[0]?.id || '');
-  const [type, setType] = useState<BankMovementType>('entrada');
-  const [category, setCategory] = useState<FinancialCategory>('Outro');
+  // No pre-selection by default (Rule 1 & Rule 7)
+  const [type, setType] = useState<BankMovementType | ''>('');
+  const [bankId, setBankId] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [reference, setReference] = useState<string>('');
-  const [responsible, setResponsible] = useState<string>('Administrador');
-  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [error, setError] = useState<string | null>(null);
+  const [responsible, setResponsible] = useState<string>('');
+  const [date, setDate] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  React.useEffect(() => {
-    if (preSelectedBankId) {
-      setBankId(preSelectedBankId);
-    } else if (!bankId && banks.length > 0) {
-      setBankId(banks[0].id);
+  // Reset all fields clean whenever modal opens (Rule 7 & Rule 9)
+  useEffect(() => {
+    if (isOpen) {
+      setType('');
+      setBankId(preSelectedBankId || '');
+      setCategory('');
+      setAmount('');
+      setReason('');
+      setReference('');
+      setResponsible('');
+      setDate(new Date().toISOString().slice(0, 10));
+      setErrors({});
     }
-  }, [preSelectedBankId, isOpen, banks]);
+  }, [isOpen, preSelectedBankId]);
 
   if (!isOpen) return null;
 
   const currentBank = banks.find((b) => b.id === bankId);
   const currentBalance = currentBank ? getBankBalance(currentBank.id) : 0;
+  const currentBankBlock = isBankOperationBlocked(bankId);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const validate = () => {
+    const errs: Record<string, string> = {};
 
-    const numAmount = parseFloat(amount);
-
-    if (!bankId) {
-      setError('Selecione uma conta financeira válida.');
-      return;
+    if (!type) {
+      errs.type = 'Selecione o tipo de operação (Entrada, Saída ou Ajuste).';
     }
 
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Insira um montante válido maior que zero.');
-      return;
+    if (!bankId) {
+      errs.bankId = 'Selecione a conta bancária.';
+    } else {
+      const blockCheck = isBankOperationBlocked(bankId);
+      if (blockCheck.blocked) {
+        errs.bankId = blockCheck.message || 'Empresa parada — serviços indisponíveis.';
+      }
+    }
+
+    const numAmount = parseFloat(amount);
+    if (!amount.trim()) {
+      errs.amount = 'O montante é obrigatório.';
+    } else if (isNaN(numAmount) || numAmount <= 0) {
+      errs.amount = 'Insira um montante válido superior a zero.';
+    }
+
+    if (!category) {
+      errs.category = 'Selecione a categoria financeira.';
     }
 
     if (!reason.trim()) {
-      setError('O motivo ou justificativa é obrigatório para conformidade e auditoria.');
-      return;
+      errs.reason = 'O motivo ou justificativa é obrigatório para conformidade e auditoria.';
     }
 
-    if (type === 'saida' && numAmount > currentBalance) {
-      const confirmNegative = window.confirm(
-        `Atenção: O saldo atual da conta (${formatCurrencyValue(
-          currentBalance,
-          currentBank?.currency || 'Kz'
-        )}) é inferior ao valor do lançamento. Deseja registrar a saída mesmo com saldo negativo?`
-      );
-      if (!confirmNegative) return;
+    if (!date) {
+      errs.date = 'A data do lançamento é obrigatória.';
     }
 
-    recordBankMovement({
-      bankId,
-      type,
-      category,
-      amount: numAmount,
-      reason: reason.trim(),
-      reference: reference.trim() || undefined,
-      responsible: responsible.trim() || 'Administrador',
-      date: new Date(date).toISOString(),
-    });
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
-    onClose();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const numAmount = parseFloat(amount);
+
+    try {
+      if (type) {
+        recordBankMovement({
+          bankId,
+          type,
+          category: (category as FinancialCategory) || 'Outro',
+          amount: numAmount,
+          reason: reason.trim(),
+          reference: reference.trim() || undefined,
+          responsible: responsible.trim() || 'Administrador',
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      onClose();
+    } catch (err: any) {
+      setErrors((prev) => ({
+        ...prev,
+        bankId: err.message || 'Empresa parada — serviços indisponíveis.',
+      }));
+    }
   };
 
   return (
@@ -116,10 +148,10 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
             </div>
             <div>
               <h3 id="modal-lancamento-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Novo Lançamento Financeiro
+                Nova Movimentação
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Registo direto de entrada, saída ou ajuste em conta
+                Registo de entrada, saída ou ajuste de conciliação
               </p>
             </div>
           </div>
@@ -134,14 +166,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-lg flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Tipo de Lançamento */}
+          {/* Tipo de Operação (sem seleção prévia) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Tipo de Operação <span className="text-rose-500">*</span>
@@ -149,186 +174,280 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                id="btn-lancamento-tipo-entrada"
-                onClick={() => setType('entrada')}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
+                id="btn-op-entrada"
+                onClick={() => {
+                  setType('entrada');
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
+                }}
+                className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'entrada'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-600 dark:ring-emerald-500'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60'
                 }`}
               >
-                Entrada (+)
+                <PlusCircle className={`w-4 h-4 ${type === 'entrada' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span>Entrada</span>
               </button>
+
               <button
                 type="button"
-                id="btn-lancamento-tipo-saida"
-                onClick={() => setType('saida')}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
+                id="btn-op-saida"
+                onClick={() => {
+                  setType('saida');
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
+                }}
+                className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'saida'
-                    ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    ? 'border-rose-600 dark:border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 ring-1 ring-rose-600 dark:ring-rose-500'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60'
                 }`}
               >
-                Saída (-)
+                <MinusCircle className={`w-4 h-4 ${type === 'saida' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span>Saída</span>
               </button>
+
               <button
                 type="button"
-                id="btn-lancamento-tipo-ajuste"
-                onClick={() => setType('ajuste')}
-                className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
+                id="btn-op-ajuste"
+                onClick={() => {
+                  setType('ajuste');
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
+                }}
+                className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'ajuste'
-                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-600 text-slate-800 dark:text-slate-200 ring-1 ring-slate-400 dark:ring-slate-600'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    ? 'border-amber-600 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 ring-1 ring-amber-600 dark:ring-amber-500'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60'
                 }`}
               >
-                Ajuste
+                <SlidersHorizontal className={`w-4 h-4 ${type === 'ajuste' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span>Ajuste</span>
               </button>
             </div>
+            {errors.type && (
+              <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.type}</span>
+              </p>
+            )}
           </div>
 
-          {/* Conta e Categoria */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Conta Bancária */}
+          <div>
+            <label htmlFor="lanc-bank" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Conta Bancária <span className="text-rose-500">*</span>
+            </label>
+            <select
+              id="lanc-bank"
+              value={bankId}
+              onChange={(e) => {
+                setBankId(e.target.value);
+                if (errors.bankId) setErrors((prev) => ({ ...prev, bankId: '' }));
+              }}
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none transition-colors [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                errors.bankId
+                  ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                  : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+              }`}
+            >
+              <option value="">Selecione a conta bancária...</option>
+              {banks.map((b) => {
+                const comp = getCompanyForBank(b.id);
+                const isStopped = comp?.status === 'parada';
+                return (
+                  <option
+                    key={b.id}
+                    value={b.id}
+                    disabled={isStopped}
+                    className={isStopped ? 'text-slate-400 bg-slate-100 dark:bg-slate-800' : ''}
+                  >
+                    {b.name} ({b.currency}){isStopped ? ' — [PARADA - Serviços indisponíveis]' : ` • Saldo: ${formatCurrencyValue(getBankBalance(b.id), b.currency)}`}
+                  </option>
+                );
+              })}
+            </select>
+            {errors.bankId && (
+              <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.bankId}</span>
+              </p>
+            )}
+            {currentBankBlock.blocked && !errors.bankId && (
+              <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{currentBankBlock.message || 'Empresa parada — serviços indisponíveis.'}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Categoria e Valor */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="select-lancamento-conta" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Conta Financeira <span className="text-rose-500">*</span>
+              <label htmlFor="lanc-cat" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Categoria <span className="text-rose-500">*</span>
               </label>
               <select
-                id="select-lancamento-conta"
-                value={bankId}
-                onChange={(e) => setBankId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                id="lanc-cat"
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  if (errors.category) setErrors((prev) => ({ ...prev, category: '' }));
+                }}
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none transition-colors [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                  errors.category
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                }`}
               >
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.currency})
+                <option value="">Selecione a categoria...</option>
+                {FINANCIAL_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
                   </option>
                 ))}
               </select>
-              {currentBank && (
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
-                  Saldo: {formatCurrencyValue(currentBalance, currentBank.currency)}
-                </span>
+              {errors.category && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.category}</span>
+                </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="select-lancamento-categoria" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Categoria Financeira <span className="text-rose-500">*</span>
+              <label htmlFor="lanc-amount" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Montante ({currentBank?.currency || 'Kz'}) <span className="text-rose-500">*</span>
               </label>
-              <select
-                id="select-lancamento-categoria"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as FinancialCategory)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-              >
-                {FINANCIAL_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              <input
+                id="lanc-amount"
+                type="number"
+                step="any"
+                min="0.01"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  if (errors.amount) setErrors((prev) => ({ ...prev, amount: '' }));
+                }}
+                placeholder="Ex: 50000"
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none transition-colors ${
+                  errors.amount
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                }`}
+              />
+              {errors.amount && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.amount}</span>
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Valor e Data */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Motivo */}
+          <div>
+            <label htmlFor="lanc-reason" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Motivo ou Justificativa <span className="text-rose-500">*</span>
+            </label>
+            <input
+              id="lanc-reason"
+              type="text"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                if (errors.reason) setErrors((prev) => ({ ...prev, reason: '' }));
+              }}
+              placeholder="Ex: Pagamento mensal de eletricidade e água"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-colors ${
+                errors.reason
+                  ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                  : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+              }`}
+            />
+            {errors.reason && (
+              <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.reason}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Referência e Data */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="input-lancamento-valor" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Montante / Valor <span className="text-rose-500">*</span>
+              <label htmlFor="lanc-ref" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Referência / Recibo <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.01"
-                  id="input-lancamento-valor"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 font-mono"
-                  required
-                />
-                <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                  {currentBank?.currency || 'Kz'}
-                </span>
-              </div>
+              <input
+                id="lanc-ref"
+                type="text"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder="Ex: Fatura #1024"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
+              />
             </div>
 
             <div>
-              <label htmlFor="input-lancamento-data" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="lanc-date" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 Data do Lançamento <span className="text-rose-500">*</span>
               </label>
               <input
+                id="lanc-date"
                 type="date"
-                id="input-lancamento-data"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-                required
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  if (errors.date) setErrors((prev) => ({ ...prev, date: '' }));
+                }}
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none transition-colors ${
+                  errors.date
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                }`}
               />
+              {errors.date && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.date}</span>
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Responsável e Documento/Referência */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="input-lancamento-responsavel" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Responsável
-              </label>
-              <input
-                type="text"
-                id="input-lancamento-responsavel"
-                value={responsible}
-                onChange={(e) => setResponsible(e.target.value)}
-                placeholder="Administrador"
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="input-lancamento-referencia" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Documento / Referência
-              </label>
-              <input
-                type="text"
-                id="input-lancamento-referencia"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="Ex: Fatura #402, Recibo #12"
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-              />
-            </div>
-          </div>
-
-          {/* Motivo / Justificativa */}
+          {/* Responsável */}
           <div>
-            <label htmlFor="textarea-lancamento-motivo" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Motivo / Justificativa de Auditoria <span className="text-rose-500">*</span>
+            <label htmlFor="lanc-resp" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Responsável
             </label>
-            <textarea
-              id="textarea-lancamento-motivo"
-              rows={2}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Descreva a finalidade desta movimentação para registo contabilístico e de auditoria..."
-              className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-              required
+            <input
+              id="lanc-resp"
+              type="text"
+              value={responsible}
+              onChange={(e) => setResponsible(e.target.value)}
+              placeholder="Ex: Administrador"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
             />
           </div>
 
-          {/* Footer */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              id="btn-submit-lancamento"
-              className="px-5 py-2 text-xs font-medium bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
+              id="btn-confirm-lancamento"
+              disabled={currentBankBlock.blocked}
+              title={currentBankBlock.blocked ? currentBankBlock.message : undefined}
+              className={`px-5 py-2 text-xs font-medium rounded-xl shadow-xs transition-colors ${
+                currentBankBlock.blocked
+                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 cursor-pointer'
+              }`}
             >
               Confirmar Lançamento
             </button>

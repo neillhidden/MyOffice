@@ -352,7 +352,7 @@ export const FilterCheckboxDropdown: React.FC<FilterCheckboxDropdownProps> = ({
                       <div className="flex items-center justify-between gap-1">
                         <span
                           className={`truncate text-xs ${
-                            isDisabled ? 'text-slate-400 dark:text-slate-500 font-normal italic line-through decoration-slate-300 dark:decoration-slate-600' : 'text-slate-800 dark:text-slate-200 font-medium'
+                            isDisabled ? 'text-slate-400 dark:text-slate-500 font-normal' : 'text-slate-800 dark:text-slate-200 font-medium'
                           }`}
                         >
                           {option.label}

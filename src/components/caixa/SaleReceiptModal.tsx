@@ -33,7 +33,8 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
       case 'dinheiro':
         return 'Numerário / Dinheiro';
       case 'tpa':
-        return 'TPA / Cartão Multicaixa';
+      case 'multicaixa':
+        return 'Multicaixa';
       case 'transferencia':
         return 'Transferência Bancária';
       case 'a_prazo':

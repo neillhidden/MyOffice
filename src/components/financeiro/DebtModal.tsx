@@ -16,48 +16,41 @@ export const DebtModal: React.FC<DebtModalProps> = ({
 }) => {
   const { companies, suppliers, clients, employees, addDebt, updateDebt } = useStock();
 
-  const [type, setType] = useState<DebtType>(debtToEdit?.type || 'a_pagar');
-  const [counterpartyType, setCounterpartyType] = useState<CounterpartyType>(
-    debtToEdit?.counterpartyType || 'fornecedor'
-  );
-  const [counterpartyName, setCounterpartyName] = useState<string>(
-    debtToEdit?.counterpartyName || ''
-  );
-  const [counterpartyId, setCounterpartyId] = useState<string>(
-    debtToEdit?.counterpartyId || ''
-  );
-  const [companyId, setCompanyId] = useState<string>(
-    debtToEdit?.companyId || companies[0]?.id || ''
-  );
-  const [totalAmount, setTotalAmount] = useState<string>(
-    debtToEdit ? String(debtToEdit.totalAmount) : ''
-  );
-  const [dueDate, setDueDate] = useState<string>(debtToEdit?.dueDate || '');
-  const [notes, setNotes] = useState<string>(debtToEdit?.notes || '');
-  const [error, setError] = useState<string | null>(null);
+  // Rules 7 & 9: Modals open empty, nothing preselected by default
+  const [type, setType] = useState<DebtType | ''>('');
+  const [counterpartyType, setCounterpartyType] = useState<CounterpartyType | ''>('');
+  const [counterpartyName, setCounterpartyName] = useState<string>('');
+  const [counterpartyId, setCounterpartyId] = useState<string>('');
+  const [companyId, setCompanyId] = useState<string>('');
+  const [totalAmount, setTotalAmount] = useState<string>('');
+  const [dueDate, setDueDate] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (debtToEdit) {
-      setType(debtToEdit.type);
-      setCounterpartyType(debtToEdit.counterpartyType);
-      setCounterpartyName(debtToEdit.counterpartyName);
-      setCounterpartyId(debtToEdit.counterpartyId || '');
-      setCompanyId(debtToEdit.companyId);
-      setTotalAmount(String(debtToEdit.totalAmount));
-      setDueDate(debtToEdit.dueDate || '');
-      setNotes(debtToEdit.notes || '');
-    } else {
-      setType('a_pagar');
-      setCounterpartyType('fornecedor');
-      setCounterpartyName('');
-      setCounterpartyId('');
-      setCompanyId(companies[0]?.id || '');
-      setTotalAmount('');
-      setDueDate('');
-      setNotes('');
+    if (isOpen) {
+      if (debtToEdit) {
+        setType(debtToEdit.type);
+        setCounterpartyType(debtToEdit.counterpartyType);
+        setCounterpartyName(debtToEdit.counterpartyName);
+        setCounterpartyId(debtToEdit.counterpartyId || '');
+        setCompanyId(debtToEdit.companyId);
+        setTotalAmount(String(debtToEdit.totalAmount));
+        setDueDate(debtToEdit.dueDate || '');
+        setNotes(debtToEdit.notes || '');
+      } else {
+        setType('');
+        setCounterpartyType('');
+        setCounterpartyName('');
+        setCounterpartyId('');
+        setCompanyId('');
+        setTotalAmount('');
+        setDueDate('');
+        setNotes('');
+      }
+      setErrors({});
     }
-    setError(null);
-  }, [debtToEdit, isOpen, companies]);
+  }, [debtToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -80,32 +73,49 @@ export const DebtModal: React.FC<DebtModalProps> = ({
       const emp = employees.find((em) => em.id === val);
       if (emp) setCounterpartyName(emp.name);
     }
+    if (errors.counterpartyName) setErrors((prev) => ({ ...prev, counterpartyName: '' }));
+  };
+
+  const validate = () => {
+    const errs: Record<string, string> = {};
+
+    if (!type) {
+      errs.type = 'Selecione o tipo de dívida (A Pagar ou A Receber).';
+    }
+
+    if (!counterpartyType) {
+      errs.counterpartyType = 'Selecione o tipo de contraparte.';
+    }
+
+    if (!counterpartyName.trim()) {
+      errs.counterpartyName = 'O nome da entidade ou contraparte é obrigatório.';
+    }
+
+    if (!companyId) {
+      errs.companyId = 'Selecione a empresa associada.';
+    }
+
+    const numAmount = parseFloat(totalAmount);
+    if (!totalAmount.trim()) {
+      errs.totalAmount = 'O valor total da dívida é obrigatório.';
+    } else if (isNaN(numAmount) || numAmount <= 0) {
+      errs.totalAmount = 'Informe um valor numérico válido superior a zero.';
+    }
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    if (!validate()) return;
 
     const numAmount = parseFloat(totalAmount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Informe um valor válido superior a zero.');
-      return;
-    }
-
-    if (!counterpartyName.trim()) {
-      setError('Informe o nome da pessoa ou entidade contraparte.');
-      return;
-    }
-
-    if (!companyId) {
-      setError('Selecione a empresa associada a esta dívida.');
-      return;
-    }
 
     if (debtToEdit) {
       updateDebt(debtToEdit.id, {
-        type,
-        counterpartyType,
+        type: type as DebtType,
+        counterpartyType: counterpartyType as CounterpartyType,
         counterpartyName: counterpartyName.trim(),
         counterpartyId: counterpartyId || undefined,
         companyId,
@@ -115,8 +125,8 @@ export const DebtModal: React.FC<DebtModalProps> = ({
       });
     } else {
       addDebt({
-        type,
-        counterpartyType,
+        type: type as DebtType,
+        counterpartyType: counterpartyType as CounterpartyType,
         counterpartyName: counterpartyName.trim(),
         counterpartyId: counterpartyId || undefined,
         companyId,
@@ -165,14 +175,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-lg flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Tipo de Dívida */}
+          {/* Tipo de Dívida (Sem seleção prévia quando novo) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Tipo de Dívida <span className="text-rose-500">*</span>
@@ -183,7 +186,8 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 id="btn-debt-type-a-pagar"
                 onClick={() => {
                   setType('a_pagar');
-                  if (counterpartyType === 'cliente') setCounterpartyType('fornecedor');
+                  if (!counterpartyType) setCounterpartyType('fornecedor');
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
                 }}
                 className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'a_pagar'
@@ -198,7 +202,8 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 id="btn-debt-type-a-receber"
                 onClick={() => {
                   setType('a_receber');
-                  if (counterpartyType === 'fornecedor') setCounterpartyType('cliente');
+                  if (!counterpartyType) setCounterpartyType('cliente');
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
                 }}
                 className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   type === 'a_receber'
@@ -209,13 +214,19 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 Conta a Receber (Entrada futura)
               </button>
             </div>
+            {errors.type && (
+              <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.type}</span>
+              </p>
+            )}
           </div>
 
           {/* Contraparte & Tipo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="select-debt-counterparty-type" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Tipo de Contraparte
+                Tipo de Contraparte <span className="text-rose-500">*</span>
               </label>
               <select
                 id="select-debt-counterparty-type"
@@ -223,14 +234,26 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 onChange={(e) => {
                   setCounterpartyType(e.target.value as CounterpartyType);
                   setCounterpartyId('');
+                  if (errors.counterpartyType) setErrors((prev) => ({ ...prev, counterpartyType: '' }));
                 }}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                  errors.counterpartyType
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                }`}
               >
+                <option value="">Selecionar tipo...</option>
                 <option value="fornecedor">Fornecedor</option>
                 <option value="cliente">Cliente</option>
                 <option value="funcionario">Funcionário</option>
                 <option value="outro">Outro / Avulso</option>
               </select>
+              {errors.counterpartyType && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.counterpartyType}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -273,11 +296,23 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 type="text"
                 id="input-debt-counterparty-name"
                 value={counterpartyName}
-                onChange={(e) => setCounterpartyName(e.target.value)}
+                onChange={(e) => {
+                  setCounterpartyName(e.target.value);
+                  if (errors.counterpartyName) setErrors((prev) => ({ ...prev, counterpartyName: '' }));
+                }}
                 placeholder="Ex: Fornecedor Central, João Silva, etc."
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-                required
+                className={`w-full px-3 py-2 text-xs border bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none ${
+                  errors.counterpartyName
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                }`}
               />
+              {errors.counterpartyName && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.counterpartyName}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -290,16 +325,29 @@ export const DebtModal: React.FC<DebtModalProps> = ({
               <select
                 id="select-debt-company"
                 value={companyId}
-                onChange={(e) => setCompanyId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                required
+                onChange={(e) => {
+                  setCompanyId(e.target.value);
+                  if (errors.companyId) setErrors((prev) => ({ ...prev, companyId: '' }));
+                }}
+                className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                  errors.companyId
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                }`}
               >
+                <option value="">Selecionar Empresa...</option>
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
               </select>
+              {errors.companyId && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.companyId}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -313,15 +361,27 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                   min="0.01"
                   id="input-debt-total-amount"
                   value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value)}
+                  onChange={(e) => {
+                    setTotalAmount(e.target.value);
+                    if (errors.totalAmount) setErrors((prev) => ({ ...prev, totalAmount: '' }));
+                  }}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 font-mono"
-                  required
+                  className={`w-full px-3 py-2 text-xs border bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg focus:outline-none font-mono ${
+                    errors.totalAmount
+                      ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-300 dark:border-slate-700 focus:border-slate-800 dark:focus:border-slate-400'
+                  }`}
                 />
                 <span className="absolute right-3 top-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
                   Kz
                 </span>
               </div>
+              {errors.totalAmount && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.totalAmount}</span>
+                </p>
+              )}
             </div>
           </div>
 

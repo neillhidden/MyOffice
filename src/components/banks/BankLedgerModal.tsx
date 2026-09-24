@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { X, Building2, ArrowDownRight, ArrowUpRight, ArrowLeftRight, SlidersHorizontal, Plus, Search, Calendar } from 'lucide-react';
-import { Bank } from '../../types/stock';
+import {
+  X,
+  Building2,
+  ArrowDownRight,
+  ArrowUpRight,
+  ArrowLeftRight,
+  SlidersHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  RotateCcw,
+  AlertCircle,
+  AlertTriangle,
+  History,
+} from 'lucide-react';
+import { Bank, BankMovement } from '../../types/stock';
 import { useStock } from '../../context/StockContext';
 import { formatCurrencyValue, formatDate } from '../../utils/formatters';
 
@@ -17,26 +31,75 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
   onClose,
   onOpenNewMovement,
 }) => {
-  const { getBankBalance, getBankMovements } = useStock();
+  const {
+    bankMovements,
+    getBankBalance,
+    removeFinancialMovement,
+    restoreFinancialMovement,
+    isBankOperationBlocked,
+  } = useStock();
+
+  const [activeTab, setActiveTab] = useState<'ativas' | 'removidas'>('ativas');
   const [filterType, setFilterType] = useState<string>('todas');
   const [search, setSearch] = useState<string>('');
 
+  // Removal dialog state
+  const [movementToRemove, setMovementToRemove] = useState<BankMovement | null>(null);
+  const [removalReason, setRemovalReason] = useState<string>('');
+  const [removalError, setRemovalError] = useState<string | null>(null);
+
   if (!isOpen || !bank) return null;
 
-  const movements = getBankMovements(bank.id);
+  const bankBlockInfo = isBankOperationBlocked(bank.id);
+
   const currentBalance = getBankBalance(bank.id);
 
-  const filteredMovements = movements.filter((mov) => {
-    if (filterType !== 'todas' && mov.type !== filterType) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchReason = mov.reason.toLowerCase().includes(q);
-      const matchRef = mov.reference?.toLowerCase().includes(q);
-      const matchResp = mov.responsible.toLowerCase().includes(q);
-      return matchReason || matchRef || matchResp;
+  // Separate active and removed movements for this specific bank
+  const bankAllMovements = bankMovements.filter((m) => m.bankId === bank.id);
+  const activeMovements = bankAllMovements.filter((m) => !m.isRemoved);
+  const removedMovements = bankAllMovements.filter((m) => !!m.isRemoved);
+
+  const currentList = activeTab === 'ativas' ? activeMovements : removedMovements;
+
+  const filteredMovements = currentList
+    .filter((mov) => {
+      if (filterType !== 'todas' && mov.type !== filterType) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const matchReason = mov.reason.toLowerCase().includes(q);
+        const matchRef = mov.reference?.toLowerCase().includes(q);
+        const matchResp = mov.responsible.toLowerCase().includes(q);
+        const matchRemovalReason = (mov.removedReason || '').toLowerCase().includes(q);
+        return matchReason || matchRef || matchResp || matchRemovalReason;
+      }
+      return true;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const handleOpenRemoval = (mov: BankMovement) => {
+    setMovementToRemove(mov);
+    setRemovalReason('');
+    setRemovalError(null);
+  };
+
+  const handleConfirmRemoval = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!removalReason.trim()) {
+      setRemovalError('O motivo da remoção é obrigatório para conformidade e auditoria.');
+      return;
     }
-    return true;
-  });
+
+    if (movementToRemove) {
+      removeFinancialMovement(movementToRemove.id, removalReason.trim(), 'Administrador');
+      setMovementToRemove(null);
+      setRemovalReason('');
+      setRemovalError(null);
+    }
+  };
+
+  const handleRestore = (movementId: string) => {
+    restoreFinancialMovement(movementId);
+  };
 
   return (
     <div
@@ -45,11 +108,11 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
     >
       <div
         id="modal-bank-ledger-card"
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] max-h-[820px] min-h-[560px] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shadow-xs">
               <Building2 className="w-5 h-5" />
@@ -71,9 +134,14 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                 >
                   {bank.status === 'ativa' ? 'Ativa' : 'Inativa'}
                 </span>
+                {bankBlockInfo.blocked && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    Empresa Parada — Operações Bloqueadas
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {bank.accountNumber ? `Nº Conta: ${bank.accountNumber}` : 'Conta'}
+                {bank.accountNumber ? `Nº Conta: ${bank.accountNumber}` : 'Conta Bancária'}
                 {bank.iban ? ` • IBAN: ${bank.iban}` : ''}
               </p>
             </div>
@@ -102,8 +170,43 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
           </div>
         </div>
 
+        {/* View Selection Tabs (Ativas vs Removidas do Histórico) */}
+        <div className="shrink-0 px-6 pt-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex items-center justify-between">
+          <div className="flex gap-4">
+            <button
+              type="button"
+              id="tab-ledger-ativas"
+              onClick={() => setActiveTab('ativas')}
+              className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                activeTab === 'ativas'
+                  ? 'border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Movimentações Ativas ({activeMovements.length})
+            </button>
+            <button
+              type="button"
+              id="tab-ledger-removidas"
+              onClick={() => setActiveTab('removidas')}
+              className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'removidas'
+                  ? 'border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Removidas do Histórico ({removedMovements.length})</span>
+            </button>
+          </div>
+
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
+            Imutabilidade ativa: movimentações não são editáveis
+          </span>
+        </div>
+
         {/* Toolbar & Filter */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="shrink-0 p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-64">
               <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -111,7 +214,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Pesquisar histórico..."
+                placeholder="Pesquisar extrato..."
                 className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
               />
             </div>
@@ -129,10 +232,12 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
             </select>
           </div>
 
+          {/* Button + Nova Movimentação (Rule 3) */}
           <button
             type="button"
             id="btn-ledger-new-mov"
             onClick={() => onOpenNewMovement(bank.id)}
+            title={bankBlockInfo.blocked ? 'Empresa parada — serviços indisponíveis' : 'Nova Movimentação'}
             className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -140,20 +245,26 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
           </button>
         </div>
 
-        {/* Table of Movements */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {/* Scrollable Container (Rule 5: keeps modal constant size) */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 bg-slate-50/40 dark:bg-slate-950/20">
           {filteredMovements.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="h-full flex flex-col items-center justify-center py-12 text-center">
               <Building2 className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Nenhuma movimentação registada</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {activeTab === 'ativas'
+                  ? 'Nenhuma movimentação ativa encontrada'
+                  : 'Nenhuma movimentação removida'}
+              </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
                 {search || filterType !== 'todas'
                   ? 'Nenhum resultado corresponde aos filtros aplicados.'
-                  : 'Esta conta ainda não possui movimentações no histórico contabilístico.'}
+                  : activeTab === 'ativas'
+                  ? 'Esta conta ainda não possui movimentações registadas no histórico.'
+                  : 'Não existem lançamentos removidos para esta conta bancária.'}
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -163,6 +274,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                     <th className="py-2.5 px-3">Referência</th>
                     <th className="py-2.5 px-3">Responsável</th>
                     <th className="py-2.5 px-4 text-right">Montante</th>
+                    <th className="py-2.5 px-4 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -172,7 +284,14 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                     const isTransfer = mov.type === 'transferencia';
 
                     return (
-                      <tr key={mov.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                      <tr
+                        key={mov.id}
+                        className={`transition-colors ${
+                          mov.isRemoved
+                            ? 'bg-rose-50/30 dark:bg-rose-950/20 opacity-90'
+                            : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
+                        }`}
+                      >
                         <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                           {formatDate(mov.date)}
                         </td>
@@ -204,8 +323,15 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                           )}
                         </td>
 
-                        <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-slate-100 max-w-xs truncate" title={mov.reason}>
-                          {mov.reason}
+                        <td className="py-2.5 px-3 max-w-xs">
+                          <p className="font-medium text-slate-900 dark:text-slate-100 truncate" title={mov.reason}>
+                            {mov.reason}
+                          </p>
+                          {mov.isRemoved && mov.removedReason && (
+                            <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 flex items-center gap-1 font-medium">
+                              <span>Motivo da remoção:</span> {mov.removedReason}
+                            </p>
+                          )}
                         </td>
 
                         <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap font-mono text-[11px]">
@@ -217,7 +343,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                         </td>
 
                         <td
-                          className={`py-2.5 px-4 text-right font-semibold whitespace-nowrap ${
+                          className={`py-2.5 px-4 text-right font-semibold whitespace-nowrap font-mono ${
                             isIncome
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : isExpense
@@ -227,6 +353,31 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                         >
                           {isIncome ? '+' : isExpense ? '-' : ''}
                           {formatCurrencyValue(mov.amount, bank.currency)}
+                        </td>
+
+                        {/* Actions Column (Rule 2: Remover do Histórico / Restaurar) */}
+                        <td className="py-2.5 px-4 whitespace-nowrap text-center">
+                          {!mov.isRemoved ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRemoval(mov)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                              title="Remover este lançamento do histórico (com auditoria)"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remover</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRestore(mov.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg transition-colors cursor-pointer"
+                              title="Restaurar este lançamento ao histórico ativo"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Restaurar</span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -238,8 +389,12 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-          <span>Total de registos: {filteredMovements.length}</span>
+        <div className="shrink-0 px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <span>
+            {activeTab === 'ativas'
+              ? `Movimentações ativas: ${filteredMovements.length}`
+              : `Movimentações removidas: ${filteredMovements.length}`}
+          </span>
           <button
             type="button"
             onClick={onClose}
@@ -249,6 +404,99 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Audit Confirmation Dialog for Removing Movement from History */}
+      {movementToRemove && (
+        <div
+          id="modal-remove-movement-dialog"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setMovementToRemove(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Remover do Histórico Contabilístico
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Esta ação é rastreada e auditada. O saldo da conta será recalculado e o Administrador será notificado.
+                </p>
+              </div>
+            </div>
+
+            {/* Movement Details Summary */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs space-y-1">
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span className="text-slate-400">Tipo:</span>
+                <span className="font-semibold uppercase">{movementToRemove.type}</span>
+              </div>
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span className="text-slate-400">Montante:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">
+                  {formatCurrencyValue(movementToRemove.amount, bank.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span className="text-slate-400">Descrição:</span>
+                <span className="truncate max-w-[200px]">{movementToRemove.reason}</span>
+              </div>
+            </div>
+
+            {/* Mandatory Reason Form */}
+            <form onSubmit={handleConfirmRemoval} className="space-y-4">
+              <div>
+                <label htmlFor="removal-reason-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Motivo da Remoção (Obrigatório para Auditoria) <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  id="removal-reason-input"
+                  rows={3}
+                  value={removalReason}
+                  onChange={(e) => {
+                    setRemovalReason(e.target.value);
+                    if (removalError) setRemovalError(null);
+                  }}
+                  placeholder="Explique detalhadamente a razão da remoção (ex.: registo duplicado por erro do operador, montante introduzido incorretamente)..."
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-colors ${
+                    removalError
+                      ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                  }`}
+                />
+                {removalError && (
+                  <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{removalError}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMovementToRemove(null)}
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  id="btn-confirm-remove-mov"
+                  className="px-4 py-2 text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Confirmar Remoção
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

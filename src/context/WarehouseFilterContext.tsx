@@ -50,16 +50,16 @@ export const WarehouseFilterProvider: React.FC<{ children: ReactNode }> = ({ chi
   }, [warehouses, disabledCompanyIdsSet]);
 
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(() => {
-    const nonDisabled = companies.filter((c) => c.status !== 'desativada').map((c) => c.id);
-    return nonDisabled.length > 0 ? nonDisabled : companies.map((c) => c.id);
+    const active = companies.filter((c) => c.status === 'ativa').map((c) => c.id);
+    return active.length > 0 ? active : companies.filter((c) => c.status !== 'desativada').map((c) => c.id);
   });
 
   const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<string[]>(() => {
-    const nonDisabledComps = new Set(
-      companies.filter((c) => c.status !== 'desativada').map((c) => c.id)
+    const activeComps = new Set(
+      companies.filter((c) => c.status === 'ativa').map((c) => c.id)
     );
     return warehouses
-      .filter((w) => nonDisabledComps.has(w.companyId))
+      .filter((w) => activeComps.has(w.companyId))
       .map((w) => w.id);
   });
 
@@ -81,15 +81,31 @@ export const WarehouseFilterProvider: React.FC<{ children: ReactNode }> = ({ chi
   >('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Sincronizar empresas: remover desativadas de selectedCompanyIds
+  // Sincronizar empresas: remover desativadas e paradas de selectedCompanyIds
   useEffect(() => {
     if (companies.length > 0) {
+      const activeIds = companies.filter((c) => c.status === 'ativa').map((c) => c.id);
       setSelectedCompanyIds((prev) => {
-        const filtered = prev.filter((id) => nonDisabledCompanyIds.includes(id));
-        return filtered.length > 0 ? filtered : nonDisabledCompanyIds;
+        const filtered = prev.filter((id) => activeIds.includes(id));
+        return filtered.length > 0 ? filtered : activeIds;
       });
     }
-  }, [companies, nonDisabledCompanyIds]);
+  }, [companies]);
+
+  // Sincronizar armazéns: remover armazéns de empresas desativadas ou paradas
+  useEffect(() => {
+    if (warehouses.length > 0 && companies.length > 0) {
+      const activeCompIds = new Set(companies.filter((c) => c.status === 'ativa').map((c) => c.id));
+      setSelectedWarehouseIds((prev) => {
+        const filtered = prev.filter((wId) => {
+          const w = warehouses.find((item) => item.id === wId);
+          return w && activeCompIds.has(w.companyId);
+        });
+        const allActiveWhs = warehouses.filter((w) => activeCompIds.has(w.companyId)).map((w) => w.id);
+        return filtered.length > 0 ? filtered : allActiveWhs;
+      });
+    }
+  }, [companies, warehouses]);
 
   // Sincronizar categorias caso a lista de categorias seja alterada
   useEffect(() => {

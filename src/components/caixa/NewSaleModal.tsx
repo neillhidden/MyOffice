@@ -46,6 +46,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     products,
     banks,
     clients,
+    isCompanyDisabled,
     getCurrentStock,
     completeSale,
   } = useStock();
@@ -82,9 +83,27 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   const operationalWarehouses = useMemo(() => {
     return warehouses.filter((w) => {
       const comp = companies.find((c) => c.id === w.companyId);
-      return comp?.status !== 'desativada';
+      return comp ? !isCompanyDisabled(comp.id) : true;
     });
-  }, [warehouses, companies]);
+  }, [warehouses, companies, isCompanyDisabled]);
+
+  // Operational products (excludes products linked to disabled companies)
+  const operationalProducts = useMemo(() => {
+    const disabledCompIds = new Set(companies.filter((c) => isCompanyDisabled(c.id)).map((c) => c.id));
+    const disabledWhIds = new Set(warehouses.filter((w) => disabledCompIds.has(w.companyId)).map((w) => w.id));
+
+    return products.filter((p) => {
+      if (p.id.includes('kianda')) return false;
+
+      // If product only exists in disabled warehouses and has no active warehouse association
+      const onlyInDisabledWh = warehouses.some((w) => disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0) &&
+        !warehouses.some((w) => !disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0);
+
+      if (onlyInDisabledWh) return false;
+
+      return true;
+    });
+  }, [products, warehouses, companies, isCompanyDisabled, getCurrentStock]);
 
   // Sync initial warehouse on open
   React.useEffect(() => {
@@ -452,7 +471,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
                 >
                   <option value="">Selecione um artigo do estoque...</option>
-                  {products.map((prod) => (
+                  {operationalProducts.map((prod) => (
                     <option key={prod.id} value={prod.id}>
                       {prod.name} ({prod.category}) • {formatCurrencyValue(prod.salePrice, currency)}
                     </option>
@@ -634,7 +653,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  TPA / Multicaixa
+                  Multicaixa
                 </button>
 
                 <button

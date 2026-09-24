@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowLeftRight, PlusCircle, MinusCircle, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { BankMovementType } from '../../types/stock';
@@ -15,125 +15,156 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
   onClose,
   preSelectedBankId,
 }) => {
-  const { banks, recordBankMovement, getBankBalance } = useStock();
+  const { banks, recordBankMovement, getBankBalance, getCompanyForBank, isBankOperationBlocked } = useStock();
 
-  const [bankId, setBankId] = useState<string>(preSelectedBankId || banks[0]?.id || '');
+  // No operation preselected by default (Rule 1 & Rule 7)
+  const [type, setType] = useState<BankMovementType | ''>('');
+  const [bankId, setBankId] = useState<string>('');
   const [destinationBankId, setDestinationBankId] = useState<string>('');
-  const [type, setType] = useState<BankMovementType>('entrada');
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [reference, setReference] = useState<string>('');
-  const [responsible, setResponsible] = useState<string>('Administrador');
-  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 16));
-  const [error, setError] = useState<string | null>(null);
+  const [responsible, setResponsible] = useState<string>('');
+  const [date, setDate] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Sync preselected bank on open
-  React.useEffect(() => {
-    if (preSelectedBankId) {
-      setBankId(preSelectedBankId);
-    } else if (!bankId && banks.length > 0) {
-      setBankId(banks[0].id);
+  // Reset all fields clean whenever modal opens (Rule 7 & 9)
+  useEffect(() => {
+    if (isOpen) {
+      setType('');
+      setBankId(preSelectedBankId || '');
+      setDestinationBankId('');
+      setAmount('');
+      setReason('');
+      setReference('');
+      setResponsible('');
+      setDate(new Date().toISOString().slice(0, 16));
+      setErrors({});
     }
-  }, [preSelectedBankId, isOpen, banks]);
+  }, [isOpen, preSelectedBankId]);
 
   if (!isOpen) return null;
 
   const currentBank = banks.find((b) => b.id === bankId);
   const currentBalance = currentBank ? getBankBalance(currentBank.id) : 0;
+  const currentBankBlock = isBankOperationBlocked(bankId);
+  const destBankBlock = destinationBankId ? isBankOperationBlocked(destinationBankId) : { blocked: false };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const numAmount = parseFloat(amount);
+  const validate = () => {
+    const errs: Record<string, string> = {};
 
-    if (!bankId) {
-      setError('Selecione a conta bancária.');
-      return;
+    if (!type) {
+      errs.type = 'Selecione o tipo de operação (Entrada, Saída, Transferência ou Ajuste).';
     }
 
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Insira um montante válido maior que zero.');
-      return;
+    if (!bankId) {
+      errs.bankId = 'Selecione a conta bancária.';
+    } else {
+      const blockCheck = isBankOperationBlocked(bankId);
+      if (blockCheck.blocked) {
+        errs.bankId = blockCheck.message || 'Empresa parada — serviços indisponíveis.';
+      }
+    }
+
+    const numAmount = parseFloat(amount);
+    if (!amount.trim()) {
+      errs.amount = 'O montante é obrigatório.';
+    } else if (isNaN(numAmount) || numAmount <= 0) {
+      errs.amount = 'Insira um montante válido superior a zero.';
     }
 
     if (!reason.trim()) {
-      setError('A descrição do motivo é obrigatória para conformidade e auditoria.');
-      return;
+      errs.reason = 'A descrição do motivo é obrigatória para conformidade e auditoria.';
     }
 
     if (type === 'transferencia') {
       if (!destinationBankId) {
-        setError('Selecione a conta de destino para a transferência.');
-        return;
+        errs.destinationBankId = 'Selecione a conta de destino para a transferência.';
+      } else if (destinationBankId === bankId) {
+        errs.destinationBankId = 'A conta de destino não pode ser igual à conta de origem.';
+      } else {
+        const destCheck = isBankOperationBlocked(destinationBankId);
+        if (destCheck.blocked) {
+          errs.destinationBankId = destCheck.message || 'Empresa parada — serviços indisponíveis.';
+        }
       }
-      if (destinationBankId === bankId) {
-        setError('A conta de destino não pode ser igual à conta de origem.');
-        return;
-      }
+
       if (numAmount > currentBalance) {
-        setError(
-          `Saldo insuficiente. O saldo disponível na conta de origem é ${formatCurrencyValue(
-            currentBalance,
-            currentBank?.currency || 'Kz'
-          )}.`
-        );
-        return;
-      }
-
-      // Execute transfer: exit on origin, entry on destination
-      const destBank = banks.find((b) => b.id === destinationBankId);
-      recordBankMovement({
-        bankId,
-        destinationBankId,
-        type: 'saida',
-        amount: numAmount,
-        reason: `Transferência enviada para ${destBank?.name || 'outra conta'}: ${reason.trim()}`,
-        reference: reference.trim() || undefined,
-        responsible: responsible.trim() || 'Administrador',
-        date: new Date(date).toISOString(),
-      });
-
-      recordBankMovement({
-        bankId: destinationBankId,
-        type: 'entrada',
-        amount: numAmount,
-        reason: `Transferência recebida de ${currentBank?.name || 'outra conta'}: ${reason.trim()}`,
-        reference: reference.trim() || undefined,
-        responsible: responsible.trim() || 'Administrador',
-        date: new Date(date).toISOString(),
-      });
-
-      onClose();
-      return;
-    }
-
-    // Saida balance warning/validation
-    if (type === 'saida' && numAmount > currentBalance) {
-      setError(
-        `Saldo insuficiente. O saldo disponível é ${formatCurrencyValue(
+        errs.amount = `Saldo insuficiente. Saldo disponível na conta de origem: ${formatCurrencyValue(
           currentBalance,
           currentBank?.currency || 'Kz'
-        )}.`
-      );
-      return;
+        )}.`;
+      }
+    } else if (type === 'saida' && numAmount > currentBalance) {
+      errs.amount = `Saldo insuficiente. Saldo disponível: ${formatCurrencyValue(
+        currentBalance,
+        currentBank?.currency || 'Kz'
+      )}.`;
     }
 
-    recordBankMovement({
-      bankId,
-      type,
-      amount: numAmount,
-      reason: reason.trim(),
-      reference: reference.trim() || undefined,
-      responsible: responsible.trim() || 'Administrador',
-      date: new Date(date).toISOString(),
-    });
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
-    onClose();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const numAmount = parseFloat(amount);
+
+    try {
+      if (type === 'transferencia') {
+        const destBank = banks.find((b) => b.id === destinationBankId);
+        recordBankMovement({
+          bankId,
+          destinationBankId,
+          type: 'saida',
+          amount: numAmount,
+          reason: `Transferência enviada para ${destBank?.name || 'outra conta'}: ${reason.trim()}`,
+          reference: reference.trim() || undefined,
+          responsible: responsible.trim() || 'Administrador',
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
+        });
+
+        recordBankMovement({
+          bankId: destinationBankId,
+          type: 'entrada',
+          amount: numAmount,
+          reason: `Transferência recebida de ${currentBank?.name || 'outra conta'}: ${reason.trim()}`,
+          reference: reference.trim() || undefined,
+          responsible: responsible.trim() || 'Administrador',
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
+        });
+
+        onClose();
+        return;
+      }
+
+      if (type) {
+        recordBankMovement({
+          bankId,
+          type,
+          amount: numAmount,
+          reason: reason.trim(),
+          reference: reference.trim() || undefined,
+          responsible: responsible.trim() || 'Administrador',
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      onClose();
+    } catch (err: any) {
+      setErrors((prev) => ({
+        ...prev,
+        bankId: err.message || 'Empresa parada — serviços indisponíveis.',
+      }));
+    }
   };
 
   return (
     <div
       id="modal-bank-movement-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
         id="modal-bank-movement-card"
@@ -151,7 +182,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 Nova Movimentação Bancária
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Registo contabilístico de entrada, despesa, transferência ou conciliação
+                Registo contabilístico de entrada, despesa, transferência ou ajuste
               </p>
             </div>
           </div>
@@ -169,14 +200,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 dark:text-rose-300">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Type Selector (Entrada, Saída, Ajuste, Transferência) */}
+          {/* Type Selector (No pre-selected option: Rule 1) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Tipo de Operação <span className="text-rose-500">*</span>
@@ -187,7 +211,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 id="btn-mov-type-entrada"
                 onClick={() => {
                   setType('entrada');
-                  setError(null);
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
                 }}
                 className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'entrada'
@@ -204,7 +228,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 id="btn-mov-type-saida"
                 onClick={() => {
                   setType('saida');
-                  setError(null);
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
                 }}
                 className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'saida'
@@ -221,7 +245,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 id="btn-mov-type-transferencia"
                 onClick={() => {
                   setType('transferencia');
-                  setError(null);
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
                 }}
                 className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'transferencia'
@@ -238,7 +262,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 id="btn-mov-type-ajuste"
                 onClick={() => {
                   setType('ajuste');
-                  setError(null);
+                  if (errors.type) setErrors((prev) => ({ ...prev, type: '' }));
                 }}
                 className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
                   type === 'ajuste'
@@ -250,6 +274,12 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 <span>Ajuste</span>
               </button>
             </div>
+            {errors.type && (
+              <p className="mt-1.5 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{errors.type}</span>
+              </p>
+            )}
           </div>
 
           {/* Account Selection */}
@@ -263,16 +293,42 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 value={bankId}
                 onChange={(e) => {
                   setBankId(e.target.value);
-                  if (error) setError(null);
+                  if (errors.bankId) setErrors((prev) => ({ ...prev, bankId: '' }));
                 }}
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none transition-colors [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                  errors.bankId
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                }`}
               >
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.currency}) • Saldo: {formatCurrencyValue(getBankBalance(b.id), b.currency)}
-                  </option>
-                ))}
+                <option value="">Selecione a conta bancária...</option>
+                {banks.map((b) => {
+                  const comp = getCompanyForBank(b.id);
+                  const isStopped = comp?.status === 'parada';
+                  return (
+                    <option
+                      key={b.id}
+                      value={b.id}
+                      disabled={isStopped}
+                      className={isStopped ? 'text-slate-400 bg-slate-100 dark:bg-slate-800' : ''}
+                    >
+                      {b.name} ({b.currency}){isStopped ? ' — [PARADA - Serviços indisponíveis]' : ` • Saldo: ${formatCurrencyValue(getBankBalance(b.id), b.currency)}`}
+                    </option>
+                  );
+                })}
               </select>
+              {errors.bankId && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.bankId}</span>
+                </p>
+              )}
+              {currentBankBlock.blocked && !errors.bankId && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{currentBankBlock.message || 'Empresa parada — serviços indisponíveis.'}</span>
+                </p>
+              )}
             </div>
 
             {type === 'transferencia' && (
@@ -285,19 +341,44 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                   value={destinationBankId}
                   onChange={(e) => {
                     setDestinationBankId(e.target.value);
-                    if (error) setError(null);
+                    if (errors.destinationBankId) setErrors((prev) => ({ ...prev, destinationBankId: '' }));
                   }}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none transition-colors [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                    errors.destinationBankId || destBankBlock.blocked
+                      ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                  }`}
                 >
-                  <option value="">Selecione o banco de destino...</option>
+                  <option value="">Selecione a conta de destino...</option>
                   {banks
                     .filter((b) => b.id !== bankId)
-                    .map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} ({b.currency})
-                      </option>
-                    ))}
+                    .map((b) => {
+                      const comp = getCompanyForBank(b.id);
+                      const isStopped = comp?.status === 'parada';
+                      return (
+                        <option
+                          key={b.id}
+                          value={b.id}
+                          disabled={isStopped}
+                          className={isStopped ? 'text-slate-400 bg-slate-100 dark:bg-slate-800' : ''}
+                        >
+                          {b.name} ({b.currency}){isStopped ? ' — [PARADA - Serviços indisponíveis]' : ` • Saldo: ${formatCurrencyValue(getBankBalance(b.id), b.currency)}`}
+                        </option>
+                      );
+                    })}
                 </select>
+                {errors.destinationBankId && (
+                  <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{errors.destinationBankId}</span>
+                  </p>
+                )}
+                {destBankBlock.blocked && !errors.destinationBankId && (
+                  <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{destBankBlock.message || 'Empresa parada — serviços indisponíveis.'}</span>
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -313,27 +394,36 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 type="number"
                 step="any"
                 min="0.01"
-                required
                 value={amount}
                 onChange={(e) => {
                   setAmount(e.target.value);
-                  if (error) setError(null);
+                  if (errors.amount) setErrors((prev) => ({ ...prev, amount: '' }));
                 }}
                 placeholder="0.00"
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors font-medium"
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-colors font-medium ${
+                  errors.amount
+                    ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+                }`}
               />
+              {errors.amount && (
+                <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.amount}</span>
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="mov-date-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Data & Hora <span className="text-rose-500">*</span>
+                Data & Hora
               </label>
               <input
                 id="mov-date-input"
                 type="datetime-local"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
               />
             </div>
           </div>
@@ -346,15 +436,24 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
             <input
               id="mov-reason-input"
               type="text"
-              required
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value);
-                if (error) setError(null);
+                if (errors.reason) setErrors((prev) => ({ ...prev, reason: '' }));
               }}
-              placeholder="Ex.: Depósito em numerário das vendas semanais ou Pagamento de aluguer"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
+              placeholder="Ex.: Depósito de vendas diárias ou Pagamento de fornecedor"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-colors ${
+                errors.reason
+                  ? 'border-rose-500 dark:border-rose-500 ring-1 ring-rose-500/20'
+                  : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-400'
+              }`}
             />
+            {errors.reason && (
+              <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.reason}</span>
+              </p>
+            )}
           </div>
 
           {/* Documento / Referência & Responsável */}
@@ -369,7 +468,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="Ex.: BPO-9821 / Recibo #44"
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
               />
             </div>
 
@@ -382,8 +481,8 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 type="text"
                 value={responsible}
                 onChange={(e) => setResponsible(e.target.value)}
-                placeholder="Administrador"
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
+                placeholder="Ex: Administrador"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 transition-colors"
               />
             </div>
           </div>
@@ -400,7 +499,13 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
             <button
               type="submit"
               id="btn-confirm-bank-movement"
-              className="px-5 py-2 text-xs font-medium bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-xl shadow-xs transition-colors cursor-pointer"
+              disabled={currentBankBlock.blocked || destBankBlock.blocked}
+              title={currentBankBlock.blocked ? currentBankBlock.message : destBankBlock.blocked ? destBankBlock.message : undefined}
+              className={`px-5 py-2 text-xs font-medium rounded-xl shadow-xs transition-colors ${
+                currentBankBlock.blocked || destBankBlock.blocked
+                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 cursor-pointer'
+              }`}
             >
               Confirmar Movimentação
             </button>

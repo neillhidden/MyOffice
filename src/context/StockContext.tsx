@@ -27,6 +27,7 @@ import {
   TransportStatus,
   Debt,
   DebtPayment,
+  DebtIncrement,
   DebtStatus,
   DebtType,
   FinancialCategory,
@@ -228,6 +229,8 @@ interface StockContextType {
   recordBankMovement: (
     movement: Omit<BankMovement, 'id' | 'date'> & { date?: string }
   ) => BankMovement;
+  getCompanyForBank: (bankId: string) => Company | undefined;
+  isBankOperationBlocked: (bankId: string) => { blocked: boolean; message?: string };
   removeFinancialMovement: (movementId: string, reason: string, removedBy?: string) => void;
   restoreFinancialMovement: (movementId: string) => void;
 
@@ -252,6 +255,14 @@ interface StockContextType {
     responsible?: string;
   }) => DebtPayment;
   deleteDebtPayment: (paymentId: string) => void;
+  addDebtIncrement: (incrementData: {
+    debtId: string;
+    amount: number;
+    reason: string;
+    reference?: string;
+    responsible?: string;
+    date?: string;
+  }) => DebtIncrement;
 
   // Caixa / Sales & Transport
   sales: Sale[];
@@ -1695,9 +1706,59 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return { success: true };
   };
 
+  const getCompanyForBank = (bankId: string): Company | undefined => {
+    if (!bankId) return undefined;
+    const bank = banks.find((b) => b.id === bankId);
+    // 1. Direct match by principalBankId on Company
+    const byPrincipal = companies.find((c) => c.principalBankId === bankId);
+    if (byPrincipal) return byPrincipal;
+    // 2. Direct match by companyId on Bank
+    if (bank && bank.companyId) {
+      const byCompanyId = companies.find((c) => c.id === bank.companyId);
+      if (byCompanyId) return byCompanyId;
+    }
+    // 3. Match by name
+    if (bank) {
+      const trimmedBankName = bank.name.trim().toLowerCase();
+      const byName = companies.find((c) => c.name.trim().toLowerCase() === trimmedBankName);
+      if (byName) return byName;
+    }
+    return undefined;
+  };
+
+  const isBankOperationBlocked = (bankId: string): { blocked: boolean; message?: string } => {
+    if (!bankId) return { blocked: false };
+    const comp = getCompanyForBank(bankId);
+    if (comp?.status === 'parada') {
+      return {
+        blocked: true,
+        message: 'Empresa parada — serviços indisponíveis.',
+      };
+    }
+    if (comp?.status === 'desativada') {
+      return {
+        blocked: true,
+        message: 'Empresa desativada — serviços indisponíveis.',
+      };
+    }
+    return { blocked: false };
+  };
+
   const recordBankMovement = (
     movementData: Omit<BankMovement, 'id' | 'date'> & { date?: string }
   ): BankMovement => {
+    const originCheck = isBankOperationBlocked(movementData.bankId);
+    if (originCheck.blocked) {
+      throw new Error(originCheck.message || 'Empresa parada — serviços indisponíveis.');
+    }
+
+    if (movementData.destinationBankId) {
+      const destCheck = isBankOperationBlocked(movementData.destinationBankId);
+      if (destCheck.blocked) {
+        throw new Error(destCheck.message || 'Empresa parada — serviços indisponíveis.');
+      }
+    }
+
     const newMovement: BankMovement = {
       ...movementData,
       id: `bmov-${Date.now()}`,
@@ -1905,6 +1966,57 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setBankMovements((prev) => prev.filter((m) => m.id !== payment.movementId));
     }
     setDebtPayments((prev) => prev.filter((p) => p.id !== paymentId));
+  };
+
+  const addDebtIncrement = (incrementData: {
+    debtId: string;
+    amount: number;
+    reason: string;
+    reference?: string;
+    responsible?: string;
+    date?: string;
+  }): DebtIncrement => {
+    const debt = debts.find((d) => d.id === incrementData.debtId);
+    if (!debt) throw new Error('Dívida não encontrada');
+
+    const now = new Date().toISOString();
+    const newIncrement: DebtIncrement = {
+      id: `dinc-${Date.now()}`,
+      debtId: incrementData.debtId,
+      amount: incrementData.amount,
+      reason: incrementData.reason.trim(),
+      reference: incrementData.reference?.trim() || undefined,
+      responsible: incrementData.responsible?.trim() || 'Administrador',
+      date: incrementData.date || now,
+      createdAt: now,
+    };
+
+    setDebts((prev) =>
+      prev.map((d) => {
+        if (d.id === incrementData.debtId) {
+          const initial = d.initialAmount !== undefined ? d.initialAmount : d.totalAmount;
+          return {
+            ...d,
+            initialAmount: initial,
+            totalAmount: d.totalAmount + incrementData.amount,
+            increments: [newIncrement, ...(d.increments || [])],
+          };
+        }
+        return d;
+      })
+    );
+
+    addNotification({
+      type: 'outro',
+      title: 'Acréscimo Rastreável de Dívida',
+      message: `Foi acrescentado o montante de ${incrementData.amount.toLocaleString()} Kz à dívida de ${debt.counterpartyName} (${debt.type === 'a_pagar' ? 'A Pagar' : 'A Receber'}). Motivo: "${incrementData.reason.trim()}".`,
+      reference: {
+        type: 'outro',
+        id: debt.id,
+      },
+    });
+
+    return newIncrement;
   };
 
   // Caixa / Sales & Transport
@@ -2700,6 +2812,8 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updateBank,
       deleteBank,
       recordBankMovement,
+      getCompanyForBank,
+      isBankOperationBlocked,
       removeFinancialMovement,
       restoreFinancialMovement,
 
@@ -2712,6 +2826,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       deleteDebt,
       recordDebtPayment,
       deleteDebtPayment,
+      addDebtIncrement,
 
       // Caixa
       sales,
