@@ -22,7 +22,7 @@ export const KIANDA_COMPANY: Company = {
   contact: '+244 924 550 100 • contacto@lojakianda.ao',
   currency: 'Kz',
   principalBankId: 'bank-kianda',
-  status: 'ativa',
+  status: 'desativada',
   createdAt: '2026-06-01T08:00:00.000Z',
   updatedAt: '2026-09-16T12:00:00.000Z',
 };
@@ -38,7 +38,8 @@ export const KIANDA_BANK: Bank = {
   currency: 'Kz',
   accountNumber: 'AO06.0040.0000.7788.9900.1122.4',
   iban: 'AO06.0040.0000.7788.9900.1122.4',
-  status: 'ativo',
+  status: 'inativo',
+  companyId: 'comp-kianda',
   createdAt: '2026-06-01T08:00:00.000Z',
   updatedAt: '2026-09-16T12:00:00.000Z',
   notes: 'Conta bancária corrente principal vinculada à Loja Kianda',

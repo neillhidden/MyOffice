@@ -76,9 +76,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
     setVisibleAgendaIds(new Set());
   };
 
-  // Filter events according to visible agendas
+  // Filter events according to visible agendas (excluding any event linked to disabled companies / Kianda)
   const visibleEvents = useMemo(() => {
-    return events.filter((ev) => visibleAgendaIds.has(ev.agendaId));
+    return events.filter((ev) => {
+      if (!visibleAgendaIds.has(ev.agendaId)) return false;
+      if (
+        ev.title.toLowerCase().includes('kianda') ||
+        ev.description?.toLowerCase().includes('kianda') ||
+        (ev.originRef?.id && ev.originRef.id.includes('KND'))
+      ) {
+        return false;
+      }
+      return true;
+    });
   }, [events, visibleAgendaIds]);
 
   // Today handler

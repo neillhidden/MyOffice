@@ -20,7 +20,7 @@ import { Employee } from '../../types/employee';
 import { EmployeeModal } from './EmployeeModal';
 
 export const FuncionariosView: React.FC = () => {
-  const { employees, companies, deleteEmployee } = useStock();
+  const { employees, companies, deleteEmployee, isCompanyDisabled } = useStock();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('todas');
@@ -37,6 +37,14 @@ export const FuncionariosView: React.FC = () => {
   // Filtered employees
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
+      // Exclude employees belonging to disabled companies
+      if (emp.companyId === 'comp-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+      const comp = companies.find((c) => c.id === emp.companyId);
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+
       if (selectedCompanyId !== 'todas' && emp.companyId !== selectedCompanyId) return false;
       if (selectedStatus !== 'todos' && emp.status !== selectedStatus) return false;
 
@@ -50,7 +58,7 @@ export const FuncionariosView: React.FC = () => {
       }
       return true;
     });
-  }, [employees, selectedCompanyId, selectedStatus, searchTerm]);
+  }, [employees, selectedCompanyId, selectedStatus, searchTerm, companies, isCompanyDisabled]);
 
   // Birthday checks
   const currentMonth = new Date().getMonth() + 1; // 1-12
@@ -227,11 +235,18 @@ export const FuncionariosView: React.FC = () => {
               className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
             >
               <option value="todas">Todas as Empresas</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {companies
+                .filter((c) => {
+                  if (c.id === 'comp-kianda') {
+                    return !isCompanyDisabled('comp-kianda') && c.status !== 'desativada';
+                  }
+                  return c.status !== 'desativada' && !isCompanyDisabled(c.id);
+                })
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </div>
 

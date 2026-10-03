@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, ArrowLeftRight, AlertCircle, PlusCircle, MinusCircle, SlidersHorizontal } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { BankMovementType, FinancialCategory } from '../../types/stock';
@@ -29,7 +29,15 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
   onClose,
   preSelectedBankId,
 }) => {
-  const { banks, recordBankMovement, getBankBalance, getCompanyForBank, isBankOperationBlocked } = useStock();
+  const {
+    banks,
+    companies,
+    recordBankMovement,
+    getBankBalance,
+    getCompanyForBank,
+    isCompanyDisabled,
+    isBankOperationBlocked,
+  } = useStock();
 
   // No pre-selection by default (Rule 1 & Rule 7)
   const [type, setType] = useState<BankMovementType | ''>('');
@@ -52,10 +60,23 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
       setReason('');
       setReference('');
       setResponsible('');
-      setDate(new Date().toISOString().slice(0, 10));
+      setDate(new Date().toISOString().slice(0, 16));
       setErrors({});
     }
   }, [isOpen, preSelectedBankId]);
+
+  // Operational banks: strictly exclude banks of disabled companies
+  const operationalBanks = useMemo(() => {
+    return banks.filter((b) => {
+      if (b.id === 'bank-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+      const comp = getCompanyForBank(b.id);
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      return true;
+    });
+  }, [banks, companies, getCompanyForBank, isCompanyDisabled]);
 
   if (!isOpen) return null;
 
@@ -250,7 +271,7 @@ export const LancamentoModal: React.FC<LancamentoModalProps> = ({
               }`}
             >
               <option value="">Selecione a conta bancária...</option>
-              {banks.map((b) => {
+              {operationalBanks.map((b) => {
                 const comp = getCompanyForBank(b.id);
                 const isStopped = comp?.status === 'parada';
                 return (

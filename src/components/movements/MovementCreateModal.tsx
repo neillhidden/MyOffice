@@ -31,6 +31,8 @@ export const MovementCreateModal: React.FC<MovementCreateModalProps> = ({
     recordMovement,
     getCurrentStock,
     getProductWarehouses,
+    getCompanyForBank,
+    isCompanyDisabled,
   } = useStock();
 
   const isProductLocked = Boolean(preSelectedProductId);
@@ -82,13 +84,32 @@ export const MovementCreateModal: React.FC<MovementCreateModalProps> = ({
 
   // Operational warehouses excluding disabled companies
   const activeAndStoppedWarehouses = warehouses.filter((w) => {
+    if (w.id === 'wh-kianda' || w.companyId === 'comp-kianda') {
+      const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+      if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+    }
     const comp = companies.find((c) => c.id === w.companyId);
-    return comp?.status !== 'desativada';
+    return comp?.status !== 'desativada' && !isCompanyDisabled(w.companyId);
   });
 
   const operationalProducts = products.filter((p) => {
+    if (p.id.includes('kianda') || p.brand?.toLowerCase().includes('kianda')) {
+      const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+      if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+    }
     const prodWhs = getProductWarehouses(p.id);
     return prodWhs.length > 0;
+  });
+
+  // Operational banks: strictly exclude banks of disabled companies
+  const operationalBanks = banks.filter((b) => {
+    if (b.id === 'bank-kianda') {
+      const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+      if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+    }
+    const comp = getCompanyForBank(b.id);
+    if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+    return true;
   });
 
   const selectedProduct = products.find((p) => p.id === productId);
@@ -637,7 +658,7 @@ export const MovementCreateModal: React.FC<MovementCreateModalProps> = ({
                       }`}
                     >
                       <option value="">Selecione a conta bancária...</option>
-                      {banks.map((b) => (
+                      {operationalBanks.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name} ({b.currency})
                         </option>

@@ -25,6 +25,7 @@ export const DefectiveView: React.FC = () => {
     recordDefective,
     updateDefectiveResolution,
     getCurrentStock,
+    getProductWarehouses,
   } = useStock();
 
   const [showModal, setShowModal] = useState(false);
@@ -34,35 +35,34 @@ export const DefectiveView: React.FC = () => {
   // Warehouses excluding disabled companies
   const operationalWarehouses = useMemo(() => {
     return warehouses.filter((w) => {
+      if (w.id === 'wh-kianda' || w.companyId === 'comp-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
       const comp = companies.find((c) => c.id === w.companyId);
-      return comp ? !isCompanyDisabled(comp.id) : true;
+      if (comp?.status === 'desativada' || isCompanyDisabled(w.companyId)) return false;
+      return true;
     });
   }, [warehouses, companies, isCompanyDisabled]);
 
-  // Products excluding products linked exclusively to disabled companies
+  // Products excluding products linked to disabled companies
   const operationalProducts = useMemo(() => {
-    const disabledCompIds = new Set(companies.filter((c) => isCompanyDisabled(c.id)).map((c) => c.id));
-    const disabledWhIds = new Set(warehouses.filter((w) => disabledCompIds.has(w.companyId)).map((w) => w.id));
-
     return products.filter((p) => {
-      // If product ID starts with prod-kianda or belongs to disabled company
-      if (p.id.includes('kianda')) return false;
+      // Direct Kianda check
+      if (p.id.includes('kianda') || p.brand?.toLowerCase().includes('kianda')) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
 
-      // Check movements or warehouses linked
-      const hasAnyNonDisabledStockOrMovement = warehouses.some((w) => {
-        if (disabledWhIds.has(w.id)) return false;
-        return getCurrentStock(p.id, w.id) > 0;
-      });
-
-      // If product has no stock anywhere, check if created by or linked to disabled company
-      const onlyInDisabledWh = warehouses.some((w) => disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0) &&
-        !warehouses.some((w) => !disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0);
-
-      if (onlyInDisabledWh) return false;
+      // Check operational warehouses for this product (excludes warehouses of disabled companies)
+      const operationalWhs = getProductWarehouses(p.id);
+      if (operationalWhs.length === 0) {
+        return false;
+      }
 
       return true;
     });
-  }, [products, warehouses, companies, isCompanyDisabled, getCurrentStock]);
+  }, [products, companies, isCompanyDisabled, getProductWarehouses]);
 
   // Form states
   const [productId, setProductId] = useState<string>('');

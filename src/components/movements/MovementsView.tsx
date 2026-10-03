@@ -22,7 +22,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
   onOpenNewMovementModal,
   onSelectProduct,
 }) => {
-  const { movements, products, warehouses, companies, isCompanyDisabled } = useStock();
+  const { movements, products, warehouses, companies, isCompanyDisabled, isWarehouseDisabled } = useStock();
 
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
@@ -32,26 +32,42 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
   // Visible warehouses excluding disabled companies
   const visibleWarehouses = useMemo(() => {
     return warehouses.filter((w) => {
+      if (w.id === 'wh-kianda' || w.companyId === 'comp-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
       const comp = companies.find((c) => c.id === w.companyId);
-      return comp ? !isCompanyDisabled(comp.id) : true;
+      if (comp?.status === 'desativada' || isCompanyDisabled(w.companyId)) return false;
+      return true;
     });
   }, [warehouses, companies, isCompanyDisabled]);
 
   // Visible movements: completely excludes disabled companies
   const visibleMovements = useMemo(() => {
     return movements.filter((m) => {
+      if (
+        m.warehouseId === 'wh-kianda' ||
+        m.destinationWarehouseId === 'wh-kianda' ||
+        m.id.startsWith('mov-knd')
+      ) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+
       const wh = warehouses.find((w) => w.id === m.warehouseId);
       const comp = companies.find((c) => c.id === wh?.companyId);
-      if (comp && isCompanyDisabled(comp.id)) return false;
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      if (wh && isWarehouseDisabled(wh.id)) return false;
 
       if (m.destinationWarehouseId) {
         const destWh = warehouses.find((w) => w.id === m.destinationWarehouseId);
         const destComp = companies.find((c) => c.id === destWh?.companyId);
-        if (destComp && isCompanyDisabled(destComp.id)) return false;
+        if (destComp && (destComp.status === 'desativada' || isCompanyDisabled(destComp.id))) return false;
+        if (destWh && isWarehouseDisabled(destWh.id)) return false;
       }
       return true;
     });
-  }, [movements, warehouses, companies, isCompanyDisabled]);
+  }, [movements, warehouses, companies, isCompanyDisabled, isWarehouseDisabled]);
 
   // Sorted & filtered movements (strictly chronological, latest first)
   const filteredMovements = useMemo(() => {
@@ -134,7 +150,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
               onChange={(e) => setTypeFilter(e.target.value)}
               className="bg-transparent font-medium text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer capitalize [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
-              <option value="all">Todos ({movements.length})</option>
+              <option value="all">Todos ({visibleMovements.length})</option>
               <option value="entrada">Entrada ({typeCounts.entrada})</option>
               <option value="saida">Saída ({typeCounts.saida})</option>
               <option value="transferencia">Transferência ({typeCounts.transferencia})</option>

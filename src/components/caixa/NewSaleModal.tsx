@@ -48,6 +48,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     clients,
     isCompanyDisabled,
     getCurrentStock,
+    getProductWarehouses,
     completeSale,
   } = useStock();
 
@@ -82,28 +83,34 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   // Operational warehouses (excludes desativada companies)
   const operationalWarehouses = useMemo(() => {
     return warehouses.filter((w) => {
+      if (w.id === 'wh-kianda' || w.companyId === 'comp-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
       const comp = companies.find((c) => c.id === w.companyId);
-      return comp ? !isCompanyDisabled(comp.id) : true;
+      if (comp?.status === 'desativada' || isCompanyDisabled(w.companyId)) return false;
+      return true;
     });
   }, [warehouses, companies, isCompanyDisabled]);
 
-  // Operational products (excludes products linked to disabled companies)
+  // Operational products (strictly excludes products linked to disabled companies)
   const operationalProducts = useMemo(() => {
-    const disabledCompIds = new Set(companies.filter((c) => isCompanyDisabled(c.id)).map((c) => c.id));
-    const disabledWhIds = new Set(warehouses.filter((w) => disabledCompIds.has(w.companyId)).map((w) => w.id));
-
     return products.filter((p) => {
-      if (p.id.includes('kianda')) return false;
+      // Exclude Kianda products if Kianda is disabled
+      if (p.id.includes('kianda') || p.brand?.toLowerCase().includes('kianda')) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
 
-      // If product only exists in disabled warehouses and has no active warehouse association
-      const onlyInDisabledWh = warehouses.some((w) => disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0) &&
-        !warehouses.some((w) => !disabledWhIds.has(w.id) && getCurrentStock(p.id, w.id) > 0);
-
-      if (onlyInDisabledWh) return false;
+      // Check operational warehouses (getProductWarehouses already filters out disabled companies)
+      const operationalWhs = getProductWarehouses(p.id);
+      if (operationalWhs.length === 0) {
+        return false;
+      }
 
       return true;
     });
-  }, [products, warehouses, companies, isCompanyDisabled, getCurrentStock]);
+  }, [products, companies, isCompanyDisabled, getProductWarehouses]);
 
   // Sync initial warehouse on open
   React.useEffect(() => {

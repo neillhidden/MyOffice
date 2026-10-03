@@ -368,10 +368,15 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       try {
         const parsed: Company[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const normalized = parsed.map((c) => ({
-            ...c,
-            status: ((c.status as string) === 'inativa' ? 'desativada' : (c.status || 'ativa')) as CompanyStatus,
-          }));
+          const normalized = parsed.map((c) => {
+            const rawStatus = (c.status as string) === 'inativa' ? 'desativada' : (c.status || 'ativa');
+            // If Kianda is stored as ativa or inativa, align with requirement that Kianda is desativada
+            const finalStatus = (c.id === 'comp-kianda' && rawStatus !== 'parada') ? 'desativada' : rawStatus;
+            return {
+              ...c,
+              status: finalStatus as CompanyStatus,
+            };
+          });
           const hasKianda = normalized.some((c) => c.id === 'comp-kianda');
           return hasKianda ? normalized : [...normalized, KIANDA_COMPANY];
         }
@@ -492,8 +497,14 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       try {
         const parsed: Bank[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasKianda = parsed.some((b) => b.id === 'bank-kianda');
-          return hasKianda ? parsed : [...parsed, KIANDA_BANK];
+          const normalized = parsed.map((b) => {
+            if (b.id === 'bank-kianda') {
+              return { ...b, companyId: 'comp-kianda', status: 'inativo' as const };
+            }
+            return b;
+          });
+          const hasKianda = normalized.some((b) => b.id === 'bank-kianda');
+          return hasKianda ? normalized : [...normalized, KIANDA_BANK];
         }
       } catch {
         // fallback
@@ -1222,6 +1233,17 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           : c
       )
     );
+
+    if (updates.status === 'desativada') {
+      setBanks((prev) =>
+        prev.map((b) => {
+          if (b.companyId === id || (id === 'comp-kianda' && b.id === 'bank-kianda')) {
+            return { ...b, status: 'inativo' as const };
+          }
+          return b;
+        })
+      );
+    }
   };
 
   const deleteCompany = (id: string): { success: boolean; message?: string } => {
@@ -2302,6 +2324,22 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
     if (entregaAgenda && entregaAgenda.status === 'ativa') {
       transports.forEach((trp) => {
+        // Excluir qualquer entrega vinculada a empresas desativadas (como Kianda)
+        const sale = sales.find((s) => s.id === trp.saleId);
+        const wh = warehouses.find((w) => w.id === sale?.warehouseId);
+        const comp = companies.find((c) => c.id === wh?.companyId);
+        if (comp && comp.status === 'desativada') return;
+        if (sale?.warehouseId && isWarehouseDisabled(sale.warehouseId)) return;
+        if (
+          trp.id.includes('KND') ||
+          trp.saleId?.includes('KND') ||
+          trp.driver?.toLowerCase().includes('kianda') ||
+          trp.vehicle?.toLowerCase().includes('kianda')
+        ) {
+          const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+          if (kiandaComp ? kiandaComp.status === 'desativada' : true) return;
+        }
+
         const eventDate =
           trp.estimatedDeliveryDate ||
           (trp.actualDeliveryDate ? trp.actualDeliveryDate.slice(0, 10) : trp.createdAt.slice(0, 10));
@@ -2328,7 +2366,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     return list;
-  }, [manualEvents, agendas, employees, transports, autoEventStatusOverrides]);
+  }, [manualEvents, agendas, employees, transports, sales, warehouses, companies, autoEventStatusOverrides]);
 
   const addAgenda = (
     agendaData: Omit<Agenda, 'id' | 'createdAt' | 'status' | 'origin'> & {

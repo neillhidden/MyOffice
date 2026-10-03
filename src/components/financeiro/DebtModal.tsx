@@ -14,7 +14,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
   onClose,
   debtToEdit,
 }) => {
-  const { companies, suppliers, clients, employees, addDebt, updateDebt } = useStock();
+  const { companies, suppliers, clients, employees, addDebt, updateDebt, isCompanyDisabled } = useStock();
 
   // Rules 7 & 9: Modals open empty, nothing preselected by default
   const [type, setType] = useState<DebtType | ''>('');
@@ -336,11 +336,18 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 }`}
               >
                 <option value="">Selecionar Empresa...</option>
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {companies
+                  .filter((c) => {
+                    if (c.id === 'comp-kianda') {
+                      return !isCompanyDisabled('comp-kianda') && c.status !== 'desativada';
+                    }
+                    return c.status !== 'desativada' && !isCompanyDisabled(c.id);
+                  })
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
               </select>
               {errors.companyId && (
                 <p className="mt-1 text-[11px] font-medium text-rose-500 dark:text-rose-400 flex items-center gap-1">

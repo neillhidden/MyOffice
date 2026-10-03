@@ -34,6 +34,7 @@ export const BankView: React.FC = () => {
     updateBank,
     deleteBank,
     getCompanyForBank,
+    isCompanyDisabled,
   } = useStock();
 
   // Search & Filter state
@@ -57,9 +58,21 @@ export const BankView: React.FC = () => {
     let activeAccountsCount = 0;
 
     banks.forEach((bank) => {
-      const bal = getBankBalance(bank.id);
-      totalConsolidatedKz += convertToKwanza(bal, bank.currency);
-      if (bank.status === 'ativo' || (bank.status as string) === 'ativa') activeAccountsCount++;
+      const comp = getCompanyForBank(bank.id);
+      const isCompDisabled = comp ? comp.status === 'desativada' || isCompanyDisabled(comp.id) : false;
+      const isKiandaDisabled = bank.id === 'bank-kianda' && isCompanyDisabled('comp-kianda');
+      const isInactive =
+        bank.status === 'inativo' ||
+        (bank.status as string) === 'inativa' ||
+        isCompDisabled ||
+        isKiandaDisabled;
+
+      // An inactive account (either because company is Desativada or manually Inactive) NEVER enters the consolidated balance
+      if (!isInactive) {
+        const bal = getBankBalance(bank.id);
+        totalConsolidatedKz += convertToKwanza(bal, bank.currency);
+        activeAccountsCount++;
+      }
     });
 
     // Inflow & Outflow this month
@@ -71,10 +84,15 @@ export const BankView: React.FC = () => {
     let monthOutflowKz = 0;
 
     bankMovements.forEach((mov) => {
+      const bank = banks.find((b) => b.id === mov.bankId);
+      if (!bank) return;
+      const comp = getCompanyForBank(bank.id);
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return;
+      if (bank.id === 'bank-kianda' && isCompanyDisabled('comp-kianda')) return;
+
       const d = new Date(mov.date);
       if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-        const bank = banks.find((b) => b.id === mov.bankId);
-        const curr = bank?.currency || 'Kz';
+        const curr = bank.currency || 'Kz';
         const valKz = convertToKwanza(mov.amount, curr);
 
         if (mov.type === 'entrada') {
@@ -91,7 +109,7 @@ export const BankView: React.FC = () => {
       monthInflowKz,
       monthOutflowKz,
     };
-  }, [banks, bankMovements, getBankBalance]);
+  }, [banks, bankMovements, getBankBalance, getCompanyForBank, isCompanyDisabled]);
 
   // Filtered Banks
   const filteredBanks = useMemo(() => {
@@ -319,6 +337,10 @@ export const BankView: React.FC = () => {
             {filteredBanks.map((bank) => {
               const balance = getBankBalance(bank.id);
               const linkedCompany = getCompanyLinkedToBank(bank.id);
+              const isCompDisabled = linkedCompany ? linkedCompany.status === 'desativada' || isCompanyDisabled(linkedCompany.id) : false;
+              const isKiandaDisabled = bank.id === 'bank-kianda' && isCompanyDisabled('comp-kianda');
+              const isCompanyDesativada = isCompDisabled || isKiandaDisabled;
+              const isAccountInactive = bank.status === 'inativo' || (bank.status as string) === 'inativa' || isCompanyDesativada;
 
               return (
                 <div
@@ -374,15 +396,21 @@ export const BankView: React.FC = () => {
                             Banco Padrão
                           </span>
                         )}
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            bank.status === 'ativa'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          {bank.status === 'ativa' ? 'Ativa' : 'Inativa'}
-                        </span>
+                        {isCompanyDesativada ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            Inativa (Empresa Desativada)
+                          </span>
+                        ) : (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                              !isAccountInactive
+                                ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            {!isAccountInactive ? 'Ativa' : 'Inativa'}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -406,12 +434,14 @@ export const BankView: React.FC = () => {
                         <div className={`flex items-center gap-1 font-medium pt-1 border-t border-slate-200/60 dark:border-slate-700 mt-1 ${
                           linkedCompany.status === 'parada'
                             ? 'text-amber-700 dark:text-amber-400'
+                            : linkedCompany.status === 'desativada'
+                            ? 'text-slate-500 dark:text-slate-400'
                             : 'text-sky-700 dark:text-sky-400'
                         }`}>
                           <ShieldCheck className="w-3 h-3 shrink-0" />
                           <span>
                             Banco Principal: {linkedCompany.name}
-                            {linkedCompany.status === 'parada' ? ' (Parada)' : ''}
+                            {linkedCompany.status === 'parada' ? ' (Parada)' : linkedCompany.status === 'desativada' ? ' (Desativada)' : ''}
                           </span>
                         </div>
                       )}
@@ -442,27 +472,29 @@ export const BankView: React.FC = () => {
                     </button>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        id={`btn-bank-mov-${bank.id}`}
-                        onClick={() => {
-                          setMovementTargetBankId(bank.id);
-                          setIsMovementModalOpen(true);
-                        }}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                          linkedCompany?.status === 'parada'
-                            ? 'text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                        title={
-                          linkedCompany?.status === 'parada'
-                            ? 'Empresa parada — serviços indisponíveis'
-                            : 'Registar movimentação nesta conta'
-                        }
-                        aria-label="Registar movimentação nesta conta"
-                      >
-                        <ArrowLeftRight className="w-3.5 h-3.5" />
-                      </button>
+                      {!isCompanyDesativada && (
+                        <button
+                          type="button"
+                          id={`btn-bank-mov-${bank.id}`}
+                          onClick={() => {
+                            setMovementTargetBankId(bank.id);
+                            setIsMovementModalOpen(true);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            linkedCompany?.status === 'parada'
+                              ? 'text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          title={
+                            linkedCompany?.status === 'parada'
+                              ? 'Empresa parada — serviços indisponíveis'
+                              : 'Registar movimentação nesta conta'
+                          }
+                          aria-label="Registar movimentação nesta conta"
+                        >
+                          <ArrowLeftRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       <button
                         type="button"

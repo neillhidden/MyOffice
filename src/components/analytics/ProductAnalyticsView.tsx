@@ -19,7 +19,16 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
   onSelectProduct,
   onGoToPurchaseList,
 }) => {
-  const { products, movements, warehouses, companies, isCompanyDisabled, getProductStockInfo, getCurrentStock } = useStock();
+  const {
+    products,
+    movements,
+    warehouses,
+    companies,
+    isCompanyDisabled,
+    getProductStockInfo,
+    getCurrentStock,
+    getProductWarehouses,
+  } = useStock();
 
   const [deadStockPeriodDays, setDeadStockPeriodDays] = useState<number>(60);
   const [activeTab, setActiveTab] = useState<'ranking' | 'parados' | 'reposicao' | 'margens'>('ranking');
@@ -27,28 +36,48 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
   // Filter out products and movements belonging solely to disabled companies (e.g. Kianda)
   const visibleProducts = useMemo(() => {
     return products.filter((p) => {
-      // Find warehouses associated with this product's movements or stock
-      const prodMovements = movements.filter((m) => m.productId === p.id);
-      if (prodMovements.length > 0) {
-        // If all associated warehouses belong to disabled companies, exclude the product
-        const hasNonDisabledMovement = prodMovements.some((m) => {
-          const wh = warehouses.find((w) => w.id === m.warehouseId);
-          const comp = companies.find((c) => c.id === wh?.companyId);
-          return comp ? !isCompanyDisabled(comp.id) : true;
-        });
-        if (!hasNonDisabledMovement) return false;
+      // Exclude Kianda products if Kianda is disabled
+      if (p.id.includes('kianda') || p.brand?.toLowerCase().includes('kianda')) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
       }
+
+      // Check operational warehouses
+      const operationalWhs = getProductWarehouses(p.id);
+      if (operationalWhs.length === 0) {
+        // Product has no warehouses in active/operational companies
+        return false;
+      }
+
       return true;
     });
-  }, [products, movements, warehouses, companies, isCompanyDisabled]);
+  }, [products, companies, isCompanyDisabled, getProductWarehouses]);
 
   const visibleMovements = useMemo(() => {
     return movements.filter((m) => {
+      if (
+        m.warehouseId === 'wh-kianda' ||
+        m.destinationWarehouseId === 'wh-kianda' ||
+        m.id.startsWith('mov-knd')
+      ) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+
       const wh = warehouses.find((w) => w.id === m.warehouseId);
       const comp = companies.find((c) => c.id === wh?.companyId);
-      return comp ? !isCompanyDisabled(comp.id) : true;
+      if (comp && isCompanyDisabled(comp.id)) return false;
+
+      // Check if product itself belongs to disabled company
+      const prod = products.find((p) => p.id === m.productId);
+      if (prod && (prod.id.includes('kianda') || prod.brand?.toLowerCase().includes('kianda'))) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+
+      return true;
     });
-  }, [movements, warehouses, companies, isCompanyDisabled]);
+  }, [movements, warehouses, companies, isCompanyDisabled, products]);
 
   // 1. Calculate sales per product (movements of type 'saida')
   const salesAnalysis = useMemo(() => {

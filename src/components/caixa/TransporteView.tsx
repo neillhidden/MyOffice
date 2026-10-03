@@ -23,7 +23,7 @@ interface TransporteViewProps {
 }
 
 export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceipt }) => {
-  const { transports, sales, warehouses, companies, isCompanyDisabled, updateTransport } = useStock();
+  const { transports, sales, warehouses, companies, isCompanyDisabled, isWarehouseDisabled, updateTransport } = useStock();
 
   // Search & Filter state
   const [search, setSearch] = useState<string>('');
@@ -36,13 +36,24 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
   // Visible transports: excludes transports associated with disabled companies
   const visibleTransports = useMemo(() => {
     return transports.filter((t) => {
+      if (
+        t.id.includes('KND') ||
+        t.saleId?.includes('KND') ||
+        t.driver?.toLowerCase().includes('kianda') ||
+        t.vehicle?.toLowerCase().includes('kianda')
+      ) {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+
       const sale = sales.find((s) => s.id === t.saleId);
       const wh = warehouses.find((w) => w.id === sale?.warehouseId);
       const comp = companies.find((c) => c.id === wh?.companyId);
-      if (comp && isCompanyDisabled(comp.id)) return false;
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      if (sale?.warehouseId && isWarehouseDisabled(sale.warehouseId)) return false;
       return true;
     });
-  }, [transports, sales, warehouses, companies, isCompanyDisabled]);
+  }, [transports, sales, warehouses, companies, isCompanyDisabled, isWarehouseDisabled]);
 
   // Status metrics
   const metrics = useMemo(() => {

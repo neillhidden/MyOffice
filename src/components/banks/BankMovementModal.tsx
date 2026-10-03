@@ -15,7 +15,15 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
   onClose,
   preSelectedBankId,
 }) => {
-  const { banks, recordBankMovement, getBankBalance, getCompanyForBank, isBankOperationBlocked } = useStock();
+  const {
+    banks,
+    companies,
+    recordBankMovement,
+    getBankBalance,
+    getCompanyForBank,
+    isCompanyDisabled,
+    isBankOperationBlocked,
+  } = useStock();
 
   // No operation preselected by default (Rule 1 & Rule 7)
   const [type, setType] = useState<BankMovementType | ''>('');
@@ -42,6 +50,19 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
       setErrors({});
     }
   }, [isOpen, preSelectedBankId]);
+
+  // Operational banks: strictly exclude banks of disabled companies from selectors
+  const operationalBanks = React.useMemo(() => {
+    return banks.filter((b) => {
+      if (b.id === 'bank-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+      const comp = getCompanyForBank(b.id);
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      return true;
+    });
+  }, [banks, companies, getCompanyForBank, isCompanyDisabled]);
 
   if (!isOpen) return null;
 
@@ -302,7 +323,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                 }`}
               >
                 <option value="">Selecione a conta bancária...</option>
-                {banks.map((b) => {
+                {operationalBanks.map((b) => {
                   const comp = getCompanyForBank(b.id);
                   const isStopped = comp?.status === 'parada';
                   return (
@@ -350,7 +371,7 @@ export const BankMovementModal: React.FC<BankMovementModalProps> = ({
                   }`}
                 >
                   <option value="">Selecione a conta de destino...</option>
-                  {banks
+                  {operationalBanks
                     .filter((b) => b.id !== bankId)
                     .map((b) => {
                       const comp = getCompanyForBank(b.id);

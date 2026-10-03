@@ -26,7 +26,7 @@ import { DebtIncrementModal } from './DebtIncrementModal';
 type DebtFilterTab = 'todas' | 'a_pagar' | 'a_receber' | 'vencidas';
 
 export const DividasView: React.FC = () => {
-  const { debts, companies, deleteDebt, getDebtCalculations } = useStock();
+  const { debts, companies, deleteDebt, getDebtCalculations, isCompanyDisabled } = useStock();
 
   // Filters
   const [activeTab, setActiveTab] = useState<DebtFilterTab>('todas');
@@ -50,6 +50,19 @@ export const DividasView: React.FC = () => {
   const [debtToDelete, setDebtToDelete] = useState<Debt | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Visible debts: strictly exclude debts belonging to disabled companies
+  const visibleDebts = useMemo(() => {
+    return debts.filter((d) => {
+      if (d.companyId === 'comp-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+      const comp = companies.find((c) => c.id === d.companyId);
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      return true;
+    });
+  }, [debts, companies, isCompanyDisabled]);
+
   // Consolidated Metrics
   const metrics = useMemo(() => {
     let totalAReceberRestante = 0;
@@ -57,7 +70,7 @@ export const DividasView: React.FC = () => {
     let totalVencido = 0;
     let totalQuitado = 0;
 
-    debts.forEach((d) => {
+    visibleDebts.forEach((d) => {
       const calcs = getDebtCalculations(d.id);
       if (calcs.status === 'quitada') {
         totalQuitado += d.totalAmount;
@@ -80,11 +93,11 @@ export const DividasView: React.FC = () => {
       totalVencido,
       totalQuitado,
     };
-  }, [debts, getDebtCalculations]);
+  }, [visibleDebts, getDebtCalculations]);
 
   // Filtered Debts
   const filteredDebts = useMemo(() => {
-    return debts
+    return visibleDebts
       .filter((d) => {
         const calcs = getDebtCalculations(d.id);
 
@@ -112,7 +125,7 @@ export const DividasView: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [debts, activeTab, companyFilter, statusFilter, search, companies, getDebtCalculations]);
+  }, [visibleDebts, activeTab, companyFilter, statusFilter, search, companies, getDebtCalculations]);
 
   const handleDeleteDebt = (debt: Debt) => {
     setErrorMessage(null);
@@ -330,11 +343,18 @@ export const DividasView: React.FC = () => {
               className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
               <option value="todas">Todas as Empresas</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {companies
+                .filter((c) => {
+                  if (c.id === 'comp-kianda') {
+                    return !isCompanyDisabled('comp-kianda') && c.status !== 'desativada';
+                  }
+                  return c.status !== 'desativada' && !isCompanyDisabled(c.id);
+                })
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </div>
 

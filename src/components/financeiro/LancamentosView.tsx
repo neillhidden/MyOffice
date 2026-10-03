@@ -36,6 +36,9 @@ export const LancamentosView: React.FC = () => {
   const {
     banks,
     bankMovements,
+    companies,
+    getCompanyForBank,
+    isCompanyDisabled,
     removeFinancialMovement,
     restoreFinancialMovement,
   } = useStock();
@@ -54,10 +57,32 @@ export const LancamentosView: React.FC = () => {
   const [removalReason, setRemovalReason] = useState<string>('');
   const [removalError, setRemovalError] = useState<string | null>(null);
 
+  // Operational banks: strictly exclude banks of disabled companies
+  const operationalBanks = useMemo(() => {
+    return banks.filter((b) => {
+      if (b.id === 'bank-kianda') {
+        const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+        if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+      }
+      const comp = getCompanyForBank(b.id);
+      if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      return true;
+    });
+  }, [banks, companies, getCompanyForBank, isCompanyDisabled]);
+
   // Filtered movements sorted in reverse chronological order
   const filteredMovements = useMemo(() => {
     return bankMovements
       .filter((mov) => {
+        // Exclude movements belonging to disabled companies
+        const bank = banks.find((b) => b.id === mov.bankId);
+        if (!bank) return false;
+        if (bank.id === 'bank-kianda') {
+          const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
+          if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
+        }
+        const comp = getCompanyForBank(bank.id);
+        if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
         // Removed filter
         if (!showRemoved && mov.isRemoved) return false;
         if (showRemoved && !mov.isRemoved) return false;
@@ -220,7 +245,7 @@ export const LancamentosView: React.FC = () => {
               className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
             >
               <option value="todas">Todas as Contas</option>
-              {banks.map((b) => (
+              {operationalBanks.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name} ({b.currency})
                 </option>

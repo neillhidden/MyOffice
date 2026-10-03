@@ -81,8 +81,9 @@ export const FornecedoresView: React.FC = () => {
             if (wh) {
               const comp = companies.find((c) => c.id === wh.companyId);
               if (comp) {
-                companyNamesSet.add(comp.name);
-                if (comp.status === 'desativada') {
+                if (comp.status !== 'desativada' && comp.id !== 'comp-kianda') {
+                  companyNamesSet.add(comp.name);
+                } else {
                   inactiveCompany = true;
                 }
               } else {
