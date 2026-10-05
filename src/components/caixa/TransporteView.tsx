@@ -17,6 +17,7 @@ import { useStock } from '../../context/StockContext';
 import { Transport, TransportStatus } from '../../types/stock';
 import { formatCurrencyValue, formatDate } from '../../utils/formatters';
 import { TransportModal } from './TransportModal';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 interface TransporteViewProps {
   onOpenSaleReceipt?: (saleId: string) => void;
@@ -126,12 +127,7 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
           </span>
         );
       case 'entregue':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-            Entregue
-          </span>
-        );
+        return <PositiveBadge label="Entregue" />;
       case 'cancelado':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
@@ -229,32 +225,45 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar por endereço, motorista ou ref..."
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900"
-          />
+      {/* Unified Filter Capsule Toolbar */}
+      <div className="dm-filter-capsule flex flex-col sm:flex-row items-center justify-between gap-2 bg-white dark:bg-dm-surface p-1.5 rounded-2xl border border-slate-200 dark:border-dm-border shadow-xs">
+        <div className="flex flex-wrap items-center divide-x divide-slate-200/80 dark:divide-dm-border flex-1 w-full">
+          {/* Status Filter Segment */}
+          <div className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs">
+            <span className="font-medium text-slate-500 dark:text-dm-muted">Estado:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-transparent border-0 text-xs text-slate-800 dark:text-dm-text font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="todos">Todos os Estados</option>
+              <option value="pendente">Apenas Pendentes</option>
+              <option value="em_transito">Em Trânsito</option>
+              <option value="entregue">Apenas Entregues</option>
+              <option value="cancelado">Cancelados</option>
+            </select>
+          </div>
+
+          {/* Search Segment */}
+          <div className="flex items-center px-3.5 py-1.5 flex-1 min-w-[200px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar por endereço, motorista ou ref..."
+              className="w-full bg-transparent border-0 text-xs text-slate-900 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
-          >
-            <option value="todos">Todos os Estados</option>
-            <option value="pendente">Apenas Pendentes</option>
-            <option value="em_transito">Em Trânsito</option>
-            <option value="entregue">Apenas Entregues</option>
-            <option value="cancelado">Cancelados</option>
-          </select>
-        </div>
+        <button
+          type="button"
+          onClick={() => {}}
+          className="dm-btn-primary px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0"
+        >
+          Pesquisar
+        </button>
       </div>
 
       {/* Transports Table */}
@@ -385,7 +394,19 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
                               setSelectedTransport(transport);
                               setIsModalOpen(true);
                             }}
-                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
+                            title="Ver e editar detalhes do transporte"
+                          >
+                            Ver detalhes
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTransport(transport);
+                              setIsModalOpen(true);
+                            }}
+                            className="dm-icon-action p-1.5 text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors"
                             title="Editar detalhes do transporte"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

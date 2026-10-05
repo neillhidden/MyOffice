@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { formatKwanza } from '../../utils/formatters';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 interface ProductAnalyticsViewProps {
   onSelectProduct: (productId: string) => void;
@@ -554,7 +555,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
               <button
                 type="button"
                 onClick={onGoToPurchaseList}
-                className="px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs flex items-center gap-1 cursor-pointer"
+                className="dm-btn-primary px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-dm-page bg-white dark:bg-dm-text border border-slate-300 dark:border-transparent rounded-lg hover:bg-slate-50 dark:hover:bg-white shadow-xs flex items-center gap-1 cursor-pointer"
               >
                 <span>Ir para Lista de Compras</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -687,9 +688,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
                             Margem Estreita
                           </span>
                         ) : isHighMargin ? (
-                          <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded font-medium">
-                            Alta Margem
-                          </span>
+                          <PositiveBadge label="Alta Margem" />
                         ) : (
                           <span className="text-[10px] text-slate-500 dark:text-slate-400">Média</span>
                         )}

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { formatDateTime } from '../../utils/formatters';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 interface MovementsViewProps {
   onOpenNewMovementModal: () => void;
@@ -132,23 +133,23 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
           type="button"
           id="btn-new-movement"
           onClick={onOpenNewMovementModal}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs shrink-0 cursor-pointer"
+          className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-lg text-xs font-medium transition-colors shadow-xs shrink-0 cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>+ Registar Movimentação</span>
         </button>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Type Filter */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg">
-            <span className="font-medium text-slate-500 dark:text-slate-400">Tipo:</span>
+      {/* Unified Filter Capsule Bar */}
+      <div className="dm-filter-capsule bg-white dark:bg-dm-surface border border-slate-200/80 dark:border-dm-border rounded-2xl p-1.5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+        <div className="flex flex-wrap items-center divide-x divide-slate-200/80 dark:divide-dm-border flex-1">
+          {/* Type Filter Segment */}
+          <div className="flex items-center gap-1.5 text-xs px-3 py-1.5">
+            <span className="font-medium text-slate-500 dark:text-dm-muted">Tipo:</span>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-transparent font-medium text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer capitalize [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer capitalize"
             >
               <option value="all">Todos ({visibleMovements.length})</option>
               <option value="entrada">Entrada ({typeCounts.entrada})</option>
@@ -159,13 +160,13 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
             </select>
           </div>
 
-          {/* Warehouse Filter */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg">
-            <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+          {/* Warehouse Filter Segment */}
+          <div className="flex items-center gap-1.5 text-xs px-3 py-1.5">
+            <span className="font-medium text-slate-500 dark:text-dm-muted">Local:</span>
             <select
               value={warehouseFilter}
               onChange={(e) => setWarehouseFilter(e.target.value)}
-              className="bg-transparent font-medium text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="all">Todos os Armazéns</option>
               {visibleWarehouses.map((w) => {
@@ -180,34 +181,47 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
             </select>
           </div>
 
-          {/* Product Filter */}
-          <select
-            value={productFilter}
-            onChange={(e) => setProductFilter(e.target.value)}
-            className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 font-medium focus:outline-none [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-          >
-            <option value="all">Todos os Produtos</option>
-            {products
-              .filter((p) => visibleMovements.some((m) => m.productId === p.id))
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-          </select>
+          {/* Product Filter Segment */}
+          <div className="flex items-center gap-1.5 text-xs px-3 py-1.5">
+            <span className="font-medium text-slate-500 dark:text-dm-muted">Produto:</span>
+            <select
+              value={productFilter}
+              onChange={(e) => setProductFilter(e.target.value)}
+              className="bg-transparent border-0 font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer max-w-[180px]"
+            >
+              <option value="all">Todos os Produtos</option>
+              {products
+                .filter((p) => visibleMovements.some((m) => m.productId === p.id))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* Quick Search Segment */}
+          <div className="flex items-center px-3 py-1.5 flex-1 min-w-[200px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filtrar motivo, ref, operador..."
+              className="w-full bg-transparent border-0 text-xs text-slate-700 dark:text-dm-text focus:outline-none placeholder:text-slate-400 dark:placeholder:text-dm-muted"
+            />
+          </div>
         </div>
 
-        {/* Quick Search */}
-        <div className="flex items-center bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 w-56">
-          <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filtrar motivo, ref, operador..."
-            className="w-full bg-transparent text-xs text-slate-700 dark:text-slate-200 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
-          />
-        </div>
+        {/* Capsule Action Button */}
+        <button
+          type="button"
+          onClick={onOpenNewMovementModal}
+          className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Adicionar</span>
+        </button>
       </div>
 
       {/* Movements Table */}
@@ -278,26 +292,27 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
 
                       {/* Tipo */}
                       <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded capitalize ${
-                            mov.type === 'entrada'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60'
-                              : mov.type === 'saida'
-                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60'
-                              : mov.type === 'transferencia'
-                              ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-900/60'
-                              : mov.type === 'defeituoso'
-                              ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60'
-                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60'
-                          }`}
-                        >
-                          {mov.type === 'entrada' && <ArrowDownLeft className="w-3 h-3" />}
-                          {mov.type === 'saida' && <ArrowUpRight className="w-3 h-3" />}
-                          {mov.type === 'transferencia' && <ArrowLeftRight className="w-3 h-3" />}
-                          {mov.type === 'ajuste' && <RotateCcw className="w-3 h-3" />}
-                          {mov.type === 'defeituoso' && <AlertTriangle className="w-3 h-3" />}
-                          {mov.type}
-                        </span>
+                        {mov.type === 'entrada' ? (
+                          <PositiveBadge label="Entrada" />
+                        ) : (
+                          <span
+                            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded capitalize ${
+                              mov.type === 'saida'
+                                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60'
+                                : mov.type === 'transferencia'
+                                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-900/60'
+                                : mov.type === 'defeituoso'
+                                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60'
+                                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60'
+                            }`}
+                          >
+                            {mov.type === 'saida' && <ArrowUpRight className="w-3 h-3" />}
+                            {mov.type === 'transferencia' && <ArrowLeftRight className="w-3 h-3" />}
+                            {mov.type === 'ajuste' && <RotateCcw className="w-3 h-3" />}
+                            {mov.type === 'defeituoso' && <AlertTriangle className="w-3 h-3" />}
+                            {mov.type}
+                          </span>
+                        )}
                       </td>
 
                       {/* Quantidade */}

@@ -14,6 +14,7 @@ import {
   DefectDecision,
 } from '../../types/stock';
 import { formatKwanza, formatDateTime } from '../../utils/formatters';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 export const DefectiveView: React.FC = () => {
   const {
@@ -287,16 +288,16 @@ export const DefectiveView: React.FC = () => {
         </div>
       </div>
 
-      {/* Action and Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Reason Filter */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg">
-            <span className="font-medium text-slate-500 dark:text-slate-400">Motivo da Avaria:</span>
+      {/* Unified Filter Capsule Toolbar */}
+      <div className="dm-filter-capsule bg-white dark:bg-dm-surface border border-slate-200/80 dark:border-dm-border rounded-2xl p-1.5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+        <div className="flex flex-wrap items-center divide-x divide-slate-200/80 dark:divide-dm-border">
+          {/* Reason Filter Segment */}
+          <div className="flex items-center gap-1.5 text-xs px-3.5 py-1.5">
+            <span className="font-medium text-slate-500 dark:text-dm-muted">Motivo da Avaria:</span>
             <select
               value={filterReason}
               onChange={(e) => setFilterReason(e.target.value)}
-              className="bg-transparent font-medium text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="all">Todas as avarias</option>
               <option value="defeito_fabrica">Defeito de Fábrica</option>
@@ -306,13 +307,13 @@ export const DefectiveView: React.FC = () => {
             </select>
           </div>
 
-          {/* Decision Filter */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg">
-            <span className="font-medium text-slate-500 dark:text-slate-400">Decisão:</span>
+          {/* Decision Filter Segment */}
+          <div className="flex items-center gap-1.5 text-xs px-3.5 py-1.5">
+            <span className="font-medium text-slate-500 dark:text-dm-muted">Decisão:</span>
             <select
               value={filterDecision}
               onChange={(e) => setFilterDecision(e.target.value)}
-              className="bg-transparent font-medium text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="all">Todas as Decisões</option>
               <option value="descartar">Descarte / Baixa</option>
@@ -327,7 +328,7 @@ export const DefectiveView: React.FC = () => {
           type="button"
           id="btn-register-defective"
           onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs ml-auto cursor-pointer"
+          className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors ml-auto cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>+ Registar Defeituoso</span>
@@ -448,16 +449,18 @@ export const DefectiveView: React.FC = () => {
                               item.status === 'pendente' ? 'resolvido' : 'pendente'
                             );
                           }}
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                          className={`${
                             isParada ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                          } ${
-                            item.status === 'resolvido'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50'
-                              : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50'
                           }`}
                           title={isParada ? 'Operação bloqueada: Empresa Parada' : undefined}
                         >
-                          {item.status === 'resolvido' ? 'Resolvido' : 'Pendente'}
+                          {item.status === 'resolvido' ? (
+                            <PositiveBadge label="Resolvido" />
+                          ) : (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50">
+                              Pendente
+                            </span>
+                          )}
                         </button>
                       </td>
 

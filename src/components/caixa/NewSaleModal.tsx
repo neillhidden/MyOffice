@@ -546,7 +546,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     id="btn-add-item-to-cart"
                     onClick={handleAddToCart}
                     disabled={!selectedProductId || availableStock <= 0}
-                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white disabled:text-slate-400 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors shrink-0 shadow-xs"
+                    className="dm-btn-primary px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-dm-text dark:text-dm-page disabled:bg-slate-200 dark:disabled:bg-dm-elevated text-white disabled:text-slate-400 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors shrink-0 shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Adicionar</span>
@@ -879,7 +879,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               id="btn-confirm-final-sale"
               onClick={handleSubmitSale}
               disabled={cart.length === 0 || currentCompany?.status === 'parada' || currentCompany?.status === 'desativada'}
-              className="flex-1 sm:flex-initial px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2"
+              className="dm-btn-primary flex-1 sm:flex-initial px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 dark:bg-dm-text dark:hover:bg-white dark:text-dm-page disabled:bg-slate-300 dark:disabled:bg-dm-elevated text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Finalizar Venda</span>

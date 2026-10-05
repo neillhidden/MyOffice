@@ -116,15 +116,15 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 px-6 py-3.5 transition-colors duration-200">
+    <header className="bg-white dark:bg-dm-surface border-b border-slate-200/80 dark:border-dm-border sticky top-0 z-30 px-6 py-3.5 transition-colors duration-200">
       <div className="flex items-center justify-between gap-4">
         {/* Breadcrumb discreto em letras finas e pequenas */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 font-normal">
-          <span className="text-slate-500 dark:text-slate-400 font-medium">{currentModule}</span>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-dm-muted font-normal">
+          <span className="text-slate-500 dark:text-dm-muted font-medium">{currentModule}</span>
           {currentSubmodule && (
             <>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
-              <span className="text-slate-700 dark:text-slate-200 font-medium">{currentSubmodule}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-dm-border" />
+              <span className="text-slate-700 dark:text-dm-text font-medium">{currentSubmodule}</span>
             </>
           )}
         </nav>

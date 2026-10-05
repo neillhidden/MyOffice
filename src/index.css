@@ -1,3 +1,240 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ==========================================================================
+   TOKENS DE COR CENTRALIZADOS (FONTE ÚNICA DE TEMA)
+   O modo claro mantém-se inalterado; o modo escuro aplica a paleta definida:
+   - Fundo de página: #0D0D0F
+   - Superfície (cartões, barra lateral, linhas de tabela, modais): #18181B
+   - Borda: #2A2A2E (1px fina, sem sombras pesadas)
+   - Texto principal: #F5F5F5
+   - Texto secundário/muted: #8B8B93
+   - Botão primário: fundo #F5F5F5, texto #0D0D0F
+   ========================================================================== */
+:root {
+  --dm-bg-page: #0D0D0F;
+  --dm-bg-surface: #18181B;
+  --dm-bg-elevated: #202024;
+  --dm-border: #2A2A2E;
+  --dm-text-primary: #F5F5F5;
+  --dm-text-muted: #8B8B93;
+  --dm-btn-primary-bg: #F5F5F5;
+  --dm-btn-primary-text: #0D0D0F;
+}
+
+@theme {
+  --color-dm-page: var(--dm-bg-page);
+  --color-dm-surface: var(--dm-bg-surface);
+  --color-dm-elevated: var(--dm-bg-elevated);
+  --color-dm-border: var(--dm-border);
+  --color-dm-text: var(--dm-text-primary);
+  --color-dm-muted: var(--dm-text-muted);
+}
+
+/* ==========================================================================
+   APLICAÇÃO GLOBAL DO TEMA ESCURO (.dark) A PARTIR DOS TOKENS CENTRALIZADOS
+   Garante que nenhum módulo, cartão, tabela ou modal fique com cor fixa clara
+   quando o modo escuro está ativo, preservando 100% do modo claro.
+   ========================================================================== */
+
+/* 1. Fundo de página (#0D0D0F) */
+.dark body,
+.dark #app-root-shell,
+.dark #calendar-module-root,
+.dark .bg-\[\#f8fafc\],
+.dark .dark\:bg-slate-950 {
+  background-color: var(--dm-bg-page) !important;
+  color: var(--dm-text-primary);
+}
+
+/* 2. Superfície (#18181B): cartões, barra lateral, linhas de tabela, cabeçalhos, modais */
+.dark #app-sidebar,
+.dark header,
+.dark .dm-surface,
+.dark .dm-filter-capsule,
+.dark .bg-white:not(.dm-btn-primary):not(.dm-positive-dot):not([role="switch"] *),
+.dark .dark\:bg-slate-900:not(.dm-btn-primary):not(.dm-positive-dot) {
+  background-color: var(--dm-bg-surface) !important;
+}
+
+/* Sub-superfícies, inputs, selects, barras de abas em modo escuro */
+.dark .bg-slate-50:not(.dm-btn-primary),
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/60,
+.dark .bg-slate-50\/70,
+.dark .bg-slate-50\/80,
+.dark .bg-slate-100:not(#calendar-module-root):not(.dm-btn-primary):not(.dm-positive-dot),
+.dark .bg-slate-100\/80,
+.dark .bg-slate-100\/90,
+.dark .dark\:bg-slate-800,
+.dark .dark\:bg-slate-800\/40,
+.dark .dark\:bg-slate-800\/50,
+.dark .dark\:bg-slate-800\/60,
+.dark .dark\:bg-slate-800\/80 {
+  background-color: var(--dm-bg-surface) !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.dark select,
+.dark textarea {
+  background-color: var(--dm-bg-surface) !important;
+  border-color: var(--dm-border) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--dm-text-muted) !important;
+}
+
+.dark select option {
+  background-color: var(--dm-bg-surface) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* 3. Tabelas de dados em modo escuro:
+   Cabeçalhos em maiúsculas pequenas (#8B8B93), linhas em #18181B, borda fina #2A2A2E, sem zebra striping */
+.dark table {
+  background-color: var(--dm-bg-surface) !important;
+}
+
+.dark thead,
+.dark thead tr,
+.dark thead th {
+  background-color: var(--dm-bg-surface) !important;
+  color: var(--dm-text-muted) !important;
+  border-color: var(--dm-border) !important;
+}
+
+.dark tbody,
+.dark tbody tr {
+  background-color: var(--dm-bg-surface) !important;
+  border-color: var(--dm-border) !important;
+}
+
+.dark tbody tr:hover {
+  background-color: var(--dm-bg-elevated) !important;
+}
+
+/* 4. Bordas finas 1px (#2A2A2E) e remoção de sombras pesadas no modo escuro */
+.dark *,
+.dark *::before,
+.dark *::after {
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+}
+
+.dark .shadow-2xs,
+.dark .shadow-xs,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: none !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-200\/60,
+.dark .border-slate-200\/70,
+.dark .border-slate-200\/80,
+.dark .border-slate-200\/90,
+.dark .border-slate-300,
+.dark .dark\:border-slate-800,
+.dark .dark\:border-slate-700,
+.dark .dark\:border-slate-700\/80,
+.dark .dark\:border-slate-700\/60,
+.dark .dark\:border-slate-600 {
+  border-color: var(--dm-border) !important;
+}
+
+.dark .divide-slate-50 > :not(:last-child),
+.dark .divide-slate-100 > :not(:last-child),
+.dark .divide-slate-200 > :not(:last-child),
+.dark .divide-slate-200\/80 > :not(:last-child),
+.dark .dark\:divide-slate-800 > :not(:last-child),
+.dark .dark\:divide-slate-800\/60 > :not(:last-child) {
+  border-color: var(--dm-border) !important;
+}
+
+/* 5. Tipografia & Contraste em modo escuro:
+   - Texto principal: #F5F5F5
+   - Texto secundário/muted: #8B8B93 */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark .text-slate-950:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .text-slate-900:not(.dm-btn-primary):not(.dm-btn-primary *):not(.dark\:text-slate-900),
+.dark .text-slate-800:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .dark\:text-slate-100:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .dark\:text-slate-200:not(.dm-btn-primary):not(.dm-btn-primary *) {
+  color: var(--dm-text-primary) !important;
+}
+
+.dark .text-slate-700:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .text-slate-600:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .text-slate-500:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .text-slate-400:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .dark\:text-slate-300:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .dark\:text-slate-400:not(.dm-btn-primary):not(.dm-btn-primary *),
+.dark .dark\:text-slate-500:not(.dm-btn-primary):not(.dm-btn-primary *) {
+  color: var(--dm-text-muted) !important;
+}
+
+/* 6. Botão Primário em modo escuro:
+   Fundo branco sólido (#F5F5F5), texto escuro (#0D0D0F) — inversão de contraste */
+.dark .dm-btn-primary,
+.dark button.bg-slate-900:not(#app-sidebar button):not(.dm-segment-btn),
+.dark button.dark\:bg-slate-100:not(#app-sidebar button):not(.dm-segment-btn) {
+  background-color: var(--dm-btn-primary-bg) !important;
+  color: var(--dm-btn-primary-text) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.dark .dm-btn-primary:hover,
+.dark button.bg-slate-900:not(#app-sidebar button):not(.dm-segment-btn):hover,
+.dark button.dark\:bg-slate-100:not(#app-sidebar button):not(.dm-segment-btn):hover {
+  background-color: #FFFFFF !important;
+  color: var(--dm-btn-primary-text) !important;
+}
+
+.dark .dm-btn-primary *,
+.dark button.bg-slate-900:not(#app-sidebar button):not(.dm-segment-btn) *,
+.dark button.dark\:bg-slate-100:not(#app-sidebar button):not(.dm-segment-btn) * {
+  color: var(--dm-btn-primary-text) !important;
+}
+
+/* 7. Indicador/badge positivo (círculo branco pequeno com ícone escuro dentro) */
+.dark .dm-positive-dot {
+  background-color: var(--dm-btn-primary-bg) !important;
+  color: var(--dm-btn-primary-text) !important;
+}
+
+.dark .dm-positive-dot * {
+  color: var(--dm-btn-primary-text) !important;
+}
+
+/* 8. Botões secundários / ações em linha (Editar, Eliminar):
+   Só ícone, cor do ícone em #8B8B93, hover mais claro (#F5F5F5) */
+.dark .dm-icon-action {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: var(--dm-text-muted) !important;
+}
+
+.dark .dm-icon-action svg {
+  color: var(--dm-text-muted) !important;
+}
+
+.dark .dm-icon-action:hover:not(:disabled) {
+  background-color: var(--dm-bg-elevated) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+.dark .dm-icon-action:hover:not(:disabled) svg {
+  color: var(--dm-text-primary) !important;
+}

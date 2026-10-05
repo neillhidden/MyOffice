@@ -78,7 +78,7 @@ export const CalendarSidebarAgendas: React.FC<CalendarSidebarAgendasProps> = ({
         <button
           id="calendar-add-agenda-btn"
           onClick={onOpenCreateAgenda}
-          className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100/80 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-md text-xs font-medium transition-colors shadow-2xs"
+          className="dm-btn-primary px-2.5 py-1 bg-white dark:bg-dm-text border border-slate-200 dark:border-transparent hover:bg-slate-100/80 dark:hover:bg-white text-slate-800 dark:text-dm-page rounded-md text-xs font-semibold transition-colors shadow-2xs"
         >
           Adicionar
         </button>

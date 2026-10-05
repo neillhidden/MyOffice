@@ -11,7 +11,7 @@ import {
   Bot,
   Warehouse,
   ArrowLeftRight,
-  TrendingUp,
+  Calculator,
   ShoppingCart,
   AlertOctagon,
   ChevronDown,
@@ -39,6 +39,7 @@ export type MainModule =
 export type EstoqueSubmodule =
   | 'Armazém'
   | 'Movimentação'
+  | 'Simulador de Importação e Rentabilidade'
   | 'Análise de produtos'
   | 'Lista de compras'
   | 'Defeituoso';
@@ -99,7 +100,11 @@ const NAV_ITEMS: NavItemConfig[] = [
 const ESTOQUE_SUBMODULES: { id: EstoqueSubmodule; label: string; icon: React.ElementType }[] = [
   { id: 'Armazém', label: 'Armazém', icon: Warehouse },
   { id: 'Movimentação', label: 'Movimentação', icon: ArrowLeftRight },
-  { id: 'Análise de produtos', label: 'Análise de produtos', icon: TrendingUp },
+  {
+    id: 'Simulador de Importação e Rentabilidade',
+    label: 'Simulador de Importação e Rentabilidade',
+    icon: Calculator,
+  },
   { id: 'Lista de compras', label: 'Lista de compras', icon: ShoppingCart },
   { id: 'Defeituoso', label: 'Defeituoso', icon: AlertOctagon },
 ];
@@ -339,24 +344,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           scheduleClose();
         }
       }}
-      className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col justify-between shrink-0 transition-[width] duration-200 ease-in-out z-40 relative select-none overflow-x-hidden ${
+      className={`bg-white dark:bg-dm-surface border-r border-slate-200/80 dark:border-dm-border flex flex-col justify-between shrink-0 transition-[width] duration-200 ease-in-out z-40 relative select-none overflow-x-hidden ${
         isCollapsed ? 'w-16' : 'w-60'
       }`}
     >
       {/* Top Section: Brand & Navigation */}
       <div>
         {/* Brand Header: Logo/nome MyOffice expande/recolhe a barra lateral */}
-        <div className="h-14 flex items-center border-b border-slate-100 dark:border-slate-800 px-2 overflow-hidden">
+        <div className="h-14 flex items-center border-b border-slate-100 dark:border-dm-border px-2 overflow-hidden">
           <button
             type="button"
             id="sidebar-brand-toggle"
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expandir barra lateral (MyOffice)' : 'Recolher barra lateral (MyOffice)'}
             aria-label={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-            className="w-full h-10 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-slate-800/80"
+            className="w-full h-10 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-dm-elevated"
           >
             {/* Ícone fixo: sem reposicionamento ou recriação de nós */}
-            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
               M
             </div>
 
@@ -366,10 +371,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[140px] opacity-100'
               }`}
             >
-              <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
+              <span className="font-semibold text-slate-900 dark:text-dm-text text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
                 MyOffice
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
+              <span className="text-[10px] text-slate-400 dark:text-dm-muted font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
                 Angola
               </span>
             </div>
@@ -404,8 +409,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className={`w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium transition-colors cursor-pointer group ${
                     isActiveModule
-                      ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
+                      ? 'bg-slate-900 dark:bg-dm-border/70 text-white dark:text-dm-text shadow-xs dark:shadow-none font-semibold'
+                      : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100/80 dark:hover:bg-dm-elevated'
                   }`}
                 >
                   {/* Contentor de ícone com largura e posição fixa (32px de largura, centrado) */}
@@ -413,8 +418,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <Icon
                       className={`w-4 h-4 shrink-0 transition-colors ${
                         isActiveModule
-                          ? 'text-white dark:text-slate-900'
-                          : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'
+                          ? 'text-white dark:text-dm-text'
+                          : 'text-slate-500 dark:text-dm-muted group-hover:text-slate-800 dark:group-hover:text-dm-text'
                       }`}
                     />
                   </div>
@@ -432,8 +437,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           isAccordionOpen ? 'rotate-180' : ''
                         } ${
                           isActiveModule
-                            ? 'text-slate-300 dark:text-slate-600'
-                            : 'text-slate-400 dark:text-slate-500'
+                            ? 'text-slate-300 dark:text-dm-text'
+                            : 'text-slate-400 dark:text-dm-muted'
                         }`}
                       />
                     )}
@@ -447,7 +452,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       !isCollapsed && isAccordionOpen
                         ? 'max-h-64 opacity-100 mt-1'
                         : 'max-h-0 opacity-0 pointer-events-none'
-                    } ml-6 pl-2 border-l border-slate-200 dark:border-slate-800 space-y-0.5`}
+                    } ml-6 pl-2 border-l border-slate-200 dark:border-dm-border space-y-0.5`}
                   >
                     {submodules.map((sub) => {
                       const SubIcon = sub.icon;
@@ -460,13 +465,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           onClick={() => handleSelectSub(item.id, sub.id)}
                           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] font-medium transition-colors text-left cursor-pointer ${
                             active
-                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                              ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
+                              : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
                           }`}
                         >
                           <SubIcon
                             className={`w-3.5 h-3.5 shrink-0 ${
-                              active ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'
+                              active ? 'text-slate-900 dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'
                             }`}
                           />
                           <span className="truncate whitespace-nowrap">{sub.label}</span>
@@ -482,20 +487,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Bottom Section: Theme toggle & footer */}
-      <div className="border-t border-slate-100 dark:border-slate-800 p-2 space-y-1 overflow-hidden">
+      <div className="border-t border-slate-100 dark:border-dm-border p-2 space-y-1 overflow-hidden">
         {/* Quick Theme Toggle */}
         <button
           type="button"
           onClick={toggleTheme}
           title={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
           aria-label={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          className="w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+          className="w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer group"
         >
           <div className="w-8 h-8 shrink-0 flex items-center justify-center">
             {actualTheme === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-400 shrink-0" />
             ) : (
-              <Moon className="w-4 h-4 text-slate-500 shrink-0 group-hover:text-slate-700 dark:group-hover:text-slate-300" />
+              <Moon className="w-4 h-4 text-slate-500 shrink-0 group-hover:text-slate-700 dark:group-hover:text-dm-text" />
             )}
           </div>
           <div
@@ -513,7 +518,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Footer info: distintivo "AO" e versão */}
         <div className="h-6 flex items-center px-2 overflow-hidden">
           <div className="w-8 h-6 shrink-0 flex items-center justify-center">
-            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono px-1.5 py-0.5 rounded text-center">
+            <span className="text-[10px] bg-slate-100 dark:bg-dm-elevated text-slate-500 dark:text-dm-muted border border-transparent dark:border-dm-border font-mono px-1.5 py-0.5 rounded text-center">
               AO
             </span>
           </div>
@@ -522,7 +527,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
             }`}
           >
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate whitespace-nowrap">
+            <span className="text-[11px] text-slate-400 dark:text-dm-muted truncate whitespace-nowrap">
               MyOffice v1.0
             </span>
           </div>
@@ -569,12 +574,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
 
           {/* Cartão visível do submenu flutuante */}
-          <div className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 backdrop-blur-xs relative z-10 animate-in fade-in zoom-in-95 duration-75">
-            <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 mb-1 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+          <div className="w-48 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-xl shadow-xl dark:shadow-none p-1.5 backdrop-blur-xs relative z-10 animate-in fade-in zoom-in-95 duration-75">
+            <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-dm-border mb-1 flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-800 dark:text-dm-text">
                 {hoveredFlyout.id}
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+              <span className="text-[10px] text-slate-400 dark:text-dm-muted font-mono">
                 Esc
               </span>
             </div>
@@ -590,15 +595,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleSelectSub(hoveredFlyout.id, sub.id)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors text-left cursor-pointer ${
                       active
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                        ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
+                        : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
                     }`}
                   >
                     <SubIcon
                       className={`w-3.5 h-3.5 shrink-0 ${
                         active
-                          ? 'text-slate-900 dark:text-slate-100'
-                          : 'text-slate-400 dark:text-slate-500'
+                          ? 'text-slate-900 dark:text-dm-text'
+                          : 'text-slate-400 dark:text-dm-muted'
                       }`}
                     />
                     <span className="truncate">{sub.label}</span>

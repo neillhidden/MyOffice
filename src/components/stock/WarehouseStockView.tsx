@@ -25,6 +25,7 @@ import { useWarehouseFilters } from '../../context/WarehouseFilterContext';
 import { formatKwanza } from '../../utils/formatters';
 import { Product } from '../../types/stock';
 import { FilterCheckboxDropdown, FilterOption } from './FilterCheckboxDropdown';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 interface WarehouseStockViewProps {
   onOpenAddProduct: () => void;
@@ -502,144 +503,158 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         </div>
       </div>
 
-      {/* Filter Toolbar (Caixas de seleção interativas para todos os filtros) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Empresa Filter (Caixa de seleção multi-select com checkboxes) */}
-          <FilterCheckboxDropdown
-            id="company"
-            label="Empresa"
-            icon={<Building2 className="w-3.5 h-3.5" />}
-            options={companyOptions}
-            selectedIds={selectedCompanyIds}
-            onChange={handleCompanyChange}
-            allLabel="Todas"
-            searchPlaceholder="Buscar empresa..."
-            extraCheckbox={{
-              id: 'chk-hide-zero-company',
-              label: 'Ocultar produtos com estoque 0',
-              checked: hideZeroStock,
-              onChange: setHideZeroStock,
-            }}
-          />
+      {/* Filter Toolbar (Cápsula única com divisórias finas entre segmentos, terminando com botão sólido branco) */}
+      <div className="dm-filter-capsule bg-white dark:bg-dm-surface border border-slate-200/80 dark:border-dm-border rounded-2xl p-2 flex flex-wrap items-center justify-between gap-2 shadow-xs dark:shadow-none">
+        <div className="flex flex-wrap items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-dm-border">
+          {/* Segmento 1: Empresa */}
+          <div className="px-1 py-0.5 first:pl-0">
+            <FilterCheckboxDropdown
+              id="company"
+              label="Empresa"
+              icon={<Building2 className="w-3.5 h-3.5" />}
+              options={companyOptions}
+              selectedIds={selectedCompanyIds}
+              onChange={handleCompanyChange}
+              allLabel="Todas"
+              searchPlaceholder="Buscar empresa..."
+              extraCheckbox={{
+                id: 'chk-hide-zero-company',
+                label: 'Ocultar produtos com estoque 0',
+                checked: hideZeroStock,
+                onChange: setHideZeroStock,
+              }}
+            />
+          </div>
 
-          {/* Armazém / Local Selector (Caixa de seleção) */}
-          <FilterCheckboxDropdown
-            id="warehouse"
-            label="Local"
-            icon={<WarehouseIcon className="w-3.5 h-3.5" />}
-            options={warehouseOptions}
-            selectedIds={selectedWarehouseIds}
-            onChange={setSelectedWarehouseIds}
-            allLabel="Todos"
-            searchPlaceholder="Buscar armazém ou loja..."
-            extraCheckbox={{
-              id: 'chk-hide-zero-warehouse',
-              label: 'Ocultar produtos com estoque 0',
-              checked: hideZeroStock,
-              onChange: setHideZeroStock,
-            }}
-          />
+          {/* Segmento 2: Local */}
+          <div className="px-1 py-0.5">
+            <FilterCheckboxDropdown
+              id="warehouse"
+              label="Local"
+              icon={<WarehouseIcon className="w-3.5 h-3.5" />}
+              options={warehouseOptions}
+              selectedIds={selectedWarehouseIds}
+              onChange={setSelectedWarehouseIds}
+              allLabel="Todos"
+              searchPlaceholder="Buscar armazém ou loja..."
+              extraCheckbox={{
+                id: 'chk-hide-zero-warehouse',
+                label: 'Ocultar produtos com estoque 0',
+                checked: hideZeroStock,
+                onChange: setHideZeroStock,
+              }}
+            />
+          </div>
 
-          {/* Categoria Selector (Caixa de seleção) */}
-          <FilterCheckboxDropdown
-            id="category"
-            label="Categoria"
-            icon={<Filter className="w-3.5 h-3.5" />}
-            options={categoryOptions}
-            selectedIds={selectedCategories}
-            onChange={setSelectedCategories}
-            allLabel="Todas"
-            searchPlaceholder="Buscar categoria..."
-            extraCheckbox={{
-              id: 'chk-hide-zero-category',
-              label: 'Ocultar produtos com estoque 0',
-              checked: hideZeroStock,
-              onChange: setHideZeroStock,
-            }}
-          />
+          {/* Segmento 3: Categoria */}
+          <div className="px-1 py-0.5">
+            <FilterCheckboxDropdown
+              id="category"
+              label="Categoria"
+              icon={<Filter className="w-3.5 h-3.5" />}
+              options={categoryOptions}
+              selectedIds={selectedCategories}
+              onChange={setSelectedCategories}
+              allLabel="Todas"
+              searchPlaceholder="Buscar categoria..."
+              extraCheckbox={{
+                id: 'chk-hide-zero-category',
+                label: 'Ocultar produtos com estoque 0',
+                checked: hideZeroStock,
+                onChange: setHideZeroStock,
+              }}
+            />
+          </div>
 
-          {/* Status / Estado Selector (Caixa de seleção) */}
-          <FilterCheckboxDropdown
-            id="status"
-            label="Estado"
-            icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-            options={statusOptions}
-            selectedIds={selectedStatuses}
-            onChange={setSelectedStatuses}
-            allLabel="Todos"
-            extraCheckbox={{
-              id: 'chk-hide-zero-status',
-              label: 'Ocultar produtos com estoque 0',
-              checked: hideZeroStock,
-              onChange: setHideZeroStock,
-            }}
-          />
+          {/* Segmento 4: Estado */}
+          <div className="px-1 py-0.5">
+            <FilterCheckboxDropdown
+              id="status"
+              label="Estado"
+              icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+              options={statusOptions}
+              selectedIds={selectedStatuses}
+              onChange={setSelectedStatuses}
+              allLabel="Todos"
+              extraCheckbox={{
+                id: 'chk-hide-zero-status',
+                label: 'Ocultar produtos com estoque 0',
+                checked: hideZeroStock,
+                onChange: setHideZeroStock,
+              }}
+            />
+          </div>
 
-          {/* Condição / Estado do artigo Selector (Caixa de seleção) */}
-          <FilterCheckboxDropdown
-            id="condition"
-            label="Estado do artigo"
-            icon={<Boxes className="w-3.5 h-3.5" />}
-            options={conditionOptions}
-            selectedIds={selectedConditions}
-            onChange={setSelectedConditions}
-            allLabel="Todos"
-            extraCheckbox={{
-              id: 'chk-hide-zero-condition',
-              label: 'Ocultar produtos com estoque 0',
-              checked: hideZeroStock,
-              onChange: setHideZeroStock,
-            }}
-          />
+          {/* Segmento 5: Condição / Estado do artigo */}
+          <div className="px-1 py-0.5">
+            <FilterCheckboxDropdown
+              id="condition"
+              label="Estado do artigo"
+              icon={<Boxes className="w-3.5 h-3.5" />}
+              options={conditionOptions}
+              selectedIds={selectedConditions}
+              onChange={setSelectedConditions}
+              allLabel="Todos"
+              extraCheckbox={{
+                id: 'chk-hide-zero-condition',
+                label: 'Ocultar produtos com estoque 0',
+                checked: hideZeroStock,
+                onChange: setHideZeroStock,
+              }}
+            />
+          </div>
 
-          {/* Botão dedicado Mostrar / Ocultar Estoque Zero */}
-          <button
-            type="button"
-            id="btn-toggle-show-zero-stock"
-            onClick={() => setHideZeroStock((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-colors font-medium border shadow-2xs cursor-pointer ${
-              !hideZeroStock
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-            }`}
-            title={
-              !hideZeroStock
-                ? 'Produtos com estoque zero estão visíveis (Clique para ocultar)'
-                : 'Produtos com estoque zero estão ocultos (Clique para mostrar)'
-            }
-          >
-            {!hideZeroStock ? (
-              <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            ) : (
-              <EyeOff className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-            )}
-            <span>{!hideZeroStock ? 'Estoque zero: Visível' : 'Estoque zero: Oculto'}</span>
-          </button>
+          {/* Segmento 6: Mostrar / Ocultar Estoque Zero */}
+          <div className="px-1.5 py-0.5">
+            <button
+              type="button"
+              id="btn-toggle-show-zero-stock"
+              onClick={() => setHideZeroStock((prev) => !prev)}
+              className={`dm-segment-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-colors font-medium border cursor-pointer ${
+                !hideZeroStock
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 dark:bg-transparent dark:text-dm-text dark:border-transparent dark:hover:bg-dm-elevated'
+                  : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 dark:bg-transparent dark:text-dm-muted dark:border-transparent dark:hover:bg-dm-elevated'
+              }`}
+              title={
+                !hideZeroStock
+                  ? 'Produtos com estoque zero estão visíveis (Clique para ocultar)'
+                  : 'Produtos com estoque zero estão ocultos (Clique para mostrar)'
+              }
+            >
+              {!hideZeroStock ? (
+                <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-dm-text" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5 text-slate-400 dark:text-dm-muted" />
+              )}
+              <span>{!hideZeroStock ? 'Estoque zero: Visível' : 'Estoque zero: Oculto'}</span>
+            </button>
+          </div>
 
           {/* Limpar Filtros se algum filtro estiver ativo */}
           {isAnyFilterActive && (
-            <button
-              type="button"
-              id="btn-clear-all-stock-filters"
-              onClick={resetAllFilters}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-lg transition-colors font-medium shadow-2xs cursor-pointer"
-              title="Redefinir todos os filtros para o padrão"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Limpar Filtros</span>
-            </button>
+            <div className="px-1.5 py-0.5">
+              <button
+                type="button"
+                id="btn-clear-all-stock-filters"
+                onClick={resetAllFilters}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-lg transition-colors font-medium cursor-pointer"
+                title="Redefinir todos os filtros para o padrão"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Limpar Filtros</span>
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Drafts & Add Buttons */}
-        <div className="flex items-center gap-2 ml-auto">
+        {/* Drafts & Primary Solid Action Button at the end of the capsule */}
+        <div className="flex items-center gap-2 ml-auto pl-2">
           {productDrafts.length > 0 && (
             <button
               type="button"
               id="btn-stock-open-drafts"
               onClick={onOpenDrafts}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 rounded-lg text-xs font-medium transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 rounded-xl text-xs font-medium transition-colors"
               title="Ver produtos não concluídos guardados como rascunho"
             >
               <FileEdit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -651,7 +666,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
             type="button"
             id="btn-stock-add-product"
             onClick={onOpenAddProduct}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-medium transition-colors shadow-xs cursor-pointer"
+            className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer"
           >
             <span>Adicionar</span>
           </button>
@@ -851,7 +866,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                       {/* Indicador Visual Claro */}
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         {stockInfo.status === 'zerado' && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-transparent dark:border-dm-border">
                             Sem estoque
                           </span>
                         )}
@@ -866,25 +881,29 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                             Excesso de estoque
                           </span>
                         )}
-                        {stockInfo.status === 'normal' && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                            Normal
-                          </span>
-                        )}
+                        {stockInfo.status === 'normal' && <PositiveBadge label="Normal" />}
                       </td>
 
                       {/* Preço de Venda */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-semibold text-slate-800 dark:text-dm-text">
                         {formatKwanza(product.salePrice)}
                       </td>
 
                       {/* Ações */}
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div
-                          className="flex items-center justify-center gap-1.5"
+                          className="flex items-center justify-end gap-1.5"
                           onClick={(e) => e.stopPropagation()}
                         >
+                          <button
+                            type="button"
+                            id={`btn-detail-product-${product.id}`}
+                            onClick={() => onSelectProduct(product.id)}
+                            className="dm-btn-primary hidden dark:inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold bg-dm-text text-dm-page hover:opacity-90 transition-opacity cursor-pointer"
+                          >
+                            Ver detalhes
+                          </button>
+
                           <button
                             type="button"
                             id={`btn-edit-product-${product.id}`}
@@ -892,10 +911,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                               if (!isCompanyStopped) onEditProduct?.(product);
                             }}
                             disabled={isCompanyStopped}
-                            className={`p-1.5 rounded-lg transition-colors shadow-2xs ${
+                            className={`dm-icon-action p-1.5 rounded-lg transition-colors ${
                               isCompanyStopped
                                 ? 'text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
-                                : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 dark:text-slate-300 dark:hover:text-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 cursor-pointer'
+                                : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 dark:text-dm-muted dark:hover:text-dm-text dark:bg-transparent cursor-pointer'
                             }`}
                             title={isCompanyStopped ? 'Empresa parada — serviços indisponíveis' : 'Editar produto'}
                             aria-label="Editar produto"
@@ -910,10 +929,10 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                               if (!isCompanyStopped) setProductToDelete(product);
                             }}
                             disabled={isCompanyStopped}
-                            className={`p-1.5 rounded-lg transition-colors shadow-2xs border border-transparent ${
+                            className={`dm-icon-action p-1.5 rounded-lg transition-colors border border-transparent ${
                               isCompanyStopped
                                 ? 'text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
-                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 dark:text-slate-500 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 dark:hover:border-rose-900/50 cursor-pointer'
+                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 dark:text-dm-muted dark:hover:text-dm-text cursor-pointer'
                             }`}
                             title={isCompanyStopped ? 'Empresa parada — serviços indisponíveis' : 'Eliminar produto'}
                             aria-label="Eliminar produto"

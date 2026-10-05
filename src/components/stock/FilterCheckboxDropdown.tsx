@@ -148,30 +148,30 @@ export const FilterCheckboxDropdown: React.FC<FilterCheckboxDropdownProps> = ({
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-label={`Filtrar por ${label}: ${getSummaryText()}`}
-        className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer select-none ${
+        className={`dm-segment-btn flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer select-none ${
           isPartiallySelected
-            ? 'bg-slate-900 text-white border-slate-900 shadow-xs dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100'
+            ? 'bg-slate-900 text-white border-slate-900 shadow-xs dark:bg-dm-border/80 dark:text-dm-text dark:border-transparent dark:shadow-none'
             : isNoneSelected
             ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-400'
             : isOpen
-            ? 'bg-white border-slate-400 text-slate-900 shadow-xs dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100'
-            : 'bg-slate-50 hover:bg-white border-slate-200 text-slate-700 hover:border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600'
+            ? 'bg-white border-slate-400 text-slate-900 shadow-xs dark:bg-dm-elevated dark:border-transparent dark:text-dm-text dark:shadow-none'
+            : 'bg-slate-50 hover:bg-white border-slate-200 text-slate-700 hover:border-slate-300 dark:bg-transparent dark:hover:bg-dm-elevated dark:border-transparent dark:text-dm-text'
         }`}
       >
         {icon && (
-          <span className={`shrink-0 ${isPartiallySelected ? 'text-white dark:text-slate-900' : 'text-slate-400 dark:text-slate-500'}`}>
+          <span className={`shrink-0 ${isPartiallySelected ? 'text-white dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'}`}>
             {icon}
           </span>
         )}
-        <span className={`font-medium ${isPartiallySelected ? 'text-slate-200 dark:text-slate-700' : 'text-slate-500 dark:text-slate-400'}`}>
+        <span className={`font-medium ${isPartiallySelected ? 'text-slate-200 dark:text-dm-muted' : 'text-slate-500 dark:text-dm-muted'}`}>
           {label}:
         </span>
-        <span className="font-semibold truncate max-w-[140px]">
+        <span className="font-semibold truncate max-w-[140px] dark:text-dm-text">
           {getSummaryText()}
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 shrink-0 transition-transform ${
-            isOpen ? 'rotate-180 text-slate-900 dark:text-slate-100' : isPartiallySelected ? 'text-slate-200 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500'
+            isOpen ? 'rotate-180 text-slate-900 dark:text-dm-text' : isPartiallySelected ? 'text-slate-200 dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'
           }`}
         />
       </button>
@@ -180,7 +180,7 @@ export const FilterCheckboxDropdown: React.FC<FilterCheckboxDropdownProps> = ({
       {isOpen && (
         <div
           id={`popover-filter-${id}`}
-          className="absolute left-0 mt-1.5 w-72 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-40 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+          className="absolute left-0 mt-1.5 w-72 sm:w-80 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-xl shadow-xl dark:shadow-none z-40 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
         >
           {/* Header com título "Filtro [Label]" e botões de ícone */}
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 flex items-center justify-between">

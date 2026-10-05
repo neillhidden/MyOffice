@@ -23,6 +23,7 @@ import { formatCurrencyValue, formatDate, convertToKwanza } from '../../utils/fo
 import { BankModal } from './BankModal';
 import { BankMovementModal } from './BankMovementModal';
 import { BankLedgerModal } from './BankLedgerModal';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 export const BankView: React.FC = () => {
   const {
@@ -179,7 +180,7 @@ export const BankView: React.FC = () => {
               setBankToEdit(null);
               setIsBankModalOpen(true);
             }}
-            className="px-3.5 py-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl text-xs font-medium transition-colors shadow-xs cursor-pointer"
+            className="dm-btn-primary px-3.5 py-2 bg-slate-900 dark:bg-dm-text hover:bg-slate-800 dark:hover:bg-white text-white dark:text-dm-page rounded-xl text-xs font-medium transition-colors shadow-xs cursor-pointer"
           >
             <span>Registar conta</span>
           </button>
@@ -304,32 +305,46 @@ export const BankView: React.FC = () => {
       {/* Tab 1: Bank Accounts Cards */}
       {activeTab === 'contas' && (
         <div className="space-y-4">
-          {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Filtrar por banco, conta ou IBAN..."
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
-              />
+          {/* Unified Filter Capsule Bar */}
+          <div className="dm-filter-capsule flex flex-col sm:flex-row items-center justify-between gap-2 bg-white dark:bg-dm-surface p-1.5 rounded-2xl border border-slate-200 dark:border-dm-border">
+            <div className="flex flex-wrap items-center divide-x divide-slate-200/80 dark:divide-dm-border flex-1 w-full">
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs">
+                <span className="font-medium text-slate-500 dark:text-dm-muted">Tipo:</span>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="bg-transparent border-0 text-xs text-slate-700 dark:text-dm-text font-semibold focus:outline-none cursor-pointer"
+                >
+                  <option value="todas">Todos os Tipos de Conta</option>
+                  <option value="banco_padrao">Banco padrão da empresa</option>
+                  <option value="corrente">Conta Corrente</option>
+                  <option value="poupanca">Conta Poupança</option>
+                  <option value="caixa_fisico">Caixa Físico</option>
+                </select>
+              </div>
+
+              <div className="flex items-center px-3.5 py-1.5 flex-1 min-w-[200px]">
+                <Search className="w-3.5 h-3.5 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Filtrar por banco, conta ou IBAN..."
+                  className="w-full bg-transparent border-0 text-xs text-slate-900 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-              >
-                <option value="todas">Todos os Tipos de Conta</option>
-                <option value="banco_padrao">Banco padrão da empresa</option>
-                <option value="corrente">Conta Corrente</option>
-                <option value="poupanca">Conta Poupança</option>
-                <option value="caixa_fisico">Caixa Físico</option>
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setBankToEdit(null);
+                setIsBankModalOpen(true);
+              }}
+              className="dm-btn-primary px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0"
+            >
+              Adicionar
+            </button>
           </div>
 
           {/* Cards Grid */}
@@ -400,15 +415,11 @@ export const BankView: React.FC = () => {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                             Inativa (Empresa Desativada)
                           </span>
+                        ) : !isAccountInactive ? (
+                          <PositiveBadge label="Ativa" />
                         ) : (
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                              !isAccountInactive
-                                ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            {!isAccountInactive ? 'Ativa' : 'Inativa'}
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            Inativa
                           </span>
                         )}
                       </div>
@@ -503,7 +514,7 @@ export const BankView: React.FC = () => {
                           setBankToEdit(bank);
                           setIsBankModalOpen(true);
                         }}
-                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        className="dm-icon-action p-1.5 text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
                         title="Editar conta"
                         aria-label="Editar conta"
                       >
@@ -514,7 +525,7 @@ export const BankView: React.FC = () => {
                         type="button"
                         id={`btn-bank-delete-${bank.id}`}
                         onClick={() => handleDeleteBank(bank.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                        className="dm-icon-action p-1.5 text-slate-400 dark:text-dm-muted hover:text-rose-600 dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
                         title="Eliminar conta (sujeito a regras de auditoria)"
                         aria-label="Eliminar conta"
                       >
@@ -569,12 +580,7 @@ export const BankView: React.FC = () => {
                       </td>
 
                       <td className="py-2.5 px-3 whitespace-nowrap">
-                        {isIncome && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                            <ArrowUpRight className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                            Entrada
-                          </span>
-                        )}
+                        {isIncome && <PositiveBadge label="Entrada" />}
                         {isExpense && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
                             <ArrowDownRight className="w-3 h-3 text-rose-600 dark:text-rose-400" />

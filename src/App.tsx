@@ -14,7 +14,7 @@ import { Header } from './components/layout/Header';
 import { OutOfServiceView } from './components/layout/OutOfServiceView';
 import { WarehouseStockView } from './components/stock/WarehouseStockView';
 import { MovementsView } from './components/movements/MovementsView';
-import { ProductAnalyticsView } from './components/analytics/ProductAnalyticsView';
+import { ImportSimulatorView } from './components/analytics/ImportSimulatorView';
 import { PurchaseListView } from './components/purchases/PurchaseListView';
 import { DefectiveView } from './components/defective/DefectiveView';
 import { BankView } from './components/banks/BankView';
@@ -136,7 +136,10 @@ function AppContent() {
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased overflow-hidden transition-colors duration-200">
+    <div
+      id="app-root-shell"
+      className="flex h-screen bg-[#f8fafc] dark:bg-dm-page text-slate-900 dark:text-dm-text font-sans antialiased overflow-hidden transition-colors duration-200"
+    >
       {/* Sidebar Navigation */}
       <Sidebar
         activeModule={activeModule}
@@ -256,12 +259,8 @@ function AppContent() {
                   />
                 )}
 
-                {activeSubmodule === 'Análise de produtos' && (
-                  <ProductAnalyticsView
-                    onSelectProduct={(id) => setSelectedProductId(id)}
-                    onGoToPurchaseList={() => setActiveSubmodule('Lista de compras')}
-                  />
-                )}
+                {(activeSubmodule === 'Simulador de Importação e Rentabilidade' ||
+                  activeSubmodule === 'Análise de produtos') && <ImportSimulatorView />}
 
                 {activeSubmodule === 'Lista de compras' && <PurchaseListView />}
 

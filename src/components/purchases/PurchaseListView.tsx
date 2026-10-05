@@ -37,6 +37,7 @@ import {
   formatUSD,
   USD_TO_KZ_RATE,
 } from '../../utils/formatters';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 interface StatusBadgeDropdownProps {
   status: PurchaseListStatus;
@@ -137,7 +138,16 @@ const StatusBadgeDropdown: React.FC<StatusBadgeDropdownProps> = ({
         title="Clique para alterar estado"
         className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md border transition-all cursor-pointer shadow-2xs select-none ${currentOption.badgeStyle}`}
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${currentOption.dotStyle}`} />
+        {normalized === 'concluido' ? (
+          <>
+            <span className={`w-1.5 h-1.5 rounded-full dark:hidden ${currentOption.dotStyle}`} />
+            <span className="hidden dark:inline-flex items-center justify-center w-4 h-4 rounded-full bg-dm-text text-dm-page dm-positive-dot shrink-0">
+              <Check className="w-2.5 h-2.5 stroke-[3]" />
+            </span>
+          </>
+        ) : (
+          <span className={`w-1.5 h-1.5 rounded-full ${currentOption.dotStyle}`} />
+        )}
         <span>{currentOption.label}</span>
         <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
       </button>
@@ -1237,19 +1247,23 @@ export const PurchaseListView: React.FC = () => {
 
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block mb-0.5">
                               Disponibilidade
                             </span>
-                            <span className="text-slate-700 dark:text-slate-300 capitalize">
-                              {src.availability.replace('_', ' ')}
-                            </span>
+                            {src.availability === 'em_estoque' ? (
+                              <PositiveBadge label="Em estoque" />
+                            ) : (
+                              <span className="text-slate-700 dark:text-slate-300 capitalize">
+                                {src.availability.replace('_', ' ')}
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={(e) => handleOpenEditSource(src, e)}
-                              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 p-1 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700/50 cursor-pointer"
+                              className="dm-icon-action text-slate-400 hover:text-slate-700 dark:text-dm-muted dark:hover:text-dm-text p-1 rounded hover:bg-slate-200/50 dark:hover:bg-dm-elevated cursor-pointer"
                               title="Editar fonte"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -1257,7 +1271,7 @@ export const PurchaseListView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => deletePurchaseSource(src.id)}
-                              className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer"
+                              className="dm-icon-action text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text p-1 rounded hover:bg-rose-50 dark:hover:bg-dm-elevated cursor-pointer"
                               title="Eliminar fonte"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

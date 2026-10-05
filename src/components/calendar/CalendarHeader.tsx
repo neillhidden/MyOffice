@@ -229,7 +229,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         <button
           id="calendar-add-event-btn"
           onClick={onOpenCreateEvent}
-          className="px-3.5 py-1.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg text-xs font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs"
+          className="dm-btn-primary px-3.5 py-1.5 bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page rounded-lg text-xs font-semibold hover:bg-slate-800 dark:hover:bg-white transition-colors shadow-xs"
         >
           Adicionar
         </button>

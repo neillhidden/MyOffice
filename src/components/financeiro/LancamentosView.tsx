@@ -17,6 +17,7 @@ import { useStock } from '../../context/StockContext';
 import { BankMovement, BankMovementType, FinancialCategory } from '../../types/stock';
 import { formatCurrencyValue, formatDate } from '../../utils/formatters';
 import { LancamentoModal } from './LancamentoModal';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 const FINANCIAL_CATEGORIES: FinancialCategory[] = [
   'Venda',
@@ -164,85 +165,59 @@ export const LancamentosView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Header & Action */}
+      {/* Top Header & View Switch */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-dm-text tracking-tight">
             Lançamentos Financeiros
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-dm-muted mt-0.5">
             Registo unificado e imutável de todas as movimentações financeiras
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        {/* Tab / View switch: Ativos vs Removidos */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-dm-surface border border-transparent dark:border-dm-border rounded-xl text-xs self-start sm:self-auto">
           <button
             type="button"
-            id="btn-novo-lancamento"
-            onClick={() => setIsNewLancamentoOpen(true)}
-            className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg text-xs font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
+            id="btn-tab-lancamentos-ativos"
+            onClick={() => setShowRemoved(false)}
+            className={`dm-segment-btn px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+              !showRemoved
+                ? 'bg-white dark:bg-dm-elevated text-slate-900 dark:text-dm-text shadow-2xs font-semibold'
+                : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text'
+            }`}
           >
-            Registar lançamento
+            Ativos ({activeCount})
+          </button>
+          <button
+            type="button"
+            id="btn-tab-lancamentos-removidos"
+            onClick={() => setShowRemoved(true)}
+            className={`dm-segment-btn px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+              showRemoved
+                ? 'bg-white dark:bg-dm-elevated text-slate-900 dark:text-dm-text shadow-2xs font-semibold'
+                : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text'
+            }`}
+          >
+            Removidos do Histórico ({removedCount})
           </button>
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 shadow-2xs space-y-3.5">
-        {/* Row 1: Search & Toggles */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              id="input-busca-lancamentos"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por motivo, responsável, referência..."
-              className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400"
-            />
-          </div>
-
-          {/* Tab / View switch: Ativos vs Removidos */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs self-start md:self-auto">
-            <button
-              type="button"
-              id="btn-tab-lancamentos-ativos"
-              onClick={() => setShowRemoved(false)}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
-                !showRemoved
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Ativos ({activeCount})
-            </button>
-            <button
-              type="button"
-              id="btn-tab-lancamentos-removidos"
-              onClick={() => setShowRemoved(true)}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
-                showRemoved
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Removidos do Histórico ({removedCount})
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Select Filters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div>
-            <label htmlFor="filter-conta" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Conta
+      {/* Unified Filter Capsule Toolbar */}
+      <div className="dm-filter-capsule bg-white dark:bg-dm-surface border border-slate-200/80 dark:border-dm-border rounded-2xl p-1.5 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+        <div className="flex flex-wrap items-center divide-x divide-slate-200/80 dark:divide-dm-border flex-1">
+          {/* Conta Segment */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs">
+            <label htmlFor="filter-conta" className="text-[11px] font-medium text-slate-500 dark:text-dm-muted shrink-0">
+              Conta:
             </label>
             <select
               id="filter-conta"
               value={bankFilter}
               onChange={(e) => setBankFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 text-xs font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="todas">Todas as Contas</option>
               {operationalBanks.map((b) => (
@@ -253,15 +228,16 @@ export const LancamentosView: React.FC = () => {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="filter-tipo" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Tipo
+          {/* Tipo Segment */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs">
+            <label htmlFor="filter-tipo" className="text-[11px] font-medium text-slate-500 dark:text-dm-muted shrink-0">
+              Tipo:
             </label>
             <select
               id="filter-tipo"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 text-xs font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="todos">Todos os Tipos</option>
               <option value="entrada">Entrada (+)</option>
@@ -270,15 +246,16 @@ export const LancamentosView: React.FC = () => {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="filter-categoria" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Categoria
+          {/* Categoria Segment */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs">
+            <label htmlFor="filter-categoria" className="text-[11px] font-medium text-slate-500 dark:text-dm-muted shrink-0">
+              Categoria:
             </label>
             <select
               id="filter-categoria"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 text-xs font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="todas">Todas as Categorias</option>
               {FINANCIAL_CATEGORIES.map((cat) => (
@@ -289,15 +266,16 @@ export const LancamentosView: React.FC = () => {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="filter-periodo" className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Período
+          {/* Período Segment */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs">
+            <label htmlFor="filter-periodo" className="text-[11px] font-medium text-slate-500 dark:text-dm-muted shrink-0">
+              Período:
             </label>
             <select
               id="filter-periodo"
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-slate-800 dark:focus:border-slate-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+              className="bg-transparent border-0 text-xs font-semibold text-slate-800 dark:text-dm-text focus:outline-none cursor-pointer"
             >
               <option value="todos">Todo o Histórico</option>
               <option value="hoje">Hoje</option>
@@ -305,7 +283,30 @@ export const LancamentosView: React.FC = () => {
               <option value="este_mes">Este Mês</option>
             </select>
           </div>
+
+          {/* Search Segment */}
+          <div className="flex items-center px-3 py-1.5 flex-1 min-w-[180px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
+            <input
+              type="text"
+              id="input-busca-lancamentos"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por motivo, responsável, referência..."
+              className="w-full bg-transparent border-0 text-xs text-slate-800 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
+            />
+          </div>
         </div>
+
+        {/* Solid White Action Button at End of Capsule */}
+        <button
+          type="button"
+          id="btn-novo-lancamento"
+          onClick={() => setIsNewLancamentoOpen(true)}
+          className="dm-btn-primary px-4 py-2 bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page rounded-xl text-xs font-semibold hover:bg-slate-800 dark:hover:bg-white transition-colors cursor-pointer shrink-0"
+        >
+          Registar lançamento
+        </button>
       </div>
 
       {/* Table of Movements */}
@@ -370,11 +371,7 @@ export const LancamentosView: React.FC = () => {
 
                       {/* Tipo Badge */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        {isEntrada && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
-                            Entrada
-                          </span>
-                        )}
+                        {isEntrada && <PositiveBadge label="Entrada" />}
                         {isSaida && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60">
                             Saída
@@ -440,7 +437,7 @@ export const LancamentosView: React.FC = () => {
                               setRemovalReason('');
                               setRemovalError(null);
                             }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
                             title="Remover do histórico com justificativa"
                             aria-label={`Remover lançamento de ${formatCurrencyValue(mov.amount, currency)} do histórico`}
                           >
@@ -450,7 +447,7 @@ export const LancamentosView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => restoreFinancialMovement(mov.id)}
-                            className="p-1.5 text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+                            className="dm-icon-action p-1.5 text-slate-400 hover:text-emerald-700 dark:text-dm-muted dark:hover:text-dm-text hover:bg-emerald-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
                             title="Restaurar ao histórico ativo"
                             aria-label="Restaurar ao histórico ativo"
                           >

@@ -22,6 +22,7 @@ import { CompanyModal } from './CompanyModal';
 import { DeleteCompanyModal } from './DeleteCompanyModal';
 import { WarehouseModal } from './WarehouseModal';
 import { ResetSettingsModal } from './ResetSettingsModal';
+import { PositiveBadge } from '../common/PositiveBadge';
 
 export const SettingsView: React.FC = () => {
   const {
@@ -214,15 +215,15 @@ export const SettingsView: React.FC = () => {
               type="button"
               id="btn-add-company"
               onClick={handleOpenNewCompany}
-              className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0"
+              className="dm-btn-primary inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0"
             >
               <span>Adicionar</span>
             </button>
           </div>
 
-          {/* Filter Toolbar */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-md">
+          {/* Filter Toolbar - Unified Capsule */}
+          <div className="dm-filter-capsule bg-white border border-slate-200/80 rounded-xl p-1.5 flex flex-wrap items-center justify-between gap-0 shadow-xs">
+            <div className="dm-filter-segment flex items-center gap-2 flex-1 min-w-[200px] px-2">
               <div className="relative w-full">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -231,23 +232,33 @@ export const SettingsView: React.FC = () => {
                   placeholder="Pesquisar por nome, NIF ou morada..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-transparent rounded-lg text-xs text-slate-800 dark:text-dm-text placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="dm-filter-segment flex items-center gap-2 px-2">
               <select
                 id="select-company-status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as 'all' | 'ativa' | 'desativada' | 'parada')}
-                className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none"
+                className="px-2.5 py-1.5 bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-transparent rounded-lg text-xs text-slate-700 dark:text-dm-text font-medium focus:outline-none"
               >
                 <option value="all">Todos os Status ({companies.length})</option>
                 <option value="ativa">Ativas ({companies.filter((c) => c.status === 'ativa').length})</option>
                 <option value="desativada">Desativadas ({companies.filter((c) => c.status === 'desativada').length})</option>
                 <option value="parada">Paradas ({companies.filter((c) => c.status === 'parada').length})</option>
               </select>
+            </div>
+
+            <div className="pl-2 pr-1 py-1">
+              <button
+                type="button"
+                onClick={handleOpenNewCompany}
+                className="dm-btn-primary inline-flex items-center justify-center px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs"
+              >
+                Adicionar
+              </button>
             </div>
           </div>
 
@@ -370,24 +381,21 @@ export const SettingsView: React.FC = () => {
                           {/* Status: ativa / desativada / parada */}
                           <td className="py-3.5 px-4">
                             {comp.status === 'ativa' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                Ativa
-                              </span>
+                              <PositiveBadge label="Ativa" />
                             ) : comp.status === 'parada' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 Parada
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-300">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                 Desativada
                               </span>
                             )}
                           </td>
 
-                          {/* Ações: Editar (só ícone) e Eliminar (só ícone caixa de lixo) */}
+                          {/* Ações */}
                           <td className="py-3.5 px-4 text-right">
                             <div className="inline-flex items-center justify-end gap-1.5">
                               {/* Editar (só ícone de lápis) */}
@@ -395,7 +403,7 @@ export const SettingsView: React.FC = () => {
                                 type="button"
                                 id={`btn-edit-company-${comp.id}`}
                                 onClick={() => handleEditCompany(comp)}
-                                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                                className="dm-icon-action p-1.5 text-slate-500 hover:text-slate-800 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors"
                                 title="Editar empresa"
                                 aria-label={`Editar ${comp.name}`}
                               >
@@ -407,7 +415,7 @@ export const SettingsView: React.FC = () => {
                                 type="button"
                                 id={`btn-delete-company-${comp.id}`}
                                 onClick={() => handleDeleteClick(comp)}
-                                className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                                className="dm-icon-action p-1.5 text-rose-500 hover:text-rose-700 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors"
                                 title="Eliminar empresa"
                                 aria-label={`Eliminar ${comp.name}`}
                               >
@@ -444,7 +452,7 @@ export const SettingsView: React.FC = () => {
               type="button"
               id="btn-add-warehouse"
               onClick={handleOpenNewWarehouse}
-              className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0"
+              className="dm-btn-primary inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0"
             >
               <span>Adicionar Armazém</span>
             </button>
@@ -506,11 +514,9 @@ export const SettingsView: React.FC = () => {
 
                         <td className="py-3.5 px-4">
                           {wh.status === 'ativo' ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Ativo
-                            </span>
+                            <PositiveBadge label="Ativo" />
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                               Inativo
                             </span>
                           )}
@@ -522,7 +528,7 @@ export const SettingsView: React.FC = () => {
                               type="button"
                               id={`btn-edit-warehouse-${wh.id}`}
                               onClick={() => handleEditWarehouse(wh)}
-                              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                              className="dm-icon-action p-1.5 text-slate-500 hover:text-slate-800 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors"
                               title="Editar armazém"
                             >
                               <Pencil className="w-4 h-4" />
@@ -531,7 +537,7 @@ export const SettingsView: React.FC = () => {
                               type="button"
                               id={`btn-delete-warehouse-${wh.id}`}
                               onClick={() => deleteWarehouse(wh.id)}
-                              className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                              className="dm-icon-action p-1.5 text-rose-500 hover:text-rose-700 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors"
                               title="Eliminar armazém"
                             >
                               <Trash2 className="w-4 h-4" />
