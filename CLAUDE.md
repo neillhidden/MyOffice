@@ -5,7 +5,8 @@ Este repositório utiliza uma documentação central multi-agente para garantir 
 ## Leitura Obrigatória Antes de Qualquer Tarefa
 
 1. Leia **[`AGENTS.md`](./AGENTS.md)** na raiz do projeto (contém todas as regras operacionais, princípios e invariantes críticas).
-2. Consulte a documentação técnica detalhada em **[`docs/README.md`](./docs/README.md)**:
+2. Verifique **[`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) (secção "0. Ponto de Continuação / Handoff Ativo")** e execute `git status` / `git log -n 5` para saber exatamente onde o agente anterior parou e se existe alguma tarefa em andamento para retomar.
+3. Consulte a documentação técnica detalhada em **[`docs/README.md`](./docs/README.md)**:
    - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — Arquitetura atual, contextos React e persistência em `localStorage`.
    - [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) — O que está implementado, o que é placeholder e o que está `A confirmar`.
    - [`docs/BUSINESS_RULES.md`](./docs/BUSINESS_RULES.md) — Regras de negócio e auditoria (estoque derivado de movimentos, proibição de `DELETE` físico em histórico, empresas `ativas`/`paradas`/`desativadas`, rastreabilidade de vendas `#VND-XXXX`, Simulador de Importação Multimoeda).

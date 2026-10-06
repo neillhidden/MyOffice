@@ -35,8 +35,8 @@
 Todo agente de IA **DEVE** cumprir estes 7 passos antes de editar ou criar qualquer ficheiro de código:
 
 1. **Ler `AGENTS.md`** (este ficheiro) na íntegra.
-2. **Consultar [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** para compreender o modelo de estado (`StockContext`, `ThemeContext`, `WarehouseFilterContext`), persistência em `localStorage` e fluxo de dados.
-3. **Consultar [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md)** para saber o que já está 100% funcional, o que está reservado/em desenvolvimento e quais são as limitações atuais.
+2. **Consultar [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) (secção "Ponto de Continuação / Handoff Ativo")** e verificar `git status` / `git diff` / `git log -n 5` para identificar imediatamente **onde o agente anterior parou** e se existe alguma tarefa a meio que precisa de ser retomada e concluída.
+3. **Consultar [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** para compreender o modelo de estado (`StockContext`, `ThemeContext`, `WarehouseFilterContext`), persistência em `localStorage` e fluxo de dados.
 4. **Consultar a documentação específica** do domínio que será alterado:
    - [`docs/MODULES.md`](./docs/MODULES.md) — detalhe funcional de cada módulo/submódulo;
    - [`docs/BUSINESS_RULES.md`](./docs/BUSINESS_RULES.md) — invariantes de negócio e auditoria que **nunca** podem ser violadas;
@@ -44,7 +44,7 @@ Todo agente de IA **DEVE** cumprir estes 7 passos antes de editar ou criar qualq
    - [`docs/DATABASE.md`](./docs/DATABASE.md) e [`docs/API.md`](./docs/API.md) — estrutura atual de dados (`localStorage` + seed) e estado de backend/API.
 5. **Analisar o código-fonte relacionado** antes de editar qualquer ficheiro.
 6. **Verificar alterações recentes** em [`docs/CHANGELOG_AI.md`](./docs/CHANGELOG_AI.md) e no histórico Git (`git log` / `git status`).
-7. **Evitar assumir que algo está errado apenas porque faria de outra maneira** — muitos comportamentos (ex.: *soft-delete* em movimentações, estornos em vez de edição financeira, empresas `paradas` vs. `desativadas`, reconciliação no arranque) são requisitos explícitos de negócio e auditoria.
+7. **Manter o Handoff atualizado**: Ao iniciar ou concluir etapas de uma tarefa, atualizar a secção **"Ponto de Continuação / Handoff Ativo"** em [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) e registar no [`docs/CHANGELOG_AI.md`](./docs/CHANGELOG_AI.md) para que, mesmo que a sessão seja interrompida por limite de quota/contexto e o utilizador faça commit para continuar noutro agente, o próximo agente saiba exatamente onde retomar.
 
 ---
 
