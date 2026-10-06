@@ -16,14 +16,11 @@ import {
   AlertOctagon,
   ChevronDown,
   Truck,
-  Sun,
-  Moon,
   UserCheck,
   UserRound,
   Share2,
   HandCoins,
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
 export type MainModule =
   | 'Dashboard'
@@ -149,8 +146,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const { actualTheme, toggleTheme } = useTheme();
-
   // Acordeão: no máximo um submenu aberto de cada vez na barra expandida
   const [openSubmenu, setOpenSubmenu] = useState<MainModule | null>(() => {
     if (['Estoque', 'Caixa', 'Contactos', 'Financeiro', 'Banco'].includes(activeModule)) {
@@ -344,179 +339,148 @@ export const Sidebar: React.FC<SidebarProps> = ({
           scheduleClose();
         }
       }}
-      className={`bg-white dark:bg-dm-surface border-r border-slate-200/80 dark:border-dm-border flex flex-col justify-between shrink-0 transition-[width] duration-200 ease-in-out z-40 relative select-none overflow-x-hidden ${
+      className={`h-full bg-white dark:bg-dm-surface border-r border-slate-200/80 dark:border-dm-border flex flex-col shrink-0 transition-[width] duration-200 ease-in-out z-40 relative select-none overflow-x-hidden ${
         isCollapsed ? 'w-16' : 'w-60'
       }`}
     >
-      {/* Top Section: Brand & Navigation */}
-      <div>
-        {/* Brand Header: Logo/nome MyOffice expande/recolhe a barra lateral */}
-        <div className="h-14 flex items-center border-b border-slate-100 dark:border-dm-border px-2 overflow-hidden">
-          <button
-            type="button"
-            id="sidebar-brand-toggle"
-            onClick={onToggleCollapse}
-            title={isCollapsed ? 'Expandir barra lateral (MyOffice)' : 'Recolher barra lateral (MyOffice)'}
-            aria-label={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-            className="w-full h-10 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-dm-elevated"
-          >
-            {/* Ícone fixo: sem reposicionamento ou recriação de nós */}
-            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-              M
-            </div>
-
-            {/* Texto animado suavemente em opacidade e largura */}
-            <div
-              className={`flex flex-col min-w-0 ml-2.5 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-                isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[140px] opacity-100'
-              }`}
-            >
-              <span className="font-semibold text-slate-900 dark:text-dm-text text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
-                MyOffice
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-dm-muted font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
-                Angola
-              </span>
-            </div>
-          </button>
-        </div>
-
-        {/* Navigation List: estrutura estrita e contínua de nós DOM */}
-        <nav className="p-2 space-y-1 flex flex-col">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const submodules = MODULE_SUBMODULES[item.id];
-            const hasSubmodules = Boolean(submodules && submodules.length > 0);
-            const isActiveModule = activeModule === item.id;
-            const isAccordionOpen = !isCollapsed && openSubmenu === item.id;
-
-            return (
-              <div key={item.id} className="w-full relative">
-                {/* Main Navigation Item Button: largura 100%, altura 40px (h-10), ícone centrado a 32px */}
-                <button
-                  type="button"
-                  id={`nav-item-${item.id.toLowerCase()}`}
-                  onClick={(e) => handleItemClick(item.id, e.currentTarget)}
-                  title={isCollapsed ? item.label : undefined}
-                  aria-label={item.label}
-                  aria-expanded={hasSubmodules ? (isCollapsed ? Boolean(hoveredFlyout?.id === item.id) : isAccordionOpen) : undefined}
-                  onMouseEnter={(e) => handleMouseEnterItem(item.id, e.currentTarget)}
-                  onMouseLeave={handleMouseLeaveItem}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape' && isCollapsed && hoveredFlyout) {
-                      closeImmediately();
-                    }
-                  }}
-                  className={`w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium transition-colors cursor-pointer group ${
-                    isActiveModule
-                      ? 'bg-slate-900 dark:bg-dm-border/70 text-white dark:text-dm-text shadow-xs dark:shadow-none font-semibold'
-                      : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100/80 dark:hover:bg-dm-elevated'
-                  }`}
-                >
-                  {/* Contentor de ícone com largura e posição fixa (32px de largura, centrado) */}
-                  <div className="w-8 h-8 shrink-0 flex items-center justify-center">
-                    <Icon
-                      className={`w-4 h-4 shrink-0 transition-colors ${
-                        isActiveModule
-                          ? 'text-white dark:text-dm-text'
-                          : 'text-slate-500 dark:text-dm-muted group-hover:text-slate-800 dark:group-hover:text-dm-text'
-                      }`}
-                    />
-                  </div>
-
-                  {/* Texto e seta colapsam suavemente sem desmontar o DOM */}
-                  <div
-                    className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-                      isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
-                    }`}
-                  >
-                    <span className="truncate whitespace-nowrap">{item.label}</span>
-                    {hasSubmodules && (
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                          isAccordionOpen ? 'rotate-180' : ''
-                        } ${
-                          isActiveModule
-                            ? 'text-slate-300 dark:text-dm-text'
-                            : 'text-slate-400 dark:text-dm-muted'
-                        }`}
-                      />
-                    )}
-                  </div>
-                </button>
-
-                {/* Submenu Inline (Acordeão quando Expandido) */}
-                {hasSubmodules && (
-                  <div
-                    className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out ${
-                      !isCollapsed && isAccordionOpen
-                        ? 'max-h-64 opacity-100 mt-1'
-                        : 'max-h-0 opacity-0 pointer-events-none'
-                    } ml-6 pl-2 border-l border-slate-200 dark:border-dm-border space-y-0.5`}
-                  >
-                    {submodules.map((sub) => {
-                      const SubIcon = sub.icon;
-                      const active = isSubActive(item.id, sub.id);
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          id={getSubnavId(item.id, sub.id, false)}
-                          onClick={() => handleSelectSub(item.id, sub.id)}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] font-medium transition-colors text-left cursor-pointer ${
-                            active
-                              ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
-                              : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
-                          }`}
-                        >
-                          <SubIcon
-                            className={`w-3.5 h-3.5 shrink-0 ${
-                              active ? 'text-slate-900 dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'
-                            }`}
-                          />
-                          <span className="truncate whitespace-nowrap">{sub.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Bottom Section: Theme toggle & footer */}
-      <div className="border-t border-slate-100 dark:border-dm-border p-2 space-y-1 overflow-hidden">
-        {/* Quick Theme Toggle */}
+      {/* Brand Header: altura fixa h-14 (56px) alinhada exatamente com o Header principal */}
+      <div className="h-14 shrink-0 flex items-center border-b border-slate-200/80 dark:border-dm-border px-2 overflow-hidden">
         <button
           type="button"
-          onClick={toggleTheme}
-          title={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          aria-label={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-          className="w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer group"
+          id="sidebar-brand-toggle"
+          onClick={onToggleCollapse}
+          title={isCollapsed ? 'Expandir barra lateral (MyOffice)' : 'Recolher barra lateral (MyOffice)'}
+          aria-label={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+          className="w-full h-10 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-dm-elevated"
         >
-          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
-            {actualTheme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-            ) : (
-              <Moon className="w-4 h-4 text-slate-500 shrink-0 group-hover:text-slate-700 dark:group-hover:text-dm-text" />
-            )}
+          {/* Ícone fixo: sem reposicionamento ou recriação de nós */}
+          <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+            M
           </div>
+
+          {/* Texto animado suavemente em opacidade e largura */}
           <div
-            className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-              isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+            className={`flex flex-col min-w-0 ml-2.5 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+              isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[140px] opacity-100'
             }`}
           >
-            <span className="truncate whitespace-nowrap">{actualTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
-            <span className="text-[10px] uppercase font-mono tracking-wider opacity-60 ml-1">
-              {actualTheme}
+            <span className="font-semibold text-slate-900 dark:text-dm-text text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
+              MyOffice
+            </span>
+            <span className="text-[10px] text-slate-400 dark:text-dm-muted font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
+              Angola
             </span>
           </div>
         </button>
+      </div>
 
-        {/* Footer info: distintivo "AO" e versão */}
-        <div className="h-6 flex items-center px-2 overflow-hidden">
+      {/* Navigation List: começa exatamente abaixo da barra de topo h-14 */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1 flex flex-col">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const submodules = MODULE_SUBMODULES[item.id];
+          const hasSubmodules = Boolean(submodules && submodules.length > 0);
+          const isActiveModule = activeModule === item.id;
+          const isAccordionOpen = !isCollapsed && openSubmenu === item.id;
+
+          return (
+            <div key={item.id} className="w-full relative">
+              {/* Main Navigation Item Button: largura 100%, altura 40px (h-10), ícone centrado a 32px */}
+              <button
+                type="button"
+                id={`nav-item-${item.id.toLowerCase()}`}
+                onClick={(e) => handleItemClick(item.id, e.currentTarget)}
+                title={isCollapsed ? item.label : undefined}
+                aria-label={item.label}
+                aria-expanded={hasSubmodules ? (isCollapsed ? Boolean(hoveredFlyout?.id === item.id) : isAccordionOpen) : undefined}
+                onMouseEnter={(e) => handleMouseEnterItem(item.id, e.currentTarget)}
+                onMouseLeave={handleMouseLeaveItem}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && isCollapsed && hoveredFlyout) {
+                    closeImmediately();
+                  }
+                }}
+                className={`w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium transition-colors cursor-pointer group ${
+                  isActiveModule
+                    ? 'bg-slate-900 dark:bg-dm-border/70 text-white dark:text-dm-text shadow-xs dark:shadow-none font-semibold'
+                    : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100/80 dark:hover:bg-dm-elevated'
+                }`}
+              >
+                {/* Contentor de ícone com largura e posição fixa (32px de largura, centrado) */}
+                <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+                  <Icon
+                    className={`w-4 h-4 shrink-0 transition-colors ${
+                      isActiveModule
+                        ? 'text-white dark:text-dm-text'
+                        : 'text-slate-500 dark:text-dm-muted group-hover:text-slate-800 dark:group-hover:text-dm-text'
+                    }`}
+                  />
+                </div>
+
+                {/* Texto e seta colapsam suavemente sem desmontar o DOM */}
+                <div
+                  className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                    isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+                  }`}
+                >
+                  <span className="truncate whitespace-nowrap">{item.label}</span>
+                  {hasSubmodules && (
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                        isAccordionOpen ? 'rotate-180' : ''
+                      } ${
+                        isActiveModule
+                          ? 'text-slate-300 dark:text-dm-text'
+                          : 'text-slate-400 dark:text-dm-muted'
+                      }`}
+                    />
+                  )}
+                </div>
+              </button>
+
+              {/* Submenu Inline (Acordeão quando Expandido) */}
+              {hasSubmodules && (
+                <div
+                  className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out ${
+                    !isCollapsed && isAccordionOpen
+                      ? 'max-h-64 opacity-100 mt-1'
+                      : 'max-h-0 opacity-0 pointer-events-none'
+                  } ml-6 pl-2 border-l border-slate-200 dark:border-dm-border space-y-0.5`}
+                >
+                  {submodules.map((sub) => {
+                    const SubIcon = sub.icon;
+                    const active = isSubActive(item.id, sub.id);
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        id={getSubnavId(item.id, sub.id, false)}
+                        onClick={() => handleSelectSub(item.id, sub.id)}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] font-medium transition-colors text-left cursor-pointer ${
+                          active
+                            ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
+                            : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
+                        }`}
+                      >
+                        <SubIcon
+                          className={`w-3.5 h-3.5 shrink-0 ${
+                            active ? 'text-slate-900 dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'
+                          }`}
+                        />
+                        <span className="truncate whitespace-nowrap">{sub.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Bottom Section: Footer info (sem o controlo de tema) */}
+      <div className="border-t border-slate-200/80 dark:border-dm-border p-2 shrink-0 overflow-hidden">
+        <div className="h-7 flex items-center px-2 overflow-hidden">
           <div className="w-8 h-6 shrink-0 flex items-center justify-center">
             <span className="text-[10px] bg-slate-100 dark:bg-dm-elevated text-slate-500 dark:text-dm-muted border border-transparent dark:border-dm-border font-mono px-1.5 py-0.5 rounded text-center">
               AO

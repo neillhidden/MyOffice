@@ -176,7 +176,7 @@ function AppContent() {
       />
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Header Bar */}
         <Header
           currentModule={activeModule}
@@ -201,12 +201,12 @@ function AppContent() {
 
         {/* Dynamic Main Workspace */}
         {activeModule === 'Calendário' ? (
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <CalendarView onNavigateToModule={handleNavigateToModule} />
           </div>
         ) : (
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+            <div className="w-full max-w-7xl mx-auto">
               {activeModule === 'Definições' ? (
                 <SettingsView />
               ) : activeModule === 'Financeiro' || activeModule === 'Banco' ? (

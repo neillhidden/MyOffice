@@ -116,34 +116,41 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="bg-white dark:bg-dm-surface border-b border-slate-200/80 dark:border-dm-border sticky top-0 z-30 px-6 py-3.5 transition-colors duration-200">
-      <div className="flex items-center justify-between gap-4">
-        {/* Breadcrumb discreto em letras finas e pequenas */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-dm-muted font-normal">
-          <span className="text-slate-500 dark:text-dm-muted font-medium">{currentModule}</span>
+    <header className="h-14 shrink-0 bg-white dark:bg-dm-surface border-b border-slate-200/80 dark:border-dm-border px-4 sm:px-6 lg:px-8 flex items-center z-30 transition-colors duration-200">
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
+        {/* Breadcrumb alinhado verticalmente e com o contentor principal abaixo */}
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 text-xs leading-none text-slate-400 dark:text-dm-muted font-normal min-w-0"
+        >
+          <span className="text-slate-500 dark:text-dm-muted font-medium leading-none truncate">
+            {currentModule}
+          </span>
           {currentSubmodule && (
             <>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-dm-border" />
-              <span className="text-slate-700 dark:text-dm-text font-medium">{currentSubmodule}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-dm-border shrink-0" />
+              <span className="text-slate-700 dark:text-dm-text font-medium leading-none truncate">
+                {currentSubmodule}
+              </span>
             </>
           )}
         </nav>
 
-        {/* Right-aligned actions */}
-        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+        {/* Controlos alinhados à direita e centrados verticalmente na mesma linha (h-8 = 32px) */}
+        <div className="flex items-center gap-2 sm:gap-2.5 ml-auto shrink-0">
           {/* Market currency info */}
-          <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/80 rounded-md text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-            <span className="dark:text-slate-300">AOA (Kz)</span>
-            <span className="text-slate-300 dark:text-slate-600">•</span>
-            <span className="text-slate-400 dark:text-slate-400">USD ref: 925 Kz</span>
+          <div className="hidden lg:inline-flex items-center gap-2 h-8 px-3 bg-slate-50 dark:bg-dm-elevated border border-slate-200/70 dark:border-dm-border rounded-lg text-[11px] leading-none text-slate-500 dark:text-dm-muted font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0" />
+            <span className="dark:text-dm-text">AOA (Kz)</span>
+            <span className="text-slate-300 dark:text-dm-border">•</span>
+            <span className="text-slate-400 dark:text-dm-muted">USD ref: 925 Kz</span>
           </div>
 
           {/* Expandable Search Input */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center h-8">
             {isSearchExpanded ? (
-              <div className="flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 transition-all w-64 md:w-80 shadow-xs">
-                <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
+              <div className="h-8 flex items-center bg-slate-50 dark:bg-dm-elevated border border-slate-300 dark:border-dm-border rounded-lg px-2.5 transition-all w-64 md:w-80 shadow-xs">
+                <Search className="w-4 h-4 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -151,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder="Pesquisar produto, SKU, código..."
-                  className="w-full bg-transparent text-xs text-slate-800 dark:text-slate-100 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full bg-transparent text-xs text-slate-800 dark:text-dm-text focus:outline-none placeholder:text-slate-400 dark:placeholder:text-dm-muted"
                 />
                 <button
                   type="button"
@@ -160,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
                     setIsSearchExpanded(false);
                     onSearchChange('');
                   }}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 ml-1"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-dm-text p-0.5 ml-1 inline-flex items-center justify-center cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -170,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 id="btn-open-search"
                 onClick={() => setIsSearchExpanded(true)}
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="w-8 h-8 inline-flex items-center justify-center text-slate-500 dark:text-dm-muted hover:text-slate-800 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
                 title="Pesquisar (Ctrl+K)"
               >
                 <Search className="w-4 h-4" />
@@ -183,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             id="btn-toggle-theme"
             onClick={toggleTheme}
-            className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="w-8 h-8 inline-flex items-center justify-center text-slate-500 dark:text-dm-muted hover:text-slate-800 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
             title={actualTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
             aria-label="Alternar modo de tema"
           >
@@ -195,19 +202,19 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Notifications */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative flex items-center h-8" ref={notifRef}>
             <button
               type="button"
               id="btn-notifications"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="relative w-8 h-8 inline-flex items-center justify-center text-slate-500 dark:text-dm-muted hover:text-slate-800 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
               title="Notificações e Alertas"
             >
               <Bell className="w-4 h-4" />
               {unreadNotificationsCount > 0 && (
                 <span
                   id="notifications-badge"
-                  className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900"
+                  className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-dm-surface"
                 >
                   {unreadNotificationsCount}
                 </span>

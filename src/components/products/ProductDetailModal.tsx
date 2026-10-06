@@ -450,11 +450,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {onEditProduct && (
                     <button
                       type="button"
+                      disabled={isStoppedCompany}
                       onClick={() => {
-                        onClose();
-                        onEditProduct(product);
+                        if (!isStoppedCompany) {
+                          onClose();
+                          onEditProduct(product);
+                        }
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        isStoppedCompany
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                          : 'bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 cursor-pointer'
+                      }`}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Editar Armazéns Vinculados</span>
@@ -694,12 +701,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </div>
                       <button
                         type="button"
+                        disabled={isStoppedCompany}
                         onClick={() => {
-                          onClose();
-                          onOpenMovementModalForProduct?.(product.id, contextWarehouseId, v.id);
+                          if (!isStoppedCompany) {
+                            onClose();
+                            onOpenMovementModalForProduct?.(product.id, contextWarehouseId, v.id);
+                          }
                         }}
-                        className="inline-flex items-center gap-1 text-[10px] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer"
-                        title={`Movimentar variação`}
+                        className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded font-medium transition-colors ${
+                          isStoppedCompany
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer'
+                        }`}
+                        title={isStoppedCompany ? 'Empresa parada — serviços indisponíveis' : 'Movimentar variação'}
                       >
                         <ArrowLeftRight className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                         <span>Movimentar Variação</span>
