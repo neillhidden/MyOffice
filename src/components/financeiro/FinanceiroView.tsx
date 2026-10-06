@@ -8,11 +8,15 @@ import { DividasView } from './DividasView';
 interface FinanceiroViewProps {
   activeSubmodule: FinanceiroSubmodule;
   onSelectSubmodule: (sub: FinanceiroSubmodule) => void;
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
 }
 
 export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
   activeSubmodule = 'Contas',
   onSelectSubmodule,
+  externalSearchQuery,
+  onExternalSearchChange,
 }) => {
   return (
     <div className="space-y-6">
@@ -66,7 +70,12 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
       {/* Submodule View Content */}
       <div>
         {activeSubmodule === 'Contas' && <BankView />}
-        {activeSubmodule === 'Lançamentos' && <LancamentosView />}
+        {activeSubmodule === 'Lançamentos' && (
+          <LancamentosView
+            externalSearchQuery={externalSearchQuery}
+            onExternalSearchChange={onExternalSearchChange}
+          />
+        )}
         {activeSubmodule === 'Dívidas' && <DividasView />}
       </div>
     </div>

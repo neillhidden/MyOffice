@@ -212,15 +212,39 @@ function AppContent() {
               ) : activeModule === 'Financeiro' || activeModule === 'Banco' ? (
                 <FinanceiroView
                   activeSubmodule={activeFinanceiroSubmodule}
-                  onSelectSubmodule={setActiveFinanceiroSubmodule}
+                  onSelectSubmodule={(sub) => {
+                    setActiveFinanceiroSubmodule(sub);
+                    setSearchQuery('');
+                  }}
+                  externalSearchQuery={searchQuery}
+                  onExternalSearchChange={setSearchQuery}
                 />
               ) : activeModule === 'Dashboard' ? (
                 <DashboardView />
               ) : activeModule === 'Caixa' ? (
                 activeCaixaSubmodule === 'Venda' ? (
-                  <VendaView onGoToTransport={() => setActiveCaixaSubmodule('Transporte')} />
+                  <VendaView
+                    onGoToTransport={(saleId) => {
+                      setActiveModule('Caixa');
+                      setActiveCaixaSubmodule('Transporte');
+                      setSearchQuery(saleId || '');
+                    }}
+                    onGoToStockMovement={(saleId) => {
+                      setActiveModule('Estoque');
+                      setActiveSubmodule('Movimentação');
+                      setSearchQuery(saleId);
+                    }}
+                    onGoToFinancialEntry={(saleId) => {
+                      setActiveModule('Financeiro');
+                      setActiveFinanceiroSubmodule('Lançamentos');
+                      setSearchQuery(saleId);
+                    }}
+                  />
                 ) : (
-                  <TransporteView />
+                  <TransporteView
+                    externalSearchQuery={searchQuery}
+                    onExternalSearchChange={setSearchQuery}
+                  />
                 )
               ) : activeModule === 'Contactos' ? (
                 activeContactosSubmodule === 'Funcionários' ? (
@@ -256,6 +280,8 @@ function AppContent() {
                   <MovementsView
                     onOpenNewMovementModal={() => handleOpenMovementModal()}
                     onSelectProduct={(id) => setSelectedProductId(id)}
+                    externalSearchQuery={searchQuery}
+                    onExternalSearchChange={setSearchQuery}
                   />
                 )}
 

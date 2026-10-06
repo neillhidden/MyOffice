@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ArrowLeftRight,
   Search,
@@ -33,7 +33,15 @@ const FINANCIAL_CATEGORIES: FinancialCategory[] = [
   'Outro',
 ];
 
-export const LancamentosView: React.FC = () => {
+interface LancamentosViewProps {
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
+}
+
+export const LancamentosView: React.FC<LancamentosViewProps> = ({
+  externalSearchQuery,
+  onExternalSearchChange,
+}) => {
   const {
     banks,
     bankMovements,
@@ -45,12 +53,31 @@ export const LancamentosView: React.FC = () => {
   } = useStock();
 
   // Filters
-  const [search, setSearch] = useState<string>('');
+  const [search, setSearch] = useState<string>(externalSearchQuery || '');
   const [bankFilter, setBankFilter] = useState<string>('todas');
   const [typeFilter, setTypeFilter] = useState<string>('todos');
   const [categoryFilter, setCategoryFilter] = useState<string>('todas');
   const [periodFilter, setPeriodFilter] = useState<string>('todos');
   const [showRemoved, setShowRemoved] = useState<boolean>(false);
+
+  // Sync externalSearchQuery when navigating from Recibo de Venda -> Ver entrada no Financeiro
+  useEffect(() => {
+    if (externalSearchQuery !== undefined) {
+      setSearch(externalSearchQuery);
+      if (externalSearchQuery.trim() !== '') {
+        setShowRemoved(false);
+        setBankFilter('todas');
+        setTypeFilter('todos');
+        setCategoryFilter('todas');
+        setPeriodFilter('todos');
+      }
+    }
+  }, [externalSearchQuery]);
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    onExternalSearchChange?.(val);
+  };
 
   // Modal states
   const [isNewLancamentoOpen, setIsNewLancamentoOpen] = useState<boolean>(false);
@@ -291,10 +318,20 @@ export const LancamentosView: React.FC = () => {
               type="text"
               id="input-busca-lancamentos"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por motivo, responsável, referência..."
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Buscar por motivo, responsável, referência (ex: VND-1001)..."
               className="w-full bg-transparent border-0 text-xs text-slate-800 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
             />
+            {search.trim() !== '' && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded ml-1 cursor-pointer"
+                title="Limpar filtro"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 

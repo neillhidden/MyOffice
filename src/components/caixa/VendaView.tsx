@@ -24,10 +24,16 @@ import { SaleReceiptModal } from './SaleReceiptModal';
 import { PositiveBadge } from '../common/PositiveBadge';
 
 interface VendaViewProps {
-  onGoToTransport?: () => void;
+  onGoToTransport?: (saleId?: string) => void;
+  onGoToStockMovement?: (saleId: string) => void;
+  onGoToFinancialEntry?: (saleId: string) => void;
 }
 
-export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
+export const VendaView: React.FC<VendaViewProps> = ({
+  onGoToTransport,
+  onGoToStockMovement,
+  onGoToFinancialEntry,
+}) => {
   const { sales, warehouses, companies, cancelSale, transports } = useStock();
 
   // Search & Filter state
@@ -248,7 +254,7 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
           id="card-metric-transporte"
           role="button"
           tabIndex={0}
-          onClick={onGoToTransport}
+          onClick={() => onGoToTransport?.()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -425,9 +431,9 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
                         {sale.requiresTransport ? (
                           <button
                             type="button"
-                            onClick={onGoToTransport}
+                            onClick={() => onGoToTransport?.(sale.id)}
                             className="inline-flex items-center gap-1 text-[11px] text-sky-700 hover:text-sky-900 font-medium bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded border border-sky-200 transition-colors cursor-pointer"
-                            title="Clique para ir ao submenu Transporte"
+                            title={`Ver registo de transporte da venda #${sale.id}`}
                           >
                             <Truck className="w-3 h-3 text-sky-600" />
                             Sim
@@ -601,6 +607,8 @@ export const VendaView: React.FC<VendaViewProps> = ({ onGoToTransport }) => {
         isOpen={Boolean(receiptSale)}
         onClose={() => setReceiptSale(null)}
         onGoToTransport={onGoToTransport}
+        onGoToStockMovement={onGoToStockMovement}
+        onGoToFinancialEntry={onGoToFinancialEntry}
       />
     </div>
   );

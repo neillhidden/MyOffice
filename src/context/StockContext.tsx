@@ -163,6 +163,8 @@ interface StockContextType {
     movement: Omit<Movement, 'id' | 'date'> & { date?: string },
     financialExit?: { bankId: string; amount: number; notes?: string }
   ) => Movement;
+  removeStockMovement: (movementId: string, reason: string, removedBy?: string) => void;
+  restoreStockMovement: (movementId: string) => void;
 
   recordDefective: (
     data: {
@@ -425,12 +427,17 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [movements, setMovements] = useState<Movement[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}movements`);
+    const isReset =
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}history_reset`) === 'true' ||
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}is_fresh_install`) === 'true';
     if (saved) {
       try {
         const parsed: Movement[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasKianda = parsed.some((m) => m.id === 'mov-knd-in-1');
-          return hasKianda ? parsed : [...parsed, ...KIANDA_INITIAL_MOVEMENTS, ...KIANDA_SALE_MOVEMENTS];
+          if (isReset) return parsed;
+          const existingIds = new Set(parsed.map((m) => m.id));
+          const missingSeeds = INITIAL_MOVEMENTS.filter((m) => !existingIds.has(m.id));
+          return missingSeeds.length > 0 ? [...parsed, ...missingSeeds] : parsed;
         }
       } catch {
         // fallback
@@ -515,12 +522,17 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [bankMovements, setBankMovements] = useState<BankMovement[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}bankMovements`);
+    const isReset =
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}history_reset`) === 'true' ||
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}is_fresh_install`) === 'true';
     if (saved) {
       try {
         const parsed: BankMovement[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasKianda = parsed.some((bm) => bm.bankId === 'bank-kianda');
-          return hasKianda ? parsed : [...parsed, ...KIANDA_BANK_MOVEMENTS];
+          if (isReset) return parsed;
+          const existingIds = new Set(parsed.map((bm) => bm.id));
+          const missingSeeds = INITIAL_BANK_MOVEMENTS.filter((bm) => !existingIds.has(bm.id));
+          return missingSeeds.length > 0 ? [...parsed, ...missingSeeds] : parsed;
         }
       } catch {
         // fallback
@@ -557,12 +569,19 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [sales, setSales] = useState<Sale[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}sales`);
+    const isReset =
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}history_reset`) === 'true' ||
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}is_fresh_install`) === 'true';
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
+        const parsed: Sale[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasKianda = parsed.some((s) => s.warehouseId === 'wh-kianda');
-          return hasKianda ? parsed : [...parsed, ...KIANDA_SALES];
+          if (isReset) return parsed;
+          const normalized = parsed.map((s) =>
+            s.id === 'VND-1005' && !s.transportId ? { ...s, transportId: 'TRP-1005' } : s
+          );
+          const hasKianda = normalized.some((s) => s.warehouseId === 'wh-kianda');
+          return hasKianda ? normalized : [...normalized, ...KIANDA_SALES];
         }
       } catch {
         // fallback
@@ -573,12 +592,17 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [transports, setTransports] = useState<Transport[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}transports`);
+    const isReset =
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}history_reset`) === 'true' ||
+      localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}is_fresh_install`) === 'true';
     if (saved) {
       try {
         const parsed: Transport[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasKianda = parsed.some((t) => t.id === 'TRP-KND-01');
-          return hasKianda ? parsed : [...parsed, ...KIANDA_TRANSPORTS];
+          if (isReset) return parsed;
+          const existingIds = new Set(parsed.map((t) => t.id));
+          const missingSeeds = INITIAL_TRANSPORTS.filter((t) => !existingIds.has(t.id));
+          return missingSeeds.length > 0 ? [...parsed, ...missingSeeds] : parsed;
         }
       } catch {
         // fallback
@@ -776,6 +800,8 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     return movements.reduce((acc, mov) => {
+      // Regra de auditoria: ignorar registos com removido: true na soma do estoque
+      if (mov.removido || mov.isRemoved) return acc;
       // Must match product
       if (mov.productId !== productId) return acc;
       // If variation filter applied
@@ -855,6 +881,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Calculate current stock in warehouses of this company
     const current = movements.reduce((acc, mov) => {
+      if (mov.removido || mov.isRemoved) return acc;
       if (mov.productId !== productId) return acc;
       const affectsOrigin = companyWhIds.has(mov.warehouseId);
       const affectsDest = mov.destinationWarehouseId ? companyWhIds.has(mov.destinationWarehouseId) : false;
@@ -903,6 +930,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     return movements
       .filter((m) => {
+        if (m.removido || m.isRemoved) return false;
         if (m.productId !== productId) return false;
         if (disabledWhIds.has(m.warehouseId)) return false;
         return true;
@@ -1411,6 +1439,83 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     return newMovement;
+  };
+
+  // Regra de auditoria de Estoque: Remover movimentação do histórico com justificativa (nunca apaga a linha)
+  const removeStockMovement = (
+    movementId: string,
+    reason: string,
+    removedBy = 'Administrador'
+  ) => {
+    const mov = movements.find((m) => m.id === movementId);
+    if (!mov) return;
+
+    const now = new Date().toISOString();
+    setMovements((prev) =>
+      prev.map((m) =>
+        m.id === movementId
+          ? {
+              ...m,
+              removido: true,
+              motivo_remocao: reason,
+              removido_por: removedBy,
+              data_remocao: now,
+              isRemoved: true,
+              removedReason: reason,
+              removedBy,
+              removedAt: now,
+            }
+          : m
+      )
+    );
+
+    const product = products.find((p) => p.id === mov.productId);
+    addNotification({
+      type: 'outro',
+      title: 'Movimentação Removida do Histórico',
+      message: `A movimentação #${mov.id} (${mov.type.toUpperCase()} de ${mov.quantity} ${
+        product?.unitOfMeasure || 'un'
+      } • ${product?.name || mov.productId}) foi removida do histórico por ${removedBy}. Motivo: "${reason}"`,
+      reference: {
+        type: 'produto',
+        id: mov.productId,
+      },
+    });
+  };
+
+  // Regra de auditoria de Estoque: Restaurar movimentação ao histórico ativo
+  const restoreStockMovement = (movementId: string) => {
+    const mov = movements.find((m) => m.id === movementId);
+    if (!mov) return;
+
+    setMovements((prev) =>
+      prev.map((m) =>
+        m.id === movementId
+          ? {
+              ...m,
+              removido: false,
+              motivo_remocao: undefined,
+              removido_por: undefined,
+              data_remocao: undefined,
+              isRemoved: false,
+              removedReason: undefined,
+              removedBy: undefined,
+              removedAt: undefined,
+            }
+          : m
+      )
+    );
+
+    const product = products.find((p) => p.id === mov.productId);
+    addNotification({
+      type: 'outro',
+      title: 'Movimentação Restaurada ao Histórico',
+      message: `A movimentação #${mov.id} (${product?.name || mov.productId}) foi restaurada ao histórico ativo de movimentações.`,
+      reference: {
+        type: 'produto',
+        id: mov.productId,
+      },
+    });
   };
 
   // Record Defective Item (Generates Movement type 'defeituoso' automatically!)
@@ -2102,10 +2207,11 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       quantity: item.quantity,
       date: now,
       responsible: seller,
-      reason: `Venda ${saleId}: ${item.quantity}x ${item.productName}${
+      reason: `Venda #${saleId}: ${item.quantity}x ${item.productName}${
         item.variationDetails ? ` (${item.variationDetails})` : ''
       }`,
       reference: `Venda #${saleId}`,
+      saleId,
     }));
     setMovements((prev) => [...newMovements, ...prev]);
 
@@ -2825,6 +2931,8 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       deleteSupplier,
       addCategory,
       recordMovement,
+      removeStockMovement,
+      restoreStockMovement,
       recordDefective,
       updateDefectiveResolution,
       updateStockLimits,

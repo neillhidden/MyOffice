@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Truck,
   Search,
@@ -12,6 +12,7 @@ import {
   FileText,
   Edit2,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Transport, TransportStatus } from '../../types/stock';
@@ -21,22 +22,63 @@ import { PositiveBadge } from '../common/PositiveBadge';
 
 interface TransporteViewProps {
   onOpenSaleReceipt?: (saleId: string) => void;
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
 }
 
-export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceipt }) => {
+export const TransporteView: React.FC<TransporteViewProps> = ({
+  onOpenSaleReceipt,
+  externalSearchQuery,
+  onExternalSearchChange,
+}) => {
   const { transports, sales, warehouses, companies, isCompanyDisabled, isWarehouseDisabled, updateTransport } = useStock();
 
   // Search & Filter state
-  const [search, setSearch] = useState<string>('');
+  const [search, setSearch] = useState<string>(externalSearchQuery || '');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
 
   // Modal state
   const [selectedTransport, setSelectedTransport] = useState<Transport | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
+  // Sync externalSearchQuery when navigating from Venda ("Sim") or Recibo de Venda
+  useEffect(() => {
+    if (externalSearchQuery !== undefined) {
+      setSearch(externalSearchQuery);
+      if (externalSearchQuery.trim() !== '') {
+        setStatusFilter('todos');
+      }
+    }
+  }, [externalSearchQuery]);
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    onExternalSearchChange?.(val);
+  };
+
   // Visible transports: excludes transports associated with disabled companies
+  // Also guarantees that any sale with requiresTransport: true has a linked transport record
   const visibleTransports = useMemo(() => {
-    return transports.filter((t) => {
+    const baseList = [...transports];
+    const coveredSaleIds = new Set(baseList.map((t) => t.saleId).filter(Boolean));
+
+    sales.forEach((sale) => {
+      if (sale.requiresTransport && !coveredSaleIds.has(sale.id)) {
+        const wh = warehouses.find((w) => w.id === sale.warehouseId);
+        baseList.push({
+          id: sale.transportId || `TRP-${sale.id.replace('VND-', '')}`,
+          saleId: sale.id,
+          deliveryAddress: sale.notes || `Entrega a partir de ${wh?.name || 'Armazém'}`,
+          responsible: sale.seller || 'Administrador',
+          cost: 0,
+          status: sale.status === 'cancelada' ? 'cancelado' : 'pendente',
+          createdAt: sale.date,
+          notes: sale.notes,
+        });
+      }
+    });
+
+    return baseList.filter((t) => {
       if (
         t.id.includes('KND') ||
         t.saleId?.includes('KND') ||
@@ -85,14 +127,14 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
       .filter((t) => {
         if (statusFilter !== 'todos' && t.status !== statusFilter) return false;
         if (search.trim()) {
-          const q = search.toLowerCase();
+          const q = search.toLowerCase().trim();
           const matchId = t.id.toLowerCase().includes(q);
-          const matchSaleId = t.saleId.toLowerCase().includes(q);
+          const matchSaleId = (t.saleId || '').toLowerCase().includes(q);
           const matchAddr = t.deliveryAddress.toLowerCase().includes(q);
           const matchDriver = t.driver?.toLowerCase().includes(q);
           const matchVehicle = t.vehicle?.toLowerCase().includes(q);
           const matchTrack = t.trackingCode?.toLowerCase().includes(q);
-          return matchId || matchSaleId || matchAddr || matchDriver || matchVehicle || matchTrack;
+          return Boolean(matchId || matchSaleId || matchAddr || matchDriver || matchVehicle || matchTrack);
         }
         return true;
       })
@@ -249,11 +291,22 @@ export const TransporteView: React.FC<TransporteViewProps> = ({ onOpenSaleReceip
             <Search className="w-3.5 h-3.5 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
             <input
               type="text"
+              id="input-search-transports"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pesquisar por endereço, motorista ou ref..."
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Pesquisar por venda (ex: VND-1001), endereço, motorista..."
               className="w-full bg-transparent border-0 text-xs text-slate-900 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
             />
+            {search.trim() !== '' && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded ml-1 cursor-pointer"
+                title="Limpar filtro"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 

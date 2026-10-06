@@ -159,6 +159,16 @@ export interface Movement {
   responsible: string;
   reason: string;
   reference?: string; // e.g. "Ordem de Compra #44", "Venda #1032"
+  saleId?: string; // Referência direta opcional ao ID da Venda
+  // Auditoria de remoção do histórico (nunca apaga a linha da base de dados)
+  removido?: boolean;
+  motivo_remocao?: string;
+  removido_por?: string;
+  data_remocao?: string;
+  isRemoved?: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: string;
 }
 
 export type DefectReason = 

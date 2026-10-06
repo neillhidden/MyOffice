@@ -9,7 +9,9 @@ interface SaleReceiptModalProps {
   transport?: Transport | null;
   isOpen: boolean;
   onClose: () => void;
-  onGoToTransport?: () => void;
+  onGoToTransport?: (saleId?: string) => void;
+  onGoToStockMovement?: (saleId: string) => void;
+  onGoToFinancialEntry?: (saleId: string) => void;
 }
 
 export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
@@ -18,6 +20,8 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
   isOpen,
   onClose,
   onGoToTransport,
+  onGoToStockMovement,
+  onGoToFinancialEntry,
 }) => {
   const { warehouses, companies, banks, transports } = useStock();
 
@@ -26,7 +30,9 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
   const warehouse = warehouses.find((w) => w.id === sale.warehouseId);
   const company = companies.find((c) => c.id === warehouse?.companyId);
   const targetBank = banks.find((b) => b.id === company?.principalBankId) || banks[0];
-  const linkedTransport = transport || transports.find((t) => t.saleId === sale.id);
+  const linkedTransport =
+    transport ||
+    transports.find((t) => t.saleId === sale.id || (sale.transportId && t.id === sale.transportId));
 
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
@@ -179,6 +185,61 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
                 Movimentação creditada em: {targetBank.name} ({targetBank.currency})
               </p>
             )}
+
+            {/* Secção de links para registos gerados por esta venda */}
+            <div className="mt-3 pt-3 border-t border-dashed border-slate-200 print:hidden">
+              <p className="text-[11px] font-semibold text-slate-600 mb-2">
+                Registos gerados por esta venda:
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {onGoToStockMovement && (
+                  <button
+                    type="button"
+                    id="btn-receipt-link-stock-movement"
+                    onClick={() => {
+                      onClose();
+                      onGoToStockMovement(sale.id);
+                    }}
+                    className="w-full text-left px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-xs font-medium text-slate-700 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>→ Ver saída no Estoque (Movimentação)</span>
+                    <span className="text-[10px] font-mono text-slate-400">#{sale.id}</span>
+                  </button>
+                )}
+
+                {onGoToFinancialEntry && (
+                  <button
+                    type="button"
+                    id="btn-receipt-link-financial-entry"
+                    onClick={() => {
+                      onClose();
+                      onGoToFinancialEntry(sale.id);
+                    }}
+                    className="w-full text-left px-3 py-1.5 rounded-lg bg-emerald-50/60 hover:bg-emerald-100/70 border border-emerald-200/70 text-xs font-medium text-emerald-800 hover:text-emerald-900 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>→ Ver entrada no Financeiro (Lançamentos)</span>
+                    <span className="text-[10px] font-mono text-emerald-600">#{sale.id}</span>
+                  </button>
+                )}
+
+                {(sale.requiresTransport || linkedTransport) && onGoToTransport && (
+                  <button
+                    type="button"
+                    id="btn-receipt-link-transport"
+                    onClick={() => {
+                      onClose();
+                      onGoToTransport(sale.id);
+                    }}
+                    className="w-full text-left px-3 py-1.5 rounded-lg bg-sky-50/70 hover:bg-sky-100/80 border border-sky-200/80 text-xs font-medium text-sky-800 hover:text-sky-900 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>→ Ver registo de Transporte</span>
+                    <span className="text-[10px] font-mono text-sky-600">
+                      {linkedTransport ? `#${linkedTransport.id}` : `#${sale.id}`}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -195,13 +256,13 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            {linkedTransport && onGoToTransport && (
+            {(sale.requiresTransport || linkedTransport) && onGoToTransport && (
               <button
                 type="button"
                 id="btn-go-to-transport-receipt"
                 onClick={() => {
                   onClose();
-                  onGoToTransport();
+                  onGoToTransport(sale.id);
                 }}
                 className="flex items-center gap-1 px-3 py-2 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 rounded-xl text-xs font-medium transition-colors"
               >
