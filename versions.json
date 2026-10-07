@@ -1,6 +1,12 @@
 {
-  "currentSha": "1e2aa36d6f06c10a968596bc3fd8b4d676f860cc",
+  "currentSha": "12bbbaba4c44fbef2d04b840cdd4a9e46886047a",
   "entries": [
+    {
+      "sha": "12bbbaba4c44fbef2d04b840cdd4a9e46886047a",
+      "date": "2026-10-07T21:07:57Z",
+      "title": "refactor: link to independent project hub and redirect old bookmarks",
+      "status": "ready"
+    },
     {
       "sha": "1e2aa36d6f06c10a968596bc3fd8b4d676f860cc",
       "date": "2026-10-07T20:11:49Z",
