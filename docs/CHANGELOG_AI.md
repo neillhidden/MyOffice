@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Central em repositório independente
+- **Pedido**: Mover a central para um repositório próprio.
+- **Resultado**: `neillhidden/MeusProjetos` recebeu páginas estáticas e workflow. Publicação confirmada pelo GitHub Actions (run 37686973187). MyOffice mantém catálogos/snapshots e somente links/redirecionamentos para a central. Bancada permanece sem código, conforme confirmação do utilizador.
+- **Alterações**: Links em `pages-catalog.mjs`, redirecionamentos em `pages-projects.mjs`, regressão de navegador e documentação. Nenhuma regra de negócio alterada.
+- **Validação**: Testes/lint/build e navegação da central independente verificados. Acesso HTTP direto ao domínio público bloqueado pelo proxy; publicação confirmada por Actions.
+
 ### [2026-10-07] — OpenAI Codex — Central de projetos
 - **Pedido**: Escolher MyOffice ou BANCADA.az numa página e consultar commits/pré-visualizações.
 - **Alterações**: Gerador `scripts/pages-projects.mjs`, integração no build Pages, navegação principal/catálogo e documentação. MyOffice mantém seus URLs; Bancada tem página sem versões porque o repositório está vazio, confirmado por clone, ls-remote e HTML público. Nenhuma alteração no repositório Bancada.

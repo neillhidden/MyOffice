@@ -1,6 +1,6 @@
 # Versões do site
 
-Central de projetos: https://neillhidden.github.io/MyOffice/projetos/
+Central de projetos: https://neillhidden.github.io/MeusProjetos/
 
 Site principal: https://neillhidden.github.io/MyOffice/
 Catálogo: https://neillhidden.github.io/MyOffice/versoes/
@@ -15,8 +15,10 @@ Para testar localmente: executar o build com `MYOFFICE_BASE_PATH=/MyOffice/`, de
 
 ## Central de projetos
 
-A página `/projetos/` reúne MyOffice e BANCADA.az. `scripts/pages-projects.mjs` regista os projetos, gera cartões e uma página de estado vazio para a Bancada. O principal oferece o link `Projetos e versões`; o catálogo MyOffice oferece `Todos os projetos`. Os endereços já publicados de versões antigas continuam válidos.
+A central está no repositório independente `neillhidden/MeusProjetos`: páginas estáticas em `site/`, publicadas por GitHub Actions. MyOffice guarda somente o seu catálogo/snapshots e links para a central. `scripts/pages-projects.mjs` gera redirecionamentos de compatibilidade para `/projetos/` e `/projetos/bancada/`; o catálogo oferece `Todos os projetos`. Endereços publicados de versões antigas continuam válidos.
 
-Em 2026-10-07, `neillhidden/BANCADA.az` foi confirmado vazio no GitHub (sem refs/commits). Não foi criado código nem workflow nesse repositório. O utilizador foi consultado sobre a localização do código; para disponibilizar versões reais, será necessário publicar o projeto, verificar o framework, preparar o build e configurar o catálogo nesse repositório. Depois, atualizar `catalogUrl` e `available` no registo da central. Adicionar um cartão não compila outro projeto automaticamente.
+Em 2026-10-07, `neillhidden/BANCADA.az` foi confirmado vazio no GitHub e o utilizador confirmou que ainda está a desenvolver o código. Nenhum workflow ou versão fictícia foi criado nesse repositório. Quando o código estiver publicado, configurar seu catálogo e atualizar o cartão em `MeusProjetos/site/index.html`. O MyOffice é atualizado pelo próprio workflow e não depende de novos commits na central.
 
 Regressão específica da central: `node tests/projects-browser-regression.mjs` usando as mesmas variáveis Playwright e URL descritas acima. Verifica escolha dos projetos, abertura do MyOffice antigo, ausência de versões fictícias da Bancada e regresso à central em desktop/mobile.
+
+Para testar a integração sem acesso HTTP ao domínio público, definir `PAGES_HUB_SITE_DIR` com a pasta `site` da central e `PAGES_SITE_DIR` com os artifacts MyOffice. O teste fornece estes arquivos locais para as URLs públicas via Playwright.
