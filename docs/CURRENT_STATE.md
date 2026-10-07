@@ -9,13 +9,19 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 > **INSTRUÇÃO PARA O PRÓXIMO AGENTE (Claude Code / Gemini / Codex)**:
 > Sempre que iniciares uma sessão neste repositório, lê este bloco primeiro e verifica `git status` e `git diff`. Se o agente anterior tiver sido interrompido a meio de uma tarefa (por limite de quota ou contexto), retoma a partir do ponto indicado abaixo. Ao trabalhares numa tarefa, mantém este bloco atualizado.
 
-- **Último Agente Ativo**: Google AI Studio (Gemini) — `2026-10-05`
+- **Último Agente Ativo**: Google AI Studio (Gemini) — `2026-10-06`
 - **Estado da Build (`npm run lint` / `npm run build`)**: ✅ 100% compilável e sem erros TypeScript.
 - **Tarefa em Andamento / Pendente de Retoma**: **Nenhuma tarefa interrompida a meio neste momento.**
 - **O que acabou de ser concluído**:
-  1. Alinhamento do layout global (`Sidebar.tsx`, `Header.tsx`, `App.tsx`) com topo sincronizado em `h-14` (`56px`), contentor `max-w-7xl mx-auto` e remoção do botão `"Modo Claro / DARK"` do rodapé da barra lateral.
-  2. Implementação completa dos 4 pontos de auditoria e rastreabilidade (remoção com motivo e aba *Removidos* em Movimentação; links diretos no recibo de venda `#VND-XXXX`; reconciliação de transportes; bloqueio de ações em empresas `paradas`).
-  3. Criação da documentação central multi-agente (`AGENTS.md`, `CLAUDE.md` e todos os ficheiros em `docs/`).
+  1. Implementação dos 5 ajustes técnicos de lógica de negócio identificados no trabalho em paralelo:
+     - Venda com entrega: total da venda e receita financeira incluem custo de transporte (`transportCost`).
+     - Venda guarda o Banco original usado (`sale.bankId`), com validação de conta ativa, mesma empresa e mesma moeda, garantindo que estornos futuros revertam sempre na conta original.
+     - Estorno/Cancelamento de venda (`cancelSale`): cancela entregas de Transporte ainda não concluídas e repõe em estoque apenas as saídas que ainda estão ativas (`!removido && !isRemoved`), evitando devolução dupla.
+     - Carrinho da Venda: acumula itens repetidos (mesmo produto/variação) numa única linha com validação do estoque disponível.
+     - Dívidas: rejeita pagamentos acima do saldo devedor atual (`remainingAmount`) com mensagem de erro clara e valida a conta bancária da mesma empresa/moeda.
+  2. Alinhamento do layout global (`Sidebar.tsx`, `Header.tsx`, `App.tsx`) com topo sincronizado em `h-14` (`56px`), contentor `max-w-7xl mx-auto` e remoção do botão `"Modo Claro / DARK"` do rodapé da barra lateral.
+  3. Implementação completa dos 4 pontos de auditoria e rastreabilidade (remoção com motivo e aba *Removidos* em Movimentação; links diretos no recibo de venda `#VND-XXXX`; reconciliação de transportes; bloqueio de ações em empresas `paradas`).
+  4. Criação e atualização da documentação central multi-agente (`AGENTS.md`, `CLAUDE.md` e todos os ficheiros em `docs/`).
 - **Próximo Passo para o Próximo Agente**: Aguardar a próxima instrução do utilizador (ou, caso `git status` mostre ficheiros modificados por concluir, inspecionar `git diff`, terminar a alteração seguindo `docs/BUSINESS_RULES.md` e validar com `npm run lint` e `npm run build`).
 
 ---

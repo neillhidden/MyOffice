@@ -80,19 +80,33 @@ Em **Financeiro → Lançamentos** (`LancamentosView.tsx` e `StockContext.tsx`):
 
 ---
 
-## 5. Rastreabilidade Cruzada de Vendas (`#VND-XXXX`)
+## 5. Rastreabilidade Cruzada de Vendas (`#VND-XXXX`), Bancos, Estornos e Dívidas
 
 Quando uma venda é concluída (`completeSale` em `StockContext.tsx`) ou carregada do histórico:
 
 1. **Três Registos Vinculados Obrigatórios**:
-   - **Estoque (`Movement`)**: Um movimento de `type: 'saida'` por cada item vendido, com `saleId: sale.id` e `reference: sale.id`.
-   - **Financeiro (`BankMovement`)**: Um lançamento de `type: 'entrada'` na conta bancária selecionada, com `saleId: sale.id` e `reference: sale.id`.
+   - **Estoque (`Movement`)**: Um movimento de `type: 'saida'` por cada item vendido, com `saleId: sale.id` e `reference: "Venda #VND-XXXX"`.
+   - **Financeiro (`BankMovement`)**: Um lançamento de `type: 'entrada'` na conta bancária selecionada, com `saleId: sale.id` e `reference: "Venda #VND-XXXX"`.
    - **Transporte (`Transport`)**: Sempre que `sale.requiresTransport === true`, existe obrigatoriamente um registo em `transports` com `saleId: sale.id`.
-2. **Navegação Direta a partir do Recibo de Venda (`SaleReceiptModal.tsx`)**:
+2. **Venda com Entrega inclui o Custo de Transporte**:
+   - Quando `requiresTransport === true`, tanto o **total da venda** (`sale.total = subtotalProdutos + transportCost`) quanto a **receita financeira gerada** (`BankMovement.amount`) incluem obrigatoriamente o custo do transporte (`transportCost`), e não apenas o valor dos produtos.
+3. **Venda guarda o Banco Original (`sale.bankId`) e Valida a Conta**:
+   - Ao escolher a conta/banco numa venda (`NewSaleModal.tsx` e `completeSale`), o sistema valida obrigatoriamente que a conta está **ativa**, pertence à **mesma Empresa** do armazém de saída e está na **mesma moeda** da venda (impedindo o uso ambíguo de conta de outra empresa).
+   - O ID da conta bancária creditada fica guardado em `sale.bankId`.
+   - Num **Estorno futuro (`cancelSale`)**, o lançamento financeiro de saída reverte **sempre na conta original** (`sale.bankId`) que recebeu o dinheiro no momento da venda, mesmo que a Conta Principal da Empresa tenha mudado depois.
+4. **Estorno / Cancelamento de Venda (`cancelSale`) sem Devolução Dupla**:
+   - Ao estornar uma venda, o sistema:
+     - Cancela automaticamente as entregas de **Transporte** associadas que ainda não estejam concluídas (`status !== 'entregue' && status !== 'cancelado'` $\rightarrow$ `'cancelado'`).
+     - Repõe em estoque (`type: 'entrada'`) **apenas as saídas de estoque dessa venda que ainda estão ativas** (`!m.removido && !m.isRemoved`). Se uma saída de estoque da venda já tinha sido "Removida do histórico" por outro motivo, não é reposta novamente (evitando duplicar a reposição).
+5. **Carrinho da Venda Acumula Itens Repetidos**:
+   - Se o mesmo produto/variação (`productId` + `variationId`) for adicionado mais de uma vez à mesma venda, o sistema **soma a quantidade numa única linha** (validando o limite de estoque disponível no armazém para o total acumulado), em vez de criar linhas duplicadas.
+6. **Dívidas — Rejeição de Pagamento Acima do Saldo Devedor**:
+   - Ao registar um pagamento numa Dívida (`DebtPaymentModal.tsx` e `recordDebtPayment`), o sistema impede qualquer valor superior ao **saldo devedor atual** (`remainingAmount`), exibindo mensagem de erro clara, e valida que a conta bancária selecionada está ativa, pertence à mesma empresa e opera na mesma moeda da dívida.
+7. **Navegação Direta a partir do Recibo de Venda (`SaleReceiptModal.tsx`)**:
    - O rodapé do recibo apresenta a secção **"Registos gerados por esta venda:"**:
      - `→ Ver saída no Estoque (Movimentação)`: Fecha o modal, navega para **Estoque → Movimentação** e filtra pelo código `sale.id`.
      - `→ Ver entrada no Financeiro (Lançamentos)`: Fecha o modal, navega para **Financeiro → Lançamentos** e filtra pelo código `sale.id`.
-     - `→ Ver entrega em Transporte` (se `requiresTransport: true`): Fecha o modal, navega para **Caixa → Transporte** e filtra pelo código `sale.id`.
+     - `→ Ver registo de Transporte` (se `requiresTransport: true`): Fecha o modal, navega para **Caixa → Transporte** e filtra pelo código `sale.id`.
    - Na tabela de **Caixa → Venda**, clicar no emblema `Sim` da coluna **Transporte** também navega diretamente para **Caixa → Transporte** filtrado por `sale.id`.
 
 ---

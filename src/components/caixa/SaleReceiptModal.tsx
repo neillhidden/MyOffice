@@ -23,16 +23,32 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
   onGoToStockMovement,
   onGoToFinancialEntry,
 }) => {
-  const { warehouses, companies, banks, transports } = useStock();
+  const { warehouses, companies, banks, bankMovements, transports } = useStock();
 
   if (!isOpen || !sale) return null;
 
   const warehouse = warehouses.find((w) => w.id === sale.warehouseId);
   const company = companies.find((c) => c.id === warehouse?.companyId);
-  const targetBank = banks.find((b) => b.id === company?.principalBankId) || banks[0];
+  const originalBankMov = bankMovements.find(
+    (bm) =>
+      bm.type === 'entrada' &&
+      !bm.isRemoved &&
+      (bm.saleId === sale.id || bm.reference === `Venda #${sale.id}`)
+  );
+  const targetBank =
+    banks.find((b) => b.id === (sale.bankId || originalBankMov?.bankId)) ||
+    banks.find((b) => b.id === company?.principalBankId) ||
+    banks[0];
   const linkedTransport =
     transport ||
     transports.find((t) => t.saleId === sale.id || (sale.transportId && t.id === sale.transportId));
+  const itemsSubtotal = sale.items.reduce((acc, it) => acc + it.subtotal, 0);
+  const effectiveTransportCost =
+    sale.requiresTransport
+      ? sale.transportCost !== undefined
+        ? sale.transportCost
+        : linkedTransport?.cost || 0
+      : 0;
 
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
@@ -173,6 +189,22 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
 
           {/* Total Section */}
           <div className="pt-3 border-t-2 border-slate-900 space-y-1">
+            {sale.requiresTransport && (
+              <div className="space-y-1 pb-1.5 border-b border-dashed border-slate-200 text-xs text-slate-600">
+                <div className="flex justify-between">
+                  <span>Subtotal dos Artigos:</span>
+                  <span className="font-semibold text-slate-800">
+                    {formatCurrencyValue(itemsSubtotal, company?.currency || 'Kz')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Custo de Transporte:</span>
+                  <span className="font-semibold text-sky-700">
+                    + {formatCurrencyValue(effectiveTransportCost, company?.currency || 'Kz')}
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="flex justify-between items-baseline">
               <span className="text-sm font-bold text-slate-900 uppercase">Total Pago</span>
               <span className="text-lg font-extrabold text-slate-900">

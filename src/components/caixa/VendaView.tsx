@@ -146,7 +146,11 @@ export const VendaView: React.FC<VendaViewProps> = ({
         setCancelError(`Operação bloqueada: A empresa "${comp.name}" está desativada.`);
         return;
       }
-      cancelSale(saleToCancel.id, cancelReason.trim() || undefined);
+      const res = cancelSale(saleToCancel.id, cancelReason.trim() || undefined);
+      if (res && !res.success) {
+        setCancelError(res.message || 'Erro ao estornar a venda.');
+        return;
+      }
       setSaleToCancel(null);
       setCancelReason('');
       setCancelError(null);

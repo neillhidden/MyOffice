@@ -310,6 +310,7 @@ export interface BankMovement {
   employeeId?: string; // relação opcional com Funcionário
   reason: string; // Motivo/justificativa
   reference?: string; // ex: "Venda #VND-001", "Aporte de Capital"
+  saleId?: string; // Referência à Venda de origem/estorno
   stockMovementId?: string; // Referência à Movimentação de Estoque de origem
   debtId?: string; // Referência à Dívida
   debtPaymentId?: string; // Referência ao Pagamento da Dívida
@@ -395,9 +396,11 @@ export interface Sale {
   clientId?: string; // Relação com Cliente (opcional)
   clientName?: string; // Nome do Cliente
   warehouseId: string; // Armazém de onde os produtos saem
+  bankId?: string; // Conta/Banco creditado no momento da venda
   items: SaleItem[];
   paymentMethod: SalePaymentMethod;
-  total: number; // Total da venda
+  total: number; // Total da venda (inclui custo de transporte quando aplicável)
+  transportCost?: number; // Custo do transporte incluído na venda
   status: SaleStatus;
   notes?: string;
   requiresTransport: boolean;

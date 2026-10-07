@@ -21,6 +21,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
     recordDebtPayment,
     getDebtCalculations,
     getCompanyForBank,
+    getBankBalance,
     isCompanyDisabled,
   } = useStock();
 
@@ -31,29 +32,42 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Reset fields clean whenever modal opens (Rule 7 & Rule 9)
-  useEffect(() => {
-    if (isOpen) {
-      setAmount('');
-      setBankId('');
-      setDate(new Date().toISOString().slice(0, 10));
-      setResponsible('');
-      setNotes('');
-      setErrors({});
-    }
-  }, [isOpen]);
+  const debtCompany = React.useMemo(
+    () => (debt ? companies.find((c) => c.id === debt.companyId) : undefined),
+    [debt, companies]
+  );
+  const debtCurrency = debt?.currency || debtCompany?.currency || 'Kz';
 
   const operationalBanks = React.useMemo(() => {
     return banks.filter((b) => {
+      const isBankActive = b.status === 'ativo' || b.status === 'ativa';
+      if (!isBankActive) return false;
       if (b.id === 'bank-kianda') {
         const kiandaComp = companies.find((c) => c.id === 'comp-kianda');
         if (kiandaComp ? kiandaComp.status === 'desativada' : true) return false;
       }
       const comp = getCompanyForBank(b.id);
       if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
+      if (debt?.companyId && comp && comp.id !== debt.companyId) return false;
+      if ((b.currency || 'Kz') !== debtCurrency) return false;
       return true;
     });
-  }, [banks, companies, getCompanyForBank, isCompanyDisabled]);
+  }, [banks, companies, debt, debtCurrency, getCompanyForBank, isCompanyDisabled]);
+
+  // Reset fields clean whenever modal opens (Rule 7 & Rule 9)
+  useEffect(() => {
+    if (isOpen && debt) {
+      setAmount('');
+      const preferredBank =
+        operationalBanks.find((b) => b.id === debtCompany?.principalBankId) ||
+        operationalBanks[0];
+      setBankId(preferredBank?.id || '');
+      setDate(new Date().toISOString().slice(0, 10));
+      setResponsible('');
+      setNotes('');
+      setErrors({});
+    }
+  }, [isOpen, debt, debtCompany, operationalBanks]);
 
   if (!isOpen || !debt) return null;
 
@@ -68,15 +82,31 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
       errs.amount = 'O montante do pagamento é obrigatório.';
     } else if (isNaN(numAmount) || numAmount <= 0) {
       errs.amount = 'Insira um valor numérico válido superior a zero.';
-    } else if (numAmount > calcs.remainingAmount + 0.001) {
-      errs.amount = `O valor não pode exceder o saldo restante da dívida (${formatCurrencyValue(
+    } else if (numAmount > calcs.remainingAmount + 0.005) {
+      errs.amount = `O valor do pagamento (${formatCurrencyValue(
+        numAmount,
+        debtCurrency
+      )}) não pode ser maior do que o saldo devedor atual (${formatCurrencyValue(
         calcs.remainingAmount,
-        'Kz'
+        debtCurrency
       )}).`;
     }
 
     if (!bankId) {
       errs.bankId = 'Selecione a conta financeira envolvida na transação.';
+    } else {
+      const selectedBank = banks.find((b) => b.id === bankId);
+      if (!selectedBank || (selectedBank.status !== 'ativo' && selectedBank.status !== 'ativa')) {
+        errs.bankId = 'A conta bancária selecionada está inativa.';
+      } else if (isAPagar && !isNaN(numAmount) && numAmount > 0) {
+        const availableBalance = getBankBalance(selectedBank.id);
+        if (numAmount > availableBalance + 0.005) {
+          errs.bankId = `Saldo insuficiente na conta "${selectedBank.name}". Disponível: ${formatCurrencyValue(
+            availableBalance,
+            selectedBank.currency || debtCurrency
+          )}.`;
+        }
+      }
     }
 
     if (!date) {
@@ -93,16 +123,23 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
 
     const numAmount = parseFloat(amount);
 
-    recordDebtPayment({
-      debtId: debt.id,
-      amount: numAmount,
-      bankId,
-      date: new Date(date).toISOString(),
-      responsible: responsible.trim() || 'Administrador',
-      notes: notes.trim() || undefined,
-    });
+    try {
+      recordDebtPayment({
+        debtId: debt.id,
+        amount: numAmount,
+        bankId,
+        date: new Date(date).toISOString(),
+        responsible: responsible.trim() || 'Administrador',
+        notes: notes.trim() || undefined,
+      });
 
-    onClose();
+      onClose();
+    } catch (err: any) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: err?.message || 'Erro ao registar pagamento da dívida.',
+      }));
+    }
   };
 
   return (

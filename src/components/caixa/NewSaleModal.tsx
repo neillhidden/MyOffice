@@ -49,11 +49,13 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     isCompanyDisabled,
     getCurrentStock,
     getProductWarehouses,
+    getCompanyForBank,
     completeSale,
   } = useStock();
 
-  // Selected Warehouse
+  // Selected Warehouse & Bank
   const [warehouseId, setWarehouseId] = useState<string>(warehouses[0]?.id || '');
+  const [selectedBankId, setSelectedBankId] = useState<string>('');
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -140,11 +142,42 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     }
   }, [isOpen, operationalWarehouses, companies]);
 
-  // Derived current Warehouse, Company, and Principal Bank
+  // Derived current Warehouse, Company, and Valid Banks for this Company & Currency
   const currentWarehouse = warehouses.find((w) => w.id === warehouseId);
   const currentCompany = companies.find((c) => c.id === currentWarehouse?.companyId);
-  const principalBank = banks.find((b) => b.id === currentCompany?.principalBankId) || banks[0];
   const currency = currentCompany?.currency || 'Kz';
+
+  // Contas elegíveis: ativas, da mesma Empresa e na mesma moeda da venda
+  const companyValidBanks = useMemo(() => {
+    if (!currentCompany) return [];
+    return banks.filter((b) => {
+      const isBankActive = b.status === 'ativo' || b.status === 'ativa';
+      if (!isBankActive) return false;
+      const bankComp = getCompanyForBank(b.id);
+      if (!bankComp || bankComp.id !== currentCompany.id) return false;
+      if ((b.currency || 'Kz') !== currency) return false;
+      return true;
+    });
+  }, [banks, currentCompany, currency, getCompanyForBank]);
+
+  // Sync selectedBankId whenever company or valid banks change
+  React.useEffect(() => {
+    if (!currentCompany) {
+      setSelectedBankId('');
+      return;
+    }
+    const currentStillValid = companyValidBanks.some((b) => b.id === selectedBankId);
+    if (currentStillValid) return;
+
+    const preferredPrincipal = companyValidBanks.find(
+      (b) => b.id === currentCompany.principalBankId
+    );
+    setSelectedBankId(preferredPrincipal?.id || companyValidBanks[0]?.id || '');
+  }, [currentCompany, companyValidBanks, selectedBankId]);
+
+  const selectedBank =
+    companyValidBanks.find((b) => b.id === selectedBankId) ||
+    banks.find((b) => b.id === currentCompany?.principalBankId);
 
   // Available stock for selected product and variation in this warehouse
   const selectedProduct = products.find((p) => p.id === selectedProductId);
@@ -313,6 +346,30 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
       return;
     }
 
+    if (!selectedBankId) {
+      setError(
+        `Nenhuma conta bancária ativa em ${currency} encontrada para a empresa "${currentCompany?.name || ''}". Verifique as contas no módulo Financeiro.`
+      );
+      return;
+    }
+
+    const chosenBank = banks.find((b) => b.id === selectedBankId);
+    const chosenBankComp = chosenBank ? getCompanyForBank(chosenBank.id) : undefined;
+    const isChosenBankActive = chosenBank?.status === 'ativo' || chosenBank?.status === 'ativa';
+
+    if (!chosenBank || !isChosenBankActive) {
+      setError('A conta bancária selecionada não está ativa.');
+      return;
+    }
+    if (!chosenBankComp || chosenBankComp.id !== currentCompany?.id) {
+      setError('A conta bancária selecionada deve pertencer à mesma empresa da venda.');
+      return;
+    }
+    if ((chosenBank.currency || 'Kz') !== currency) {
+      setError(`A conta bancária selecionada deve estar na mesma moeda da venda (${currency}).`);
+      return;
+    }
+
     if (requiresTransport && !deliveryAddress.trim()) {
       setError('O endereço de entrega é obrigatório para vendas com transporte.');
       return;
@@ -324,6 +381,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
       const result = completeSale({
         warehouseId,
+        bankId: selectedBankId,
         seller: seller.trim() || 'Administrador',
         clientId: selectedClientId || undefined,
         clientName: finalClientName,
@@ -436,13 +494,34 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               </div>
             </div>
 
-            <div className="text-left sm:text-right text-xs">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">
-                Empresa & Banco de Liquidação
-              </span>
-              <span className="font-semibold text-slate-800">
-                {currentCompany?.name} • {principalBank?.name || 'Banco'} ({principalBank?.currency})
-              </span>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+              <div className="flex-1 sm:w-72">
+                <label htmlFor="sale-bank-select" className="block text-[10px] uppercase font-semibold text-slate-500 mb-0.5">
+                  Conta / Banco de Liquidação ({currentCompany?.name})
+                </label>
+                <select
+                  id="sale-bank-select"
+                  value={selectedBankId}
+                  onChange={(e) => {
+                    setSelectedBankId(e.target.value);
+                    setError(null);
+                  }}
+                  disabled={currentCompany?.status === 'parada' || companyValidBanks.length === 0}
+                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                >
+                  {companyValidBanks.length === 0 ? (
+                    <option value="">Sem conta ativa em {currency} nesta empresa</option>
+                  ) : (
+                    companyValidBanks.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.currency})
+                        {b.id === currentCompany?.principalBankId ? ' • Principal' : ''}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -857,9 +936,12 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             <div className="text-2xl font-extrabold text-slate-900">
               {formatCurrencyValue(totalSale, currency)}
             </div>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-slate-500 block">
               {cart.length} {cart.length === 1 ? 'artigo' : 'artigos'}
-              {requiresTransport ? ' • Inclui transporte' : ''}
+              {requiresTransport
+                ? ` • Artigos: ${formatCurrencyValue(subtotalProducts, currency)} + Transporte: ${formatCurrencyValue(numTransportCost, currency)}`
+                : ''}
+              {selectedBank ? ` • Conta: ${selectedBank.name}` : ''}
             </span>
           </div>
 
