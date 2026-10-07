@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Definições em linhas com ícones
+- **Pedido**: Aplicar às Definições o estilo da imagem de referência enviada pelo utilizador.
+- **Alterações**: `SettingsView.tsx` passa a abrir numa lista de categorias em linhas: ícone, título, descrição, estado e seta. Cada linha abre/fecha os detalhes, com botão de fecho. Contagens e proteção de histórico à direita no desktop e abaixo da descrição no telefone. Temas claro/escuro e foco de teclado. IDs existentes e formulários preservados.
+- **Regras**: Nenhuma mudança em operações, armazenamento ou proteções de reposição; não foram adicionadas opções fictícias de rede ou switches sem função.
+- **Validação**: 7 testes unitários, lint/build e Chromium passaram. Verificados formulário de empresa, lista de armazéns, bloqueio das duas reposições com histórico, temas e layout de telefone 390px com sidebar recolhida. Build mantém aviso conhecido de bundle grande.
+
 ### [2026-10-07] — OpenAI Codex — Central em repositório independente
 - **Pedido**: Mover a central para um repositório próprio.
 - **Resultado**: `neillhidden/MeusProjetos` recebeu páginas estáticas e workflow. Publicação confirmada pelo GitHub Actions (run 37686973187). MyOffice mantém catálogos/snapshots e somente links/redirecionamentos para a central. Bancada permanece sem código, conforme confirmação do utilizador.

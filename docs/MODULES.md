@@ -141,6 +141,7 @@ Este documento detalha todos os módulos e submódulos existentes na aplicação
 ---
 
 ### 2.7. Módulo `Definições` (`SettingsView.tsx`)
+- **Navegação**: Lista de linhas com ícone, título, descrição, estado e seta. Categorias Empresas, Armazéns e lojas, Gestão de dados; detalhes abrem/fecham pela linha ou por Fechar detalhes. Entrada mostra apenas a lista. IDs legados das abas e ações preservados.
 - **Aba `Empresas`**: Criação, edição, alteração de estado operacional (`ativa`, `parada`, `desativada`) e eliminação protegida de empresas (`DeleteCompanyModal` impede apagar empresas que possuam armazéns vinculados).
 - **Aba `Armazéns`**: Criação, edição e remoção de armazéns e lojas físicas associados a uma empresa.
 - **Aba `Repor Dados` (`ResetSettingsModal.tsx`)**:

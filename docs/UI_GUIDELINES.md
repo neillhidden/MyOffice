@@ -78,3 +78,7 @@ Vários fluxos e verificações automatizadas dependem de `id`s específicos nos
   - `#sale-generated-records-section`, `#link-sale-stock-movement`, `#link-sale-financial-entry`, `#link-sale-transport`, `#btn-go-to-transport`
 - **Detalhe do Produto**:
   - `#btn-product-detail-edit`, `#btn-product-detail-move`, `#btn-close-product-detail-modal`
+
+## Definições — categorias em linhas
+
+A entrada de Definições usa linhas de largura completa com ícone linear, título, descrição e seta. O estado/contagem aparece à direita no desktop e abaixo da descrição em telas pequenas. Linhas têm área de toque mínima de 76px, foco visível e `aria-expanded`. Usar superfícies/bordas/textos dos tokens escuros existentes. Uma categoria abre os detalhes existentes; não adicionar controlos sem configuração real associada. O controlo de tema continua exclusivamente no cabeçalho.
