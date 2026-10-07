@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import {
   Product,
   Supplier,
@@ -41,6 +41,9 @@ import {
 import { Employee } from '../types/employee';
 import { Client } from '../types/client';
 import { NotificationItem } from '../types/notification';
+import { createId } from '../utils/ids';
+import { createReversal, migrateFinancialAudit } from '../utils/financialAudit';
+import { validateSaleItem } from '../utils/saleValidation';
 import { USD_TO_KZ_RATE } from '../utils/formatters';
 import {
   INITIAL_PRODUCTS,
@@ -216,6 +219,7 @@ interface StockContextType {
   deletePurchaseSource: (sourceId: string) => void;
 
   // Global search & reset
+  canResetData: boolean;
   resetToDefaults: () => void;
   resetHistory: () => void;
   resetAll: () => void;
@@ -233,6 +237,7 @@ interface StockContextType {
   ) => BankMovement;
   getCompanyForBank: (bankId: string) => Company | undefined;
   isBankOperationBlocked: (bankId: string) => { blocked: boolean; message?: string };
+  reverseBankMovement: (movementId: string, reason: string, responsible?: string) => BankMovement;
   removeFinancialMovement: (movementId: string, reason: string, removedBy?: string) => void;
   restoreFinancialMovement: (movementId: string) => void;
 
@@ -256,7 +261,7 @@ interface StockContextType {
     notes?: string;
     responsible?: string;
   }) => DebtPayment;
-  deleteDebtPayment: (paymentId: string) => void;
+  deleteDebtPayment: (paymentId: string, reason: string) => void;
   addDebtIncrement: (incrementData: {
     debtId: string;
     amount: number;
@@ -343,6 +348,8 @@ const StockContext = createContext<StockContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEY_PREFIX = 'myoffice_estoque_';
 
 export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const reversedMovementIds = useRef(new Set<string>());
+  const cancelledSaleIds = useRef(new Set<string>());
   // 1. Initial State from localStorage or Seeds
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}products`);
@@ -530,35 +537,17 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       try {
         const parsed: BankMovement[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          if (isReset) return parsed;
-          const reconciled = parsed.map((bm) => {
-            if (bm.id === 'bmov-2' && bm.amount === 587000) {
-              return {
-                ...bm,
-                amount: 592000,
-                reason: 'Receita da Venda #VND-1001 (2 itens + transporte)',
-                saleId: 'VND-1001',
-              };
-            }
-            if (bm.id === 'bmov-1005' && bm.amount === 614900) {
-              return {
-                ...bm,
-                amount: 619400,
-                reason: 'Receita da Venda #VND-1005 (2 itens + transporte)',
-                saleId: 'VND-1005',
-              };
-            }
-            return bm;
-          });
+          if (isReset) return migrateFinancialAudit(parsed);
+          const reconciled = parsed; // Preserve booked values; corrections require a new entry.
           const existingIds = new Set(reconciled.map((bm) => bm.id));
           const missingSeeds = INITIAL_BANK_MOVEMENTS.filter((bm) => !existingIds.has(bm.id));
-          return missingSeeds.length > 0 ? [...reconciled, ...missingSeeds] : reconciled;
+          return migrateFinancialAudit(missingSeeds.length > 0 ? [...reconciled, ...missingSeeds] : reconciled);
         }
       } catch {
         // fallback
       }
     }
-    return INITIAL_BANK_MOVEMENTS;
+    return migrateFinancialAudit(INITIAL_BANK_MOVEMENTS);
   });
 
   const [debts, setDebts] = useState<Debt[]>(() => {
@@ -1143,7 +1132,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     draftIdToRemove?: string
   ): Product => {
     const now = new Date().toISOString();
-    const newProductId = `prod-${Date.now()}`;
+    const newProductId = createId('prod');
     const newProduct: Product = {
       ...productData,
       id: newProductId,
@@ -1285,7 +1274,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const now = new Date().toISOString();
     const newCompany: Company = {
       ...companyData,
-      id: `comp-${Date.now()}`,
+      id: createId('comp'),
       createdAt: now,
       updatedAt: now,
     };
@@ -1334,7 +1323,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addWarehouse = (whData: Omit<Warehouse, 'id'>): Warehouse => {
     const newWarehouse: Warehouse = {
       ...whData,
-      id: `wh-${Date.now()}`,
+      id: createId('wh'),
     };
     setWarehouses((prev) => [...prev, newWarehouse]);
     return newWarehouse;
@@ -1359,7 +1348,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     draftData: Omit<ProductDraft, 'id' | 'savedAt'> & { id?: string }
   ): ProductDraft => {
     const now = new Date().toISOString();
-    const draftId = draftData.id || `draft-${Date.now()}`;
+    const draftId = draftData.id || createId('draft');
     const newDraft: ProductDraft = {
       ...draftData,
       id: draftId,
@@ -1388,7 +1377,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'createdAt'>): Supplier => {
     const newSupplier: Supplier = {
       ...supplierData,
-      id: `sup-${Date.now()}`,
+      id: createId('sup'),
       createdAt: new Date().toISOString(),
     };
     setSuppliers((prev) => [...prev, newSupplier]);
@@ -1457,7 +1446,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const newMovement: Movement = {
       ...movementData,
-      id: `mov-${Date.now()}`,
+      id: createId('mov'),
       date: movementData.date || new Date().toISOString(),
     };
     setMovements((prev) => [newMovement, ...prev]);
@@ -1465,7 +1454,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Ligação automática com o Financeiro: Compra de estoque gera saída financeira automática
     if (financialExit && financialExit.amount > 0 && financialExit.bankId) {
       const bankMov: BankMovement = {
-        id: `bmov-stock-${Date.now()}`,
+        id: createId('bmov-stock'),
         bankId: financialExit.bankId,
         type: 'saida',
         category: 'Compra de estoque',
@@ -1582,7 +1571,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     const now = new Date().toISOString();
-    const movementId = `mov-def-${Date.now()}`;
+    const movementId = createId('mov-def');
 
     // 1. Audit Movement deduction
     const defectMovement: Movement = {
@@ -1595,13 +1584,13 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       date: now,
       responsible: data.responsible,
       reason: `Item defeituoso registrado: ${data.reason.replace('_', ' ')}${data.notes ? ` - ${data.notes}` : ''}`,
-      reference: `Auto-DEF-${Date.now().toString().slice(-4)}`,
+      reference: createId('Auto-DEF'),
     };
     setMovements((prev) => [defectMovement, ...prev]);
 
     // 2. Defective Record
     const record: DefectiveRecord = {
-      id: `def-${Date.now()}`,
+      id: createId('def'),
       productId: data.productId,
       variationId: data.variationId,
       warehouseId: data.warehouseId,
@@ -1681,7 +1670,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addPurchaseGroup = (name: string, description?: string): PurchaseGroup => {
     const now = new Date().toISOString();
     const newGroup: PurchaseGroup = {
-      id: `grp-${Date.now()}`,
+      id: createId('grp'),
       name,
       description,
       createdAt: now,
@@ -1714,7 +1703,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const newList: PurchaseList = {
       ...listData,
       status: normalizePurchaseListStatus(listData.status || 'em_pesquisa'),
-      id: `list-${Date.now()}`,
+      id: createId('list'),
       createdAt: now,
       updatedAt: now,
     };
@@ -1756,7 +1745,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const newSource: PurchaseSource = {
       ...sourceData,
-      id: `src-${Date.now()}`,
+      id: createId('src'),
       totalPrice: calculatedTotal,
     };
     setPurchaseSources((prev) => [newSource, ...prev]);
@@ -1831,7 +1820,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const now = new Date().toISOString();
     const newBank: Bank = {
       ...bankData,
-      id: `bank-${Date.now()}`,
+      id: createId('bank'),
       createdAt: now,
       updatedAt: now,
     };
@@ -1931,77 +1920,55 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const newMovement: BankMovement = {
       ...movementData,
-      id: `bmov-${Date.now()}`,
+      id: createId('bmov'),
       date: movementData.date || new Date().toISOString(),
     };
     setBankMovements((prev) => [newMovement, ...prev]);
     return newMovement;
   };
 
-  // Regra de auditoria Financeira: Remoção com motivo e notificação ao Administrador
-  const removeFinancialMovement = (
+  const reverseBankMovement = (
     movementId: string,
     reason: string,
-    removedBy: string = 'Administrador'
-  ) => {
-    const mov = bankMovements.find((m) => m.id === movementId);
-    if (!mov) return;
-
-    setBankMovements((prev) =>
-      prev.map((m) =>
-        m.id === movementId
-          ? {
-              ...m,
-              isRemoved: true,
-              removedAt: new Date().toISOString(),
-              removedReason: reason,
-              removedBy,
-            }
-          : m
-      )
-    );
-
-    const bank = banks.find((b) => b.id === mov.bankId);
+    responsible = 'Administrador',
+  ): BankMovement => {
+    const original = bankMovements.find((m) => m.id === movementId);
+    if (!original) throw new Error('Lançamento não encontrado.');
+    if (original.saleId) {
+      const sale = sales.find((sale) => sale.id === original.saleId);
+      if (sale && sale.status !== 'cancelada' && !cancelledSaleIds.current.has(sale.id)) {
+        throw new Error('Use o cancelamento da venda para estornar financeiro, estoque e entrega em conjunto.');
+      }
+    }
+    if (original.isReversed || original.reversalOfId || reversedMovementIds.current.has(original.id) ||
+        bankMovements.some((m) => m.reversalOfId === original.id)) {
+      throw new Error('Este lançamento já foi estornado ou é um lançamento de estorno.');
+    }
+    const originCheck = isBankOperationBlocked(original.bankId);
+    const destinationCheck = original.destinationBankId ? isBankOperationBlocked(original.destinationBankId) : { blocked: false };
+    if (originCheck.blocked || destinationCheck.blocked) {
+      throw new Error(originCheck.message || destinationCheck.message || 'Operação bloqueada.');
+    }
+    const reversal = createReversal(original, reason, responsible);
+    reversedMovementIds.current.add(original.id);
+    setBankMovements((prev) => [reversal, ...prev.map((m) => m.id === original.id ? {
+      ...m, isReversed: true, reversedAt: reversal.date,
+      reversalReason: reason.trim(), reversedBy: responsible,
+    } : m)]);
     addNotification({
-      type: 'outro',
-      title: 'Lançamento Removido do Histórico',
-      message: `O lançamento #${mov.id} (${mov.type.toUpperCase()}) no valor de ${mov.amount.toLocaleString()} ${bank?.currency || 'Kz'} foi removido do histórico por ${removedBy}. Motivo da auditoria: "${reason}"`,
-      reference: {
-        type: 'outro',
-        id: mov.id,
-      },
+      type: 'outro', title: 'Lançamento Estornado',
+      message: `O lançamento #${original.id} foi compensado pelo estorno #${reversal.id}. Motivo: ${reason.trim()}`,
+      reference: { type: 'outro', id: original.id },
     });
+    return reversal;
   };
 
-  // Regra de auditoria Financeira: Restaurar lançamento
-  const restoreFinancialMovement = (movementId: string) => {
-    const mov = bankMovements.find((m) => m.id === movementId);
-    if (!mov) return;
-
-    setBankMovements((prev) =>
-      prev.map((m) =>
-        m.id === movementId
-          ? {
-              ...m,
-              isRemoved: false,
-              removedAt: undefined,
-              removedReason: undefined,
-              removedBy: undefined,
-            }
-          : m
-      )
-    );
-
-    const bank = banks.find((b) => b.id === mov.bankId);
-    addNotification({
-      type: 'outro',
-      title: 'Lançamento Restaurado ao Histórico',
-      message: `O lançamento #${mov.id} no valor de ${mov.amount.toLocaleString()} ${bank?.currency || 'Kz'} foi restaurado ao extrato ativo.`,
-      reference: {
-        type: 'outro',
-        id: mov.id,
-      },
-    });
+  // Compatibility for existing integrations: removal now means a compensating entry.
+  const removeFinancialMovement = (id: string, reason: string, responsible = 'Administrador') => {
+    reverseBankMovement(id, reason, responsible);
+  };
+  const restoreFinancialMovement = (_id: string) => {
+    throw new Error('Estornos não podem ser apagados ou restaurados. Registe um novo lançamento justificado.');
   };
 
   // ==========================================
@@ -2021,7 +1988,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (p.debtId !== debt.id) return false;
       if (p.movementId) {
         const linkedMov = bankMovements.find((m) => m.id === p.movementId);
-        if (linkedMov?.isRemoved) return false;
+        if (linkedMov?.isRemoved || linkedMov?.isReversed) return false;
       }
       return true;
     });
@@ -2054,7 +2021,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const now = new Date().toISOString();
     const newDebt: Debt = {
       ...debtData,
-      id: `deb-${Date.now()}`,
+      id: createId('deb'),
       createdAt: now,
     };
     setDebts((prev) => [newDebt, ...prev]);
@@ -2076,7 +2043,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return {
         success: false,
         message:
-          'Esta dívida possui pagamentos registrados no histórico e não pode ser eliminada. Registre um estorno/ajuste ou remova os pagamentos primeiro.',
+          'Esta dívida possui pagamentos registrados no histórico e não pode ser eliminada. O histórico de pagamentos, incluindo estornos, deve ser preservado.',
       };
     }
     setDebts((prev) => prev.filter((d) => d.id !== id));
@@ -2152,8 +2119,8 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     const now = new Date().toISOString();
-    const paymentId = `pay-${Date.now()}`;
-    const movId = `bmov-debt-${Date.now()}`;
+    const paymentId = createId('pay');
+    const movId = createId('bmov-debt');
 
     // Sincronização com o Financeiro:
     // Se a dívida é a receber e estamos a receber pagamento -> entrada
@@ -2192,26 +2159,12 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newPayment;
   };
 
-  const deleteDebtPayment = (paymentId: string) => {
+  const deleteDebtPayment = (paymentId: string, reason: string) => {
     const payment = debtPayments.find((p) => p.id === paymentId);
-    if (!payment) return;
-
-    if (payment.movementId) {
-      setBankMovements((prev) =>
-        prev.map((m) =>
-          m.id === payment.movementId
-            ? {
-                ...m,
-                isRemoved: true,
-                removedAt: new Date().toISOString(),
-                removedReason: 'Pagamento de dívida anulado/removido',
-                removedBy: 'Administrador',
-              }
-            : m
-        )
-      );
-    }
-    setDebtPayments((prev) => prev.filter((p) => p.id !== paymentId));
+    if (!payment) throw new Error('Pagamento não encontrado.');
+    if (!payment.movementId) throw new Error('Pagamento antigo sem lançamento vinculado: necessita de reconciliação antes do estorno.');
+    reverseBankMovement(payment.movementId, reason, 'Administrador');
+    // Preserve payment in its history; debt calculations ignore its reversed entry.
   };
 
   const addDebtIncrement = (incrementData: {
@@ -2227,7 +2180,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const now = new Date().toISOString();
     const newIncrement: DebtIncrement = {
-      id: `dinc-${Date.now()}`,
+      id: createId('dinc'),
       debtId: incrementData.debtId,
       amount: incrementData.amount,
       reason: incrementData.reason.trim(),
@@ -2293,8 +2246,8 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }): { sale: Sale; transport?: Transport } => {
     const targetWh = warehouses.find((w) => w.id === saleData.warehouseId);
-    if (!targetWh) {
-      throw new Error('Armazém de saída inválido ou não encontrado.');
+    if (!targetWh || targetWh.status !== 'ativo') {
+      throw new Error('Armazém de saída inválido, inativo ou não encontrado.');
     }
     const targetComp = companies.find((c) => c.id === targetWh.companyId);
     if (!targetComp) {
@@ -2349,12 +2302,16 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     >();
 
+    if (!Array.isArray(saleData.items)) throw new Error('A venda deve conter uma lista de itens válida.');
     for (const rawItem of saleData.items) {
+      validateSaleItem(rawItem, products);
       const key = `${rawItem.productId}::${rawItem.variationId || ''}`;
       const existing = consolidatedMap.get(key);
       if (existing) {
         existing.quantity += Number(rawItem.quantity) || 0;
-        existing.unitPrice = Number(rawItem.unitPrice);
+        if (existing.unitPrice !== rawItem.unitPrice) {
+          throw new Error('Itens repetidos devem ter o mesmo preço unitário.');
+        }
       } else {
         consolidatedMap.set(key, {
           ...rawItem,
@@ -2372,6 +2329,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Validar disponibilidade de estoque para cada item consolidado
     for (const item of consolidatedInputItems) {
+      validateSaleItem(item, products);
       const available = getCurrentStock(item.productId, saleData.warehouseId, item.variationId);
       if (item.quantity > available) {
         throw new Error(
@@ -2382,8 +2340,14 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     }
 
+    const transportCost = saleData.requiresTransport ? saleData.transportDetails?.cost ?? 0 : 0;
+    if (!Number.isFinite(transportCost) || transportCost < 0) {
+      throw new Error('O custo de transporte deve ser um número válido igual ou superior a zero.');
+    }
+    const totalSale = consolidatedInputItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, transportCost);
+    if (!Number.isFinite(totalSale)) throw new Error('O total da venda excede o limite permitido.');
     const now = new Date().toISOString();
-    const saleId = `VND-${Date.now().toString().slice(-4)}`;
+    const saleId = createId('VND');
     const seller = saleData.seller || 'Administrador';
 
     // 1. Calculate items subtotals and total (Regra 1: incluir custo de transporte no total e na receita)
@@ -2393,19 +2357,15 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       subtotalProducts += subtotal;
       return {
         ...item,
-        id: `si-${Date.now()}-${idx}`,
+        id: createId('si'),
         subtotal,
       };
     });
 
-    const transportCost = saleData.requiresTransport
-      ? Math.max(0, Number(saleData.transportDetails?.cost) || 0)
-      : 0;
-    const totalSale = subtotalProducts + transportCost;
 
     // 2. Generate stock Movement 'saida' for each sold item
     const newMovements: Movement[] = saleItems.map((item, idx) => ({
-      id: `mov-sale-${Date.now()}-${idx}`,
+      id: createId('mov-sale'),
       productId: item.productId,
       variationId: item.variationId,
       warehouseId: saleData.warehouseId,
@@ -2423,7 +2383,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 3. Generate bank movement 'entrada' in the chosen & validated bank (including transport cost)
     const bankMov: BankMovement = {
-      id: `bmov-sale-${Date.now()}`,
+      id: createId('bmov-sale'),
       bankId: targetBank.id,
       type: 'entrada',
       category: 'Venda',
@@ -2443,7 +2403,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     let transportId: string | undefined;
 
     if (saleData.requiresTransport) {
-      transportId = `TRP-${Date.now().toString().slice(-4)}`;
+      transportId = createId('TRP');
       newTransport = {
         id: transportId,
         saleId,
@@ -2488,7 +2448,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): { success: boolean; message?: string } => {
     const sale = sales.find((s) => s.id === saleId);
     if (!sale) return { success: false, message: 'Venda não encontrada' };
-    if (sale.status === 'cancelada') return { success: false, message: 'Esta venda já está cancelada' };
+    if (sale.status === 'cancelada' || cancelledSaleIds.current.has(saleId)) return { success: false, message: 'Esta venda já está cancelada' };
 
     const warehouse = warehouses.find((w) => w.id === sale.warehouseId);
     const company = companies.find((c) => c.id === warehouse?.companyId);
@@ -2499,6 +2459,25 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: false, message: 'Empresa desativada — operações não permitidas.' };
     }
 
+    if (!reason?.trim()) return { success: false, message: 'O motivo do cancelamento é obrigatório.' };
+    const originalSaleBankMov = bankMovements.find((bm) =>
+      bm.type === 'entrada' && !bm.reversalOfId &&
+      (bm.saleId === saleId || bm.reference === `Venda #${saleId}`)
+    );
+    if (!originalSaleBankMov) return { success: false, message: 'Venda sem lançamento financeiro original. Reconcilie o histórico antes de cancelar.' };
+    if (!banks.some((bank) => bank.id === originalSaleBankMov.bankId)) {
+      return { success: false, message: 'A conta bancária original não foi encontrada.' };
+    }
+    const bankCheck = isBankOperationBlocked(originalSaleBankMov.bankId);
+    if (bankCheck.blocked) return { success: false, message: bankCheck.message };
+    cancelledSaleIds.current.add(saleId);
+    if (!originalSaleBankMov.isReversed && !bankMovements.some((m) => m.reversalOfId === originalSaleBankMov.id)) {
+      try { reverseBankMovement(originalSaleBankMov.id, reason.trim()); }
+      catch (error) {
+        cancelledSaleIds.current.delete(saleId);
+        return { success: false, message: error instanceof Error ? error.message : 'Não foi possível estornar a venda.' };
+      }
+    }
     const now = new Date().toISOString();
 
     // 1. Regra 3: Repor em estoque SÓ as saídas que ainda estão ativas (evitar devolução dupla)
@@ -2524,7 +2503,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const prod = products.find((p) => p.id === outMov.productId);
         const itemName = matchedItem?.productName || prod?.name || outMov.productId;
         return {
-          id: `mov-cancel-${Date.now()}-${idx}`,
+          id: createId('mov-cancel'),
           productId: outMov.productId,
           variationId: outMov.variationId,
           warehouseId: outMov.warehouseId || sale.warehouseId,
@@ -2542,7 +2521,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       // Fallback para vendas antigas sem movimentos de saída individualizados
       reverseMovements = sale.items.map((item, idx) => ({
-        id: `mov-cancel-${Date.now()}-${idx}`,
+        id: createId('mov-cancel'),
         productId: item.productId,
         variationId: item.variationId,
         warehouseId: sale.warehouseId,
@@ -2558,36 +2537,6 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     if (reverseMovements.length > 0) {
       setMovements((prev) => [...reverseMovements, ...prev]);
-    }
-
-    // 2. Regra 2: Reverter na conta bancária original que recebeu a venda (mesmo que o banco principal da empresa tenha mudado depois)
-    const originalSaleBankMov = bankMovements.find(
-      (bm) =>
-        bm.type === 'entrada' &&
-        !bm.isRemoved &&
-        (bm.saleId === saleId || bm.reference === `Venda #${saleId}`)
-    );
-    const targetBankId =
-      sale.bankId ||
-      originalSaleBankMov?.bankId ||
-      company?.principalBankId ||
-      banks.find((b) => b.companyId === company?.id)?.id ||
-      banks[0]?.id;
-
-    if (targetBankId) {
-      const reverseBankMov: BankMovement = {
-        id: `bmov-cancel-${Date.now()}`,
-        bankId: targetBankId,
-        type: 'saida',
-        category: 'Venda',
-        amount: sale.total,
-        date: now,
-        responsible: 'Administrador',
-        reason: `Estorno da Venda #${saleId}${reason ? `: ${reason}` : ''}`,
-        reference: `Estorno #${saleId}`,
-        saleId,
-      };
-      setBankMovements((prev) => [reverseBankMov, ...prev]);
     }
 
     // 3. Regra 3: Cancelar entregas de Transporte ainda não concluídas (pendente / em_transito -> cancelado)
@@ -2619,7 +2568,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const now = new Date().toISOString();
     const newTransport: Transport = {
       ...transportData,
-      id: `TRP-${Date.now().toString().slice(-4)}`,
+      id: createId('TRP'),
       createdAt: now,
     };
     setTransports((prev) => [newTransport, ...prev]);
@@ -2753,7 +2702,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): Agenda => {
     const newAgenda: Agenda = {
       ...agendaData,
-      id: `agenda-${Date.now()}`,
+      id: createId('agenda'),
       origin: agendaData.origin || 'manual',
       status: agendaData.status || 'ativa',
       createdAt: new Date().toISOString(),
@@ -2797,7 +2746,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): CalendarEvent => {
     const newEvent: CalendarEvent = {
       ...eventData,
-      id: `evt-man-${Date.now()}`,
+      id: createId('evt-man'),
       createdAt: new Date().toISOString(),
     };
     setManualEvents((prev) => [newEvent, ...prev]);
@@ -2900,7 +2849,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): Employee => {
     const newEmp: Employee = {
       ...empData,
-      id: `emp-${Date.now()}`,
+      id: createId('emp'),
       createdAt: new Date().toISOString(),
     };
     setEmployees((prev) => [...prev, newEmp]);
@@ -2948,7 +2897,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>): Client => {
     const newClient: Client = {
       ...clientData,
-      id: `cli-${Date.now()}`,
+      id: createId('cli'),
       createdAt: new Date().toISOString(),
     };
     setClients((prev) => [newClient, ...prev]);
@@ -2993,7 +2942,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): NotificationItem => {
     const newNotif: NotificationItem = {
       ...notifData,
-      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: createId('notif'),
       date: notifData.date || new Date().toISOString(),
       read: notifData.read ?? false,
     };
@@ -3019,8 +2968,16 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return notifications.filter((n) => !n.read).length;
   }, [notifications]);
 
+  const canResetData = movements.length === 0 && bankMovements.length === 0 && sales.length === 0 &&
+    transports.length === 0 && debtPayments.length === 0 && debts.length === 0 && defectiveRecords.length === 0 &&
+    !purchaseLists.some((list) => normalizePurchaseListStatus(list.status) === 'concluido');
+  const assertResetAllowed = () => {
+    if (!canResetData) throw new Error('Reposição bloqueada: existem registos operacionais ou financeiros. O histórico deve ser preservado.');
+  };
+
   const resetToDefaults = () => {
-    localStorage.clear();
+    assertResetAllowed();
+    Object.keys(localStorage).filter((key) => key.startsWith('myoffice_')).forEach((key) => localStorage.removeItem(key));
     setProducts(INITIAL_PRODUCTS);
     setSuppliers(INITIAL_SUPPLIERS);
     setCompanies(INITIAL_COMPANIES);
@@ -3069,6 +3026,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
    * ficar restrita ao papel de Administrador.
    */
   const resetHistory = () => {
+    assertResetAllowed();
     // Salvar arrays vazios no localStorage para persistir o reset de histórico entre recarregamentos
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}history_reset`, 'true');
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}movements`, JSON.stringify([]));
@@ -3107,8 +3065,9 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
    * ficar restrita ao papel de Administrador.
    */
   const resetAll = () => {
+    assertResetAllowed();
     // Limpar todo o armazenamento local
-    localStorage.clear();
+    Object.keys(localStorage).filter((key) => key.startsWith('myoffice_')).forEach((key) => localStorage.removeItem(key));
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}is_fresh_install`, 'true');
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}products`, JSON.stringify([]));
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}companies`, JSON.stringify([]));
@@ -3216,6 +3175,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updatePurchaseSource,
       toggleSourceAccounted,
       deletePurchaseSource,
+      canResetData,
       resetToDefaults,
       resetHistory,
       resetAll,
@@ -3231,6 +3191,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       recordBankMovement,
       getCompanyForBank,
       isBankOperationBlocked,
+      reverseBankMovement,
       removeFinancialMovement,
       restoreFinancialMovement,
 

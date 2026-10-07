@@ -19,7 +19,9 @@ export const DebtLedgerModal: React.FC<DebtLedgerModalProps> = ({
   onOpenNewPayment,
   onOpenIncrement,
 }) => {
-  const { banks, debtPayments, deleteDebtPayment, getDebtCalculations } = useStock();
+  const { banks, bankMovements, debtPayments, deleteDebtPayment, getDebtCalculations } = useStock();
+  const [paymentReversalReason, setPaymentReversalReason] = useState('');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pagamentos' | 'acrescimos'>('pagamentos');
   const [paymentToDelete, setPaymentToDelete] = useState<{ id: string; amount: number } | null>(null);
 
@@ -34,7 +36,9 @@ export const DebtLedgerModal: React.FC<DebtLedgerModalProps> = ({
 
   const handleConfirmDelete = () => {
     if (!paymentToDelete) return;
-    deleteDebtPayment(paymentToDelete.id);
+    try { deleteDebtPayment(paymentToDelete.id, paymentReversalReason); }
+    catch (error) { setPaymentError(error instanceof Error ? error.message : 'Não foi possível estornar o pagamento.'); return; }
+    setPaymentError(null);
     setPaymentToDelete(null);
   };
 
@@ -74,6 +78,7 @@ export const DebtLedgerModal: React.FC<DebtLedgerModalProps> = ({
           </button>
         </div>
 
+        {paymentError && <p role="alert" className="px-6 py-2 text-xs text-rose-700 dark:text-rose-400">{paymentError}</p>}
         {/* Resumo visual de quitação */}
         <div className="shrink-0 p-4 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-3 text-center font-mono text-xs">
           <div className="p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
@@ -195,14 +200,15 @@ export const DebtLedgerModal: React.FC<DebtLedgerModalProps> = ({
                             {p.responsible || 'Administrador'}
                           </td>
                           <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 text-[11px]">
-                            {p.notes || '—'}
+                            {bankMovements.some((m) => m.id === p.movementId && m.isReversed) ? 'Pagamento estornado' : p.notes || '—'}
                           </td>
                           <td className="py-2.5 px-3 text-right whitespace-nowrap">
                             <button
                               type="button"
-                              onClick={() => setPaymentToDelete({ id: p.id, amount: p.amount })}
+                              disabled={bankMovements.some((m) => m.id === p.movementId && m.isReversed)}
+                              onClick={() => { setPaymentError(null); setPaymentReversalReason(''); setPaymentToDelete({ id: p.id, amount: p.amount }); }}
                               className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
-                              title="Estornar/eliminar pagamento"
+                              title="Estornar pagamento"
                               aria-label={`Estornar pagamento de ${formatCurrencyValue(p.amount, debt.currency || 'Kz')}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -306,10 +312,16 @@ export const DebtLedgerModal: React.FC<DebtLedgerModalProps> = ({
               <div>
                 <p className="font-semibold">Confirmar estorno de pagamento?</p>
                 <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">
-                  Deseja estornar/eliminar o pagamento de <strong>{formatCurrencyValue(paymentToDelete.amount, debt.currency || 'Kz')}</strong>? O saldo da dívida será recalculado e a movimentação financeira vinculada será revertida.
+                  Deseja estornar o pagamento de <strong>{formatCurrencyValue(paymentToDelete.amount, debt.currency || 'Kz')}</strong>? O pagamento e o lançamento original serão preservados, e um estorno compensará o valor.
                 </p>
               </div>
             </div>
+            <label htmlFor="debt-payment-reversal-reason" className="block text-xs font-semibold text-slate-700 dark:text-dm-text">
+              Motivo do estorno *
+              <textarea id="debt-payment-reversal-reason" value={paymentReversalReason}
+                onChange={(event) => setPaymentReversalReason(event.target.value)} required rows={2}
+                className="mt-1 block w-full rounded-lg border border-slate-300 dark:border-dm-border bg-white dark:bg-dm-surface p-2 text-xs" />
+            </label>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -321,6 +333,7 @@ export const DebtLedgerModal: React.FC<DebtLedgerModalProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmDelete}
+                disabled={!paymentReversalReason.trim()}
                 className="px-3.5 py-1 text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-xs cursor-pointer"
               >
                 Confirmar estorno

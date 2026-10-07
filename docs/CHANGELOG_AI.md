@@ -21,6 +21,18 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Integridade do front-end e esquema futuro
+- **Pedido**: Resolver problemas 1–3, manter foco no front-end e guardar estrutura de base de dados para conexão futura.
+- **Alterações**:
+  - `src/utils/ids.ts`, `saleValidation.ts`, `financialAudit.ts`: IDs criptográficos, validação e compensação/migração idempotente de remoções antigas.
+  - `src/context/StockContext.tsx` e `src/types/stock.ts`: novos IDs; validação prévia de vendas; estornos vinculados; proteção contra duplicação; cancelamento na conta original; pagamentos preservados; resets bloqueados quando há histórico.
+  - Lançamentos, extratos bancários, extrato de dívida e cancelamento de venda: motivo obrigatório, histórico/estornos, erros explícitos e ausência de restauro financeiro. Definições desativam resets com histórico. IDs DOM existentes preservados.
+  - `database/migrations/001_initial.sql`, `database/README.md`: esquema PostgreSQL 15+ offline com 36 tabelas, vistas de saldos, vínculos por espaço, Pessoal/Business e financeiro append-only. Sem serviço remoto ou SDK na aplicação.
+  - `tests/`: 5 testes de regras, 8 regressões funcionais em Chromium isolado e 6 testes SQL em PostgreSQL embutido. `package.json` acrescenta somente o script `test`; dependências e `bun.lock` preservados.
+  - Documentação de regras, arquitetura, dados, módulos, desenvolvimento e handoff atualizada. Direção de produto em `docs/PRODUCT_DIRECTION.md`.
+- **Validação**: `npm test`, `npm run lint`, `npm run build` e os dois scripts de regressão passaram: 19 testes. Build apresenta apenas aviso de bundle grande.
+- **Limites**: Persistência permanece no navegador. Conexão, backend, autenticação/políticas de acesso e migração efetiva estão adiados. Telas pessoais, botão de alternância e melhorias móveis não foram implementados nesta correção.
+
 ### [2026-10-06] — Google AI Studio (Gemini) — Ajustes Técnicos de Regras de Negócio (Vendas, Transporte, Banco Original, Estorno e Dívidas)
 - **Objetivo**: Implementar as 5 melhorias de lógica de negócio identificadas no trabalho em paralelo:
   1. **Venda com entrega inclui custo de transporte**: `completeSale`, `seedData` e reconciliação somam `transportCost` ao total da venda (`sale.total`) e à receita financeira gerada (`BankMovement.amount`).

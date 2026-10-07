@@ -314,7 +314,12 @@ export interface BankMovement {
   stockMovementId?: string; // Referência à Movimentação de Estoque de origem
   debtId?: string; // Referência à Dívida
   debtPaymentId?: string; // Referência ao Pagamento da Dívida
-  isRemoved?: boolean; // Auditoria: se foi removido do histórico
+  isReversed?: boolean;
+  reversedAt?: string;
+  reversalReason?: string;
+  reversedBy?: string;
+  reversalOfId?: string; // Novo lançamento que compensa o original sem o apagar
+  isRemoved?: boolean; // Legado: convertido em original + estorno ao carregar
   removedAt?: string;
   removedReason?: string;
   removedBy?: string;

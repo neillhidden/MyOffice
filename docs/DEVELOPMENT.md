@@ -18,6 +18,7 @@ Este documento descreve o ambiente técnico, dependências, scripts disponíveis
 | Comando | Script Executado | Descrição |
 | :--- | :--- | :--- |
 | `npm run dev` | `vite --port=3000 --host=0.0.0.0` | Inicia o servidor de desenvolvimento Vite na porta 3000 |
+| `npm test` | `node --import tsx --test tests/*.test.ts` | Regressões de IDs, validação de vendas e migração/estornos |
 | `npm run lint` | `tsc --noEmit` | Executa a verificação completa de tipos TypeScript sem emitir ficheiros |
 | `npm run build` | `vite build` | Gera o bundle de produção otimizado na pasta `dist/` |
 | `npm run preview` | `vite preview` | Serve localmente o bundle de produção compilado |
@@ -66,3 +67,25 @@ Antes de dar uma tarefa por concluída, qualquer agente deve verificar:
    - Novos componentes respeitam as classes de superfície e borda do tema escuro (`dark:bg-dm-surface`, `dark:border-dm-border`, `dark:text-dm-text`) definidas em `src/index.css`?
 4. **Atualização da Documentação**:
    - Registar a alteração em [`docs/CHANGELOG_AI.md`](./CHANGELOG_AI.md) e atualizar os documentos relevantes em `docs/`.
+
+
+## 6. Regressões de integridade e esquema offline
+
+Da raiz do checkout executar `npm test`, `npm run lint` e `npm run build`. Nenhuma dependência de produção foi adicionada. A fixture em `tests/fixtures/provider.html` expõe o contexto **apenas na página de teste do Vite** e não entra no build de produção.
+
+Para as regressões funcionais opcionais, instalar as ferramentas fora do checkout:
+
+```sh
+npm --cache /workspace/.cache/npm install --prefix /workspace/.tools/browser playwright-core@1.58.2 --no-audit --no-fund
+npm --cache /workspace/.cache/npm install --prefix /workspace/.tools/database @electric-sql/pglite@0.3.14 --no-audit --no-fund
+```
+
+Com Chromium disponível e `npm run dev -- --strictPort` ativo numa sessão separada:
+
+```sh
+cd /workspace/MyOffice
+MYOFFICE_PLAYWRIGHT_MODULE=/workspace/.tools/browser/node_modules/playwright-core/index.mjs node --test tests/browser-regression.mjs
+MYOFFICE_PGLITE_MODULE=/workspace/.tools/database/node_modules/@electric-sql/pglite/dist/index.js node --test tests/database-regression.mjs
+```
+
+Pode configurar `MYOFFICE_CHROMIUM` e `MYOFFICE_TEST_URL` para outros ambientes. Se os módulos estiverem disponíveis no mecanismo normal de resolução Node, as variáveis de caminho são opcionais. Os testes de navegador usam contextos novos, sem afetar o perfil/dados do utilizador. Os testes SQL usam PostgreSQL embutido em memória; não criam uma conexão externa nem executam a migração na aplicação.

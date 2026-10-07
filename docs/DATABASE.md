@@ -4,6 +4,10 @@ Este documento descreve a estrutura de dados atual do **MyOffice**, as chaves de
 
 ---
 
+## Estrutura futura guardada (2026-10-07)
+
+O esquema PostgreSQL está em [`database/migrations/001_initial.sql`](../database/migrations/001_initial.sql), com documentação de aplicação/importação em [`database/README.md`](../database/README.md). Inclui espaços Pessoal e Business, multiempresa, contas/lançamentos, estoque/vendas e planeamento pessoal. Foi validado localmente, sem servidor remoto. **Não está ligado ao front-end**, não substitui o armazenamento atual e não implementa autenticação nem as telas pessoais.
+
 ## 1. Estado Atual do Banco de Dados
 
 - **Banco de Dados Externo (SQL / NoSQL)**: **Não utilizado atualmente.**
@@ -24,24 +28,24 @@ Este documento descreve a estrutura de dados atual do **MyOffice**, as chaves de
 | `myoffice_estoque_companies` | `StockContext.tsx` | `Company[]` | Empresas registadas e respetivo `status` |
 | `myoffice_estoque_warehouses` | `StockContext.tsx` | `Warehouse[]` | Armazéns e lojas físicas |
 | `myoffice_estoque_products` | `StockContext.tsx` | `Product[]` | Catálogo de produtos e variações |
-| `myoffice_estoque_configs` | `StockContext.tsx` | `StockConfig[]` | Limites mín./máx. e localização por produto/armazém |
+| `myoffice_estoque_stockConfigs` | `StockContext.tsx` | `StockConfig[]` | Limites mín./máx. e localização por produto/armazém |
 | `myoffice_estoque_movements` | `StockContext.tsx` | `Movement[]` | Histórico de movimentações (ativas e removidas) |
 | `myoffice_estoque_defective` | `StockContext.tsx` | `DefectiveRecord[]` | Registos de produtos defeituosos |
-| `myoffice_estoque_purchase_groups` | `StockContext.tsx` | `PurchaseGroup[]` | Grupos de listas de compras |
-| `myoffice_estoque_purchase_lists` | `StockContext.tsx` | `PurchaseList[]` | Listas de compras, itens e fontes de fornecedores |
+| `myoffice_estoque_purchaseGroups` | `StockContext.tsx` | `PurchaseGroup[]` | Grupos de listas de compras |
+| `myoffice_estoque_purchaseLists` | `StockContext.tsx` | `PurchaseList[]` | Listas de compras, itens e fontes de fornecedores |
 | `myoffice_estoque_suppliers` | `StockContext.tsx` | `Supplier[]` | Fornecedores nacionais e internacionais |
 | `myoffice_estoque_categories` | `StockContext.tsx` | `string[]` | Categorias de produtos |
-| `myoffice_estoque_drafts` | `StockContext.tsx` | `ProductDraft[]` | Rascunhos de produtos em criação |
+| `myoffice_estoque_productDrafts` | `StockContext.tsx` | `ProductDraft[]` | Rascunhos de produtos em criação |
 | `myoffice_estoque_banks` | `StockContext.tsx` | `Bank[]` | Contas bancárias e cofres |
-| `myoffice_estoque_bank_movements` | `StockContext.tsx` | `BankMovement[]` | Lançamentos financeiros e estornos |
-| `myoffice_financeiro_debts` | `StockContext.tsx` | `Debt[]` | Dívidas a receber e a pagar + histórico de pagamentos |
-| `myoffice_caixa_sales` | `StockContext.tsx` | `Sale[]` | Vendas realizadas no POS |
-| `myoffice_caixa_transports` | `StockContext.tsx` | `Transport[]` | Entregas e transportes logísticos |
-| `myoffice_calendar_agendas` | `StockContext.tsx` | `Agenda[]` | Agendas do calendário |
-| `myoffice_calendar_events` | `StockContext.tsx` | `CalendarEvent[]` | Eventos manuais e automáticos |
-| `myoffice_notifications` | `StockContext.tsx` | `NotificationItem[]` | Notificações do sistema |
-| `myoffice_empregados` | `StockContext.tsx` | `Employee[]` | Funcionários por empresa |
-| `myoffice_clientes` | `StockContext.tsx` | `Client[]` | Clientes registados |
+| `myoffice_estoque_bankMovements` | `StockContext.tsx` | `BankMovement[]` | Lançamentos financeiros e estornos |
+| `myoffice_estoque_debts` | `StockContext.tsx` | `Debt[]` | Dívidas a receber e a pagar + histórico de pagamentos |
+| `myoffice_estoque_sales` | `StockContext.tsx` | `Sale[]` | Vendas realizadas no POS |
+| `myoffice_estoque_transports` | `StockContext.tsx` | `Transport[]` | Entregas e transportes logísticos |
+| `myoffice_estoque_agendas` | `StockContext.tsx` | `Agenda[]` | Agendas do calendário |
+| `myoffice_estoque_manualEvents` | `StockContext.tsx` | `CalendarEvent[]` | Eventos manuais e automáticos |
+| `myoffice_estoque_notifications` | `StockContext.tsx` | `NotificationItem[]` | Notificações do sistema |
+| `myoffice_estoque_employees` | `StockContext.tsx` | `Employee[]` | Funcionários por empresa |
+| `myoffice_estoque_clients` | `StockContext.tsx` | `Client[]` | Clientes registados |
 | `myoffice_import_simulations_v2_multicurrency` | `ImportSimulatorView.tsx` | `ImportSimulation[]` | Simulações de importação guardadas |
 | `myoffice_import_thresholds_v1` | `ImportSimulatorView.tsx` | `ClassificationThresholds` | Limiares de margem e ROI para classificação de viabilidade |
 
@@ -93,6 +97,10 @@ erDiagram
 ### 4.4. `Sale` e `Transport` (`src/types/stock.ts`)
 - `Sale`: `id` (ex.: `'VND-1001'`), `date`, `customerName`, `customerContact?`, `warehouseId`, `items` (`SaleItem[]`), `subtotal`, `discount`, `total`, `paymentMethod`, `bankId`, `requiresTransport`, `transportId?`, `status` (`'concluida' | 'pendente' | 'cancelada'`), `seller`, `notes?`.
 - `Transport`: `id` (ex.: `'TRP-1001'`), `saleId?`, `customerName`, `customerContact`, `originWarehouseId`, `destinationAddress`, `driverName`, `driverContact`, `vehicleInfo`, `status` (`'pendente' | 'em_transito' | 'entregue' | 'atrasado' | 'cancelado'`), `priority` (`'baixa' | 'normal' | 'alta' | 'urgente'`), `scheduledDate`, `deliveredDate?`, `cost`, `trackingCode?`, `notes?`.
+
+### Auditoria financeira atual
+
+`BankMovement` inclui `isReversed`, `reversedAt`, `reversalReason`, `reversedBy` e `reversalOfId`. O lançamento de compensação aponta para o original. O saldo inclui os dois; pagamentos de dívida ligados a um original estornado deixam de liquidar a dívida, sem eliminar o histórico do pagamento. Campos antigos de remoção são mantidos como metadados de compatibilidade e convertidos ao carregar.
 
 ### 4.5. `Bank`, `BankMovement` e `Debt` (`src/types/stock.ts`)
 - `Bank`: `id`, `name`, `code`, `accountNumber`, `iban`, `currency`, `balance`, `companyId`, `type` (`'banco' | 'caixa_fisico'`), `status`.

@@ -10,7 +10,7 @@ Atualmente, o **MyOffice** é uma **Single-Page Application (SPA) 100% Client-Si
 
 - **Frontend**: SPA React estruturada por módulos de domínio (`src/components/<dominio>/`) e coordenada por um contentor de navegação central em `src/App.tsx`.
 - **Backend**: **Não implementado atualmente.** Embora o `package.json` possua dependências instaladas do template base (`express`, `dotenv`, `@google/genai`, `tsx`), **não existe ficheiro `server.ts`** nem rotas `/api/*` ativas no código atual.
-  - *Arquitetura futura de backend*: **A confirmar**.
+  - *Arquitetura futura de backend*: **A confirmar**. Esquema PostgreSQL offline preparado em `database/`; nenhuma conexão ativa.
 - **Banco de Dados**: **Não existe banco de dados relacional ou NoSQL externo configurado atualmente.** Toda a persistência ocorre no navegador através de **`window.localStorage`**, inicializada a partir de dados de *seed* (`src/data/seedData.ts`, `src/data/calendarSeedData.ts`, `src/data/kiandaSeedData.ts`) e mantida íntegra por uma rotina de reconciliação automática no arranque.
   - *Banco de dados definitivo (ex.: PostgreSQL / Cloud SQL / Supabase / Firebase)*: **A confirmar**.
 - **Autenticação e Autorização**: **Não existe ecrã de login ou sistema de autenticação externo ativo.** O sistema opera assumindo um perfil administrativo/operacional local, aplicando regras de permissão baseadas em regras de auditoria e no estado das empresas (`ativa`, `parada`, `desativada`).
@@ -93,7 +93,7 @@ A aplicação utiliza 3 provedores de contexto aninhados em `src/App.tsx` nesta 
 - **Movimentações de Estoque**: `movements`, `recordMovement`, `removeStockMovement` (*soft-delete* com auditoria), `restoreStockMovement`.
 - **Defeituosos**: `defectiveRecords`, `recordDefective` (gera automaticamente movimento do tipo `'defeituoso'`), `updateDefectiveResolution`.
 - **Compras**: `purchaseGroups`, `purchaseLists` (com itens e fontes/fornecedores alternativos).
-- **Financeiro e Bancos**: `banks`, `bankMovements` (imutáveis, com suporte a estorno `reverseBankMovement`), `debts` (dívidas a receber/pagar, amortizações `registerDebtPayment` e incrementos `incrementDebtAmount`).
+- **Financeiro e Bancos**: `banks`, `bankMovements` (imutáveis, com suporte a estorno `reverseBankMovement` com original + compensação), `debts` (dívidas a receber/pagar, pagamentos `recordDebtPayment`, estorno de pagamentos `deleteDebtPayment` e incrementos `addDebtIncrement`).
 - **Caixa (Vendas e Transporte)**: `sales`, `completeSale` (orquestra venda + baixa de estoque + entrada financeira + criação de transporte + evento no calendário), `transports`, `updateTransportStatus`.
 - **Contactos**: `suppliers`, `employees` (sincronizados automaticamente com a agenda de aniversários), `clients`.
 - **Calendário**: `agendas` (manuais e automáticas), `events`.
@@ -140,3 +140,8 @@ Quando a aplicação arranca no navegador:
 5. **Sincronização de Agendas Automáticas e Notificações**:
    - Gera/atualiza eventos de aniversário a partir de `employees` e eventos de entrega a partir de `transports`.
    - Gera alertas automáticos de estoque crítico/reposto e entregas próximas em `notifications`.
+
+
+## Preparação para Pessoal e Business
+
+`database/README.md` descreve a futura separação por espaços e membros. O React/Context API e `localStorage` permanecem ativos. `src/utils/ids.ts`, `saleValidation.ts` e `financialAudit.ts` centralizam geração de IDs, validação e compensações, sem introduzir outra biblioteca de estado. O futuro botão Pessoal/Business deverá selecionar o espaço corrente; essa navegação ainda não foi implementada nesta correção.

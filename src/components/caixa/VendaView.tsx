@@ -561,10 +561,11 @@ export const VendaView: React.FC<VendaViewProps> = ({
 
             <div className="mb-4">
               <label htmlFor="cancel-sale-reason" className="block text-xs font-semibold text-slate-700 mb-1">
-                Motivo do Estorno <span className="text-slate-400 font-normal">(Opcional)</span>
+                Motivo do Estorno <span className="text-rose-500">*</span>
               </label>
               <input
                 id="cancel-sale-reason"
+                required
                 type="text"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
@@ -584,6 +585,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
               <button
                 type="button"
                 id="btn-confirm-cancel-sale"
+                disabled={!cancelReason.trim()}
                 onClick={handleConfirmCancel}
                 className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition-colors"
               >

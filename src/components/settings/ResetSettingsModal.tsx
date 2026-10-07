@@ -27,9 +27,10 @@ export const ResetSettingsModal: React.FC<{
   onClose: () => void;
   actionType: ResetActionType;
 }> = ({ isOpen, onClose, actionType }) => {
-  const { resetHistory, resetAll } = useStock();
+  const { resetHistory, resetAll, canResetData } = useStock();
   const [confirmationInput, setConfirmationInput] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   if (!isOpen || !actionType) return null;
 
@@ -42,16 +43,19 @@ export const ResetSettingsModal: React.FC<{
   const handleClose = () => {
     setConfirmationInput('');
     setIsSuccess(false);
+    setResetError(null);
     onClose();
   };
 
   const handleExecuteReset = () => {
-    if (!isConfirmed) return;
+    if (!isConfirmed || !canResetData) return;
 
-    if (isResetHistory) {
-      resetHistory();
-    } else {
-      resetAll();
+    try {
+      if (isResetHistory) resetHistory();
+      else resetAll();
+    } catch (error) {
+      setResetError(error instanceof Error ? error.message : 'Não foi possível repor os dados.');
+      return;
     }
 
     setIsSuccess(true);
@@ -118,6 +122,7 @@ export const ResetSettingsModal: React.FC<{
           </button>
         </div>
 
+        {(resetError || !canResetData) && <p role="alert" className="px-6 py-3 text-xs text-rose-700 dark:text-rose-400">{resetError || 'Reposição bloqueada para preservar o histórico operacional e financeiro.'}</p>}
         {/* Modal Body */}
         <div className="p-6 space-y-4">
           {isSuccess ? (
@@ -129,7 +134,7 @@ export const ResetSettingsModal: React.FC<{
                 {isResetHistory ? 'Histórico zerado com sucesso!' : 'Sistema resetado com sucesso!'}
               </h4>
               <p className="text-xs text-slate-500">
-                Os dados foram atualizados e sincronizados em conformidade.
+                Os dados locais foram repostos.
               </p>
             </div>
           ) : (
@@ -240,7 +245,7 @@ export const ResetSettingsModal: React.FC<{
             <button
               type="button"
               id="btn-confirm-reset"
-              disabled={!isConfirmed}
+              disabled={!isConfirmed || !canResetData}
               onClick={handleExecuteReset}
               className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 shadow-xs ${
                 !isConfirmed

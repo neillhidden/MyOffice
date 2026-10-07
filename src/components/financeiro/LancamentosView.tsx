@@ -48,8 +48,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
     companies,
     getCompanyForBank,
     isCompanyDisabled,
-    removeFinancialMovement,
-    restoreFinancialMovement,
+    reverseBankMovement,
   } = useStock();
 
   // Filters
@@ -112,8 +111,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
         const comp = getCompanyForBank(bank.id);
         if (comp && (comp.status === 'desativada' || isCompanyDisabled(comp.id))) return false;
         // Removed filter
-        if (!showRemoved && mov.isRemoved) return false;
-        if (showRemoved && !mov.isRemoved) return false;
+        if (showRemoved && !mov.isReversed && !mov.reversalOfId) return false;
 
         // Bank filter
         if (bankFilter !== 'todas' && mov.bankId !== bankFilter) return false;
@@ -167,12 +165,12 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
 
   // Counts for tabs/badges
   const activeCount = useMemo(
-    () => bankMovements.filter((m) => !m.isRemoved).length,
-    [bankMovements]
+    () => bankMovements.filter((m) => operationalBanks.some((b) => b.id === m.bankId)).length,
+    [bankMovements, operationalBanks]
   );
   const removedCount = useMemo(
-    () => bankMovements.filter((m) => m.isRemoved).length,
-    [bankMovements]
+    () => bankMovements.filter((m) => (m.isReversed || m.reversalOfId) && operationalBanks.some((b) => b.id === m.bankId)).length,
+    [bankMovements, operationalBanks]
   );
 
   const handleConfirmRemoval = (e: React.FormEvent) => {
@@ -180,11 +178,16 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
     if (!movementToRemove) return;
 
     if (!removalReason.trim()) {
-      setRemovalError('O motivo da remoção é obrigatório para conformidade de auditoria.');
+      setRemovalError('O motivo do estorno é obrigatório.');
       return;
     }
 
-    removeFinancialMovement(movementToRemove.id, removalReason.trim(), 'Administrador');
+    try {
+      reverseBankMovement(movementToRemove.id, removalReason.trim(), 'Administrador');
+    } catch (error) {
+      setRemovalError(error instanceof Error ? error.message : 'Não foi possível estornar.');
+      return;
+    }
     setMovementToRemove(null);
     setRemovalReason('');
     setRemovalError(null);
@@ -215,7 +218,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                 : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text'
             }`}
           >
-            Ativos ({activeCount})
+            Histórico ({activeCount})
           </button>
           <button
             type="button"
@@ -227,7 +230,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                 : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text'
             }`}
           >
-            Removidos do Histórico ({removedCount})
+            Estornos ({removedCount})
           </button>
         </div>
       </div>
@@ -358,7 +361,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
               {showRemoved
-                ? 'Nenhum lançamento foi removido com justificativa de auditoria.'
+                ? 'Nenhum estorno foi registado com os filtros selecionados.'
                 : 'Não há registos com os filtros selecionados ou ainda não foram realizados lançamentos.'}
             </p>
           </div>
@@ -388,7 +391,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                     <tr
                       key={mov.id}
                       className={`hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors ${
-                        mov.isRemoved ? 'bg-slate-50/40 dark:bg-slate-850/40 opacity-75' : ''
+                        mov.isReversed ? 'bg-slate-50/40 dark:bg-slate-850/40 opacity-75' : ''
                       }`}
                     >
                       {/* Data */}
@@ -452,45 +455,32 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                         <p className="text-slate-700 dark:text-slate-300 leading-snug line-clamp-2">
                           {mov.reason}
                         </p>
+                        {mov.reversalOfId && <p className="text-[10px] text-slate-500 dark:text-dm-muted">Estorno de {mov.reversalOfId}</p>}
                         {mov.reference && (
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 block">
                             Ref: {mov.reference}
                           </span>
                         )}
-                        {mov.isRemoved && (
+                        {mov.isReversed && (
                           <div className="mt-1 p-1.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900 rounded text-[10px] text-rose-700 dark:text-rose-300">
-                            <span className="font-semibold">Removido do histórico:</span> {mov.removedReason} (por {mov.removedBy || 'Administrador'})
+                            <span className="font-semibold">Estornado:</span> {mov.reversalReason} (por {mov.reversedBy || 'Administrador'})
                           </div>
                         )}
                       </td>
 
                       {/* Ações */}
                       <td className="py-3 px-4 whitespace-nowrap text-right">
-                        {!mov.isRemoved ? (
+                        {!mov.isReversed && !mov.reversalOfId ? (
                           <button
                             type="button"
-                            onClick={() => {
-                              setMovementToRemove(mov);
-                              setRemovalReason('');
-                              setRemovalError(null);
-                            }}
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
-                            title="Remover do histórico com justificativa"
-                            aria-label={`Remover lançamento de ${formatCurrencyValue(mov.amount, currency)} do histórico`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => restoreFinancialMovement(mov.id)}
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-emerald-700 dark:text-dm-muted dark:hover:text-dm-text hover:bg-emerald-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
-                            title="Restaurar ao histórico ativo"
-                            aria-label="Restaurar ao histórico ativo"
+                            onClick={() => { setMovementToRemove(mov); setRemovalReason(''); setRemovalError(null); }}
+                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg cursor-pointer"
+                            title="Estornar com justificativa"
+                            aria-label={`Estornar lançamento de ${formatCurrencyValue(mov.amount, currency)}`}
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                        ) : <span className="text-[10px] text-slate-500 dark:text-dm-muted">{mov.reversalOfId ? 'Estorno' : 'Estornado'}</span>}
                       </td>
                     </tr>
                   );
@@ -525,10 +515,10 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Remover Lançamento do Histórico
+                    Estornar Lançamento
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Conforme as regras de auditoria, o registo não é eliminado permanentemente da base, mas marcado como removido com justificativa obrigatória.
+                    O lançamento original será preservado. Um novo lançamento de sentido contrário compensará o valor na mesma conta.
                   </p>
                 </div>
               </div>
@@ -572,7 +562,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
 
               <div>
                 <label htmlFor="textarea-motivo-remocao" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Justificativa da Remoção <span className="text-rose-500">*</span>
+                  Justificativa do Estorno <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   id="textarea-motivo-remocao"
@@ -598,7 +588,7 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                   id="btn-confirmar-remocao-lancamento"
                   className="px-4 py-2 text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-xs cursor-pointer"
                 >
-                  Confirmar Remoção
+                  Confirmar Estorno
                 </button>
               </div>
             </form>

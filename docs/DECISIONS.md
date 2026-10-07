@@ -50,3 +50,8 @@ Este documento explica o **porquê** das decisões técnicas e de domínio já t
 ## ADR-007: Layout Global Sincronizado (`h-14` + `max-w-7xl mx-auto`)
 - **Contexto**: A barra lateral e o cabeçalho principal apresentavam alturas ligeiramente diferentes (`56px` vs. `~61px`) e espaçamentos horizontais distintos face ao conteúdo principal.
 - **Decisão**: Fixar a altura do cabeçalho da marca na `Sidebar` e do `<Header>` principal em `h-14 shrink-0` (`56px`) com a mesma borda inferior, alinhar o contentor interno do `<Header>` com `px-4 sm:px-6 lg:px-8` e `w-full max-w-7xl mx-auto`, e remover o botão de tema do rodapé da `Sidebar`.
+
+
+## 2026-10-07 — Preparação offline para Pessoal e Business
+
+Por pedido do utilizador, manter React/Context API e persistência local nesta fase. Corrigir integridade no contexto e nas interfaces existentes. Guardar esquema PostgreSQL 15+ independente de fornecedor em `database/`, com espaços pessoais/Business e vínculos compostos, sem ligar serviços externos. A escolha de alojamento e autenticação permanece por definir. O esquema foi testado em PostgreSQL embutido; não equivale à implantação do backend. Consultar `PRODUCT_DIRECTION.md` e `database/README.md` para os requisitos e a etapa posterior.

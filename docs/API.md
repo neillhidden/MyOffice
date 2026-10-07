@@ -52,9 +52,9 @@ Quando no futuro for implementado um backend ou base de dados (**A confirmar**),
 ### 2.5. Financeiro (Bancos, Lançamentos e Dívidas)
 - `addBank(bank)` / `updateBank(id, data)` / `deleteBank(id)`
 - `recordBankMovement(movement)`
-- `reverseBankMovement(movementId, reason, responsible?)`
+- `reverseBankMovement(movementId, reason, responsible?)`: acrescenta compensação e preserva o original.
 - `addDebt(debt)` / `updateDebt(id, data)` / `deleteDebt(id)`
-- `registerDebtPayment(debtId, payment, bankId?)`
+- `recordDebtPayment(paymentData)` / `deleteDebtPayment(paymentId, reason)`: pagamento e estorno, preservando o histórico.
 - `incrementDebtAmount(debtId, amount, reason, date?, bankId?)`
 
 ### 2.6. Contactos, Calendário e Notificações
@@ -72,3 +72,8 @@ Quando no futuro for implementado um backend ou base de dados (**A confirmar**),
 - **Backend & Base de Dados**: Se o projeto migrar de `localStorage` para uma API REST (Express/Node, Next.js, Supabase ou Firebase), a estratégia de sincronização e autenticação está **A confirmar**.
 - **Módulo `Agentes`**: Existe na barra lateral o item `Agentes` (atualmente exibindo `OutOfServiceView`). A utilização futura de `@google/genai` para agentes de IA dentro do MyOffice está **A confirmar**.
 - **Cotações de Câmbio Automáticas**: Integração com API externa de taxas de câmbio (BNA / mercados internacionais) está **A confirmar**.
+
+
+## Estrutura offline para a fase de backend
+
+O esquema SQL em `database/migrations/001_initial.sql` está guardado e testado localmente. `database/README.md` descreve relações, importação e trabalho necessário antes da ligação. Não existem endpoints novos, autenticação ativa, SDK de base de dados ou credenciais no frontend. A versão atual continua a operar exclusivamente no navegador.

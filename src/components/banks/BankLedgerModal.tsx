@@ -34,8 +34,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
   const {
     bankMovements,
     getBankBalance,
-    removeFinancialMovement,
-    restoreFinancialMovement,
+    reverseBankMovement,
     isBankOperationBlocked,
   } = useStock();
 
@@ -56,8 +55,8 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
 
   // Separate active and removed movements for this specific bank
   const bankAllMovements = bankMovements.filter((m) => m.bankId === bank.id);
-  const activeMovements = bankAllMovements.filter((m) => !m.isRemoved);
-  const removedMovements = bankAllMovements.filter((m) => !!m.isRemoved);
+  const activeMovements = bankAllMovements;
+  const removedMovements = bankAllMovements.filter((m) => m.isReversed || m.reversalOfId);
 
   const currentList = activeTab === 'ativas' ? activeMovements : removedMovements;
 
@@ -69,7 +68,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
         const matchReason = mov.reason.toLowerCase().includes(q);
         const matchRef = mov.reference?.toLowerCase().includes(q);
         const matchResp = mov.responsible.toLowerCase().includes(q);
-        const matchRemovalReason = (mov.removedReason || '').toLowerCase().includes(q);
+        const matchRemovalReason = (mov.reversalReason || '').toLowerCase().includes(q);
         return matchReason || matchRef || matchResp || matchRemovalReason;
       }
       return true;
@@ -85,21 +84,23 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
   const handleConfirmRemoval = (e: React.FormEvent) => {
     e.preventDefault();
     if (!removalReason.trim()) {
-      setRemovalError('O motivo da remoção é obrigatório para conformidade e auditoria.');
+      setRemovalError('O motivo do estorno é obrigatório.');
       return;
     }
 
     if (movementToRemove) {
-      removeFinancialMovement(movementToRemove.id, removalReason.trim(), 'Administrador');
+      try {
+        reverseBankMovement(movementToRemove.id, removalReason.trim(), 'Administrador');
+      } catch (error) {
+        setRemovalError(error instanceof Error ? error.message : 'Não foi possível estornar.');
+        return;
+      }
       setMovementToRemove(null);
       setRemovalReason('');
       setRemovalError(null);
     }
   };
 
-  const handleRestore = (movementId: string) => {
-    restoreFinancialMovement(movementId);
-  };
 
   return (
     <div
@@ -183,7 +184,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Movimentações Ativas ({activeMovements.length})
+              Histórico ({activeMovements.length})
             </button>
             <button
               type="button"
@@ -196,7 +197,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
               }`}
             >
               <History className="w-3.5 h-3.5" />
-              <span>Removidas do Histórico ({removedMovements.length})</span>
+              <span>Estornos ({removedMovements.length})</span>
             </button>
           </div>
 
@@ -253,14 +254,14 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {activeTab === 'ativas'
                   ? 'Nenhuma movimentação ativa encontrada'
-                  : 'Nenhuma movimentação removida'}
+                  : 'Nenhum estorno registado'}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
                 {search || filterType !== 'todas'
                   ? 'Nenhum resultado corresponde aos filtros aplicados.'
                   : activeTab === 'ativas'
                   ? 'Esta conta ainda não possui movimentações registadas no histórico.'
-                  : 'Não existem lançamentos removidos para esta conta bancária.'}
+                  : 'Não existem estornos para esta conta bancária.'}
               </p>
             </div>
           ) : (
@@ -287,7 +288,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                       <tr
                         key={mov.id}
                         className={`transition-colors ${
-                          mov.isRemoved
+                          mov.isReversed
                             ? 'bg-rose-50/30 dark:bg-rose-950/20 opacity-90'
                             : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
                         }`}
@@ -327,9 +328,9 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                           <p className="font-medium text-slate-900 dark:text-slate-100 truncate" title={mov.reason}>
                             {mov.reason}
                           </p>
-                          {mov.isRemoved && mov.removedReason && (
+                          {mov.isReversed && mov.reversalReason && (
                             <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 flex items-center gap-1 font-medium">
-                              <span>Motivo da remoção:</span> {mov.removedReason}
+                              <span>Motivo da remoção:</span> {mov.reversalReason}
                             </p>
                           )}
                         </td>
@@ -355,29 +356,17 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                           {formatCurrencyValue(mov.amount, bank.currency)}
                         </td>
 
-                        {/* Actions Column (Rule 2: Remover do Histórico / Restaurar) */}
+                        {/* Actions Column (Rule 2: Estornar Lançamento / Restaurar) */}
                         <td className="py-2.5 px-4 whitespace-nowrap text-center">
-                          {!mov.isRemoved ? (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenRemoval(mov)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
-                              title="Remover este lançamento do histórico (com auditoria)"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>Remover</span>
+                          {!mov.isReversed && !mov.reversalOfId ? (
+                            <button type="button" onClick={() => handleOpenRemoval(mov)}
+                              disabled={bankBlockInfo.blocked}
+                              title={bankBlockInfo.message || 'Estornar com justificativa'}
+                              aria-label="Estornar lançamento"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                              <RotateCcw className="w-3.5 h-3.5" />
                             </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleRestore(mov.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg transition-colors cursor-pointer"
-                              title="Restaurar este lançamento ao histórico ativo"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                              <span>Restaurar</span>
-                            </button>
-                          )}
+                          ) : <span className="text-[10px] text-slate-500 dark:text-dm-muted">{mov.reversalOfId ? 'Estorno' : 'Estornado'}</span>}
                         </td>
                       </tr>
                     );
@@ -393,7 +382,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
           <span>
             {activeTab === 'ativas'
               ? `Movimentações ativas: ${filteredMovements.length}`
-              : `Movimentações removidas: ${filteredMovements.length}`}
+              : `Registos de estorno: ${filteredMovements.length}`}
           </span>
           <button
             type="button"
@@ -422,10 +411,10 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Remover do Histórico Contabilístico
+                  Estornar Lançamento Contabilístico
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Esta ação é rastreada e auditada. O saldo da conta será recalculado e o Administrador será notificado.
+                  O original será preservado e um lançamento de sentido contrário compensará o saldo.
                 </p>
               </div>
             </div>
@@ -452,7 +441,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
             <form onSubmit={handleConfirmRemoval} className="space-y-4">
               <div>
                 <label htmlFor="removal-reason-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Motivo da Remoção (Obrigatório para Auditoria) <span className="text-rose-500">*</span>
+                  Motivo do Estorno (Obrigatório para Auditoria) <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   id="removal-reason-input"
@@ -490,7 +479,7 @@ export const BankLedgerModal: React.FC<BankLedgerModalProps> = ({
                   id="btn-confirm-remove-mov"
                   className="px-4 py-2 text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
-                  Confirmar Remoção
+                  Confirmar Estorno
                 </button>
               </div>
             </form>

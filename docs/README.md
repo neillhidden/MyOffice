@@ -23,6 +23,8 @@ A aplicação permite gerir múltiplas empresas do mesmo grupo económico (com e
 | **[`PROJECT_STRUCTURE.md`](./PROJECT_STRUCTURE.md)** | Árvore completa de pastas e descrição de todos os ficheiros do repositório | Para localizar componentes, modais, tipos e dados |
 | **[`MODULES.md`](./MODULES.md)** | Especificação funcional de todos os módulos e submódulos existentes | Antes de modificar qualquer ecrã ou funcionalidade |
 | **[`BUSINESS_RULES.md`](./BUSINESS_RULES.md)** | Regras de negócio, fórmulas matemáticas, regras de auditoria e invariantes | Antes de tocar em cálculos, estoque, vendas, financeiro ou simulador |
+| **[`PRODUCT_DIRECTION.md`](./PRODUCT_DIRECTION.md)** | Requisitos aceites de Pessoal/Business, telefone e custos | Antes de ampliar o produto |
+| **[`../database/README.md`](../database/README.md)** | Esquema PostgreSQL offline para a futura ligação, Pessoal e Business | Ao preparar a fase de backend |
 | **[`DATABASE.md`](./DATABASE.md)** | Entidades de dados (`TypeScript interfaces`), chaves de `localStorage`, *seed data* e reconciliação | Ao alterar modelos de dados ou preparar futura base de dados |
 | **[`API.md`](./API.md)** | Estado atual de comunicação (client-side), dependências instaladas e notas sobre futuro backend | Ao planear endpoints, integrações externas ou persistência remota |
 | **[`UI_GUIDELINES.md`](./UI_GUIDELINES.md)** | Alinhamento do layout global, sistema de tema Claro/Escuro, tipografia, grelhas e `id`s de teste | Antes de qualquer alteração visual ou de CSS/Tailwind |

@@ -78,6 +78,11 @@ Em **Financeiro → Lançamentos** (`LancamentosView.tsx` e `StockContext.tsx`):
    - O sistema marca o lançamento original com `isReversed: true`, `reversalReason` e `reversedAt`.
    - Cria simultaneamente um **novo lançamento de sentido inverso** (`entrada` $\leftrightarrow$ `saida`) com o mesmo valor, vinculado por `reversalOfId`, ajustando automaticamente o saldo da conta bancária (`Bank.balance`).
 
+3. **Histórico completo**: Original e compensação participam do saldo; `isReversed` não exclui o original. Não existe restauro/apagamento de estornos; uma nova operação exige novo lançamento justificado.
+4. **Uma compensação por original**: Estornos repetidos, incluindo cliques antes da renderização seguinte, são rejeitados. Lançamentos de estorno não podem ser estornados novamente.
+5. **Vendas e dívidas**: Uma entrada de venda ativa só pode ser estornada pelo cancelamento da venda, preservando os vínculos com estoque/entrega. Estornar um pagamento mantém o pagamento no histórico e reabre o saldo devedor.
+6. **Compatibilidade local**: Remoções financeiras antigas (`isRemoved`) são convertidas ao carregar em original + estorno, preservando o saldo anterior. A conversão é idempotente. Valores/datas/motivos originais não são reescritos para corrigir lançamentos.
+
 ---
 
 ## 5. Rastreabilidade Cruzada de Vendas (`#VND-XXXX`), Bancos, Estornos e Dívidas
@@ -109,6 +114,10 @@ Quando uma venda é concluída (`completeSale` em `StockContext.tsx`) ou carrega
      - `→ Ver registo de Transporte` (se `requiresTransport: true`): Fecha o modal, navega para **Caixa → Transporte** e filtra pelo código `sale.id`.
    - Na tabela de **Caixa → Venda**, clicar no emblema `Sim` da coluna **Transporte** também navega diretamente para **Caixa → Transporte** filtrado por `sale.id`.
 
+8. **Identificadores novos**: `VND-<UUID>` e `TRP-<UUID>` usam aleatoriedade criptográfica; não dependem dos últimos dígitos do relógio. Os demais registos criados pelo contexto seguem o mesmo padrão. IDs históricos são preservados.
+9. **Validação central antes de gravar**: Armazém ativo, produto ativo existente, variação válida quando o produto tem variações, quantidade finita superior a zero, preço finito não negativo e subtotal/total finitos. Custos de entrega devem ser finitos e não negativos. Quantidades fracionárias continuam permitidas. Preço zero admite oferta; não admite quantidade zero. Itens repetidos com preços diferentes são rejeitados, sem alterar silenciosamente preços anteriores.
+10. **Cancelamento justificado**: Motivo obrigatório; a compensação usa o lançamento bancário original. Se esse lançamento já foi compensado por migração antiga, não é compensado duas vezes. Venda sem lançamento/conta original exige reconciliação antes de cancelar, sem escolher arbitrariamente outra conta.
+
 ---
 
 ## 6. Regras do Simulador de Importação e Rentabilidade (Multimoeda)
@@ -137,3 +146,10 @@ Implementadas em `src/types/importSimulator.ts` e `src/components/analytics/Impo
    - Esta distinção evita confundir o saldo de caixa antes de escoar o lote com o lucro económico de cada unidade vendida.
 6. **Análise de Sensibilidade**:
    - A tabela de sensibilidade de frete utiliza sempre a **moeda original do frete** (`freightCurrency`, ex.: `USD/kg` ou `Kz/kg`) e converte cada escalão para a moeda-base (`Kz`).
+
+
+## 7. Proteção da Reposição de Dados
+
+`resetHistory`, `resetAll` e `resetToDefaults` recusam operações quando existem movimentos de estoque, lançamentos bancários, vendas, transportes, pagamentos, dívidas, defeituosos ou listas de compras concluídas. O bloqueio está nas funções centrais e nos controlos da interface. Reposição só pode ocorrer sem histórico operacional/financeiro; não é um mecanismo para apagar registos auditáveis. A limpeza autorizada de uma instalação vazia afeta apenas chaves `myoffice_*`.
+
+Esta proteção é de integridade do front-end. Sem backend/autenticação, não representa proteção contra manipulação direta do armazenamento do navegador.

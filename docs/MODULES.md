@@ -121,6 +121,8 @@ Este documento detalha todos os módulos e submódulos existentes na aplicação
 
 ---
 
+- **Auditoria atual (2026-10-07)**: Lançamentos e extratos apresentam Histórico e Estornos. Corrigir cria lançamento inverso com motivo obrigatório; não há remoção/restauro financeiro. Pagamentos estornados permanecem no extrato da dívida. Vendas ativas devem ser canceladas pelo módulo Caixa.
+
 ### 2.5. Módulo `Contactos`
 - **`Funcionários` (`FuncionariosView.tsx`, `EmployeeModal.tsx`)**: Cadastro de colaboradores vinculados obrigatoriamente a uma empresa (`companyId`), com cargo, telefone, data de nascimento (que alimenta automaticamente a agenda de aniversários no Calendário) e estado.
 - **`Clientes` (`ClientesView.tsx`, `ClientModal.tsx`)**: Cadastro de clientes individuais ou empresariais (telefone, WhatsApp separado, endereço de entrega, NIF/BI) e visualização do histórico de compras do cliente.
@@ -142,5 +144,4 @@ Este documento detalha todos os módulos e submódulos existentes na aplicação
 - **Aba `Empresas`**: Criação, edição, alteração de estado operacional (`ativa`, `parada`, `desativada`) e eliminação protegida de empresas (`DeleteCompanyModal` impede apagar empresas que possuam armazéns vinculados).
 - **Aba `Armazéns`**: Criação, edição e remoção de armazéns e lojas físicas associados a uma empresa.
 - **Aba `Repor Dados` (`ResetSettingsModal.tsx`)**:
-  - **Limpar Apenas Histórico**: Apaga vendas, movimentações, transportes e lançamentos financeiros, mantendo empresas, armazéns, produtos, bancos e contactos.
-  - **Restaurar Padrão de Fábrica**: Repõe todos os dados para os valores originais de `seedData.ts`.
+  - **Zerar Histórico / Zerar Tudo**: Bloqueados quando existe histórico operacional ou financeiro, tanto na interface como nas funções centrais. Não podem apagar transações auditáveis. Disponíveis apenas numa instalação sem esses registos.
