@@ -21,6 +21,11 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Catálogo de versões
+- **Pedido**: Escolher e testar versões anteriores sem substituir o site principal.
+- **Escopo**: Catálogo em /versoes/, builds por commit, arquivo persistente de versões e isolamento do armazenamento de cada pré-visualização.
+- **Validação**: 7 testes unitários, lint e build passaram. 14 snapshots históricos testados em Chromium sem erros JavaScript; armazenamento do principal preservado após limpar cada pré-visualização, pesquisa e layout móvel verificados. Primeiro commit sem aplicação indicado como indisponível.
+
 ### [2026-10-07] — OpenAI Codex — Publicação GitHub Pages
 - **Pedido**: Configurar, enviar e verificar o site no GitHub Pages.
 - **Alterações**: Workflow de testes/build/publicação; base do Vite configurável por ambiente para preservar desenvolvimento e Google AI Studio.

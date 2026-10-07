@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -22,6 +22,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -34,10 +36,37 @@ jobs:
       - run: npm run build
         env:
           MYOFFICE_BASE_PATH: /MyOffice/
+      - name: Restaurar arquivo de versões
+        env:
+          PAGES_ARCHIVE_DIR: ${{ runner.temp }}/myoffice-pages-history
+        run: |
+          mkdir -p "$PAGES_ARCHIVE_DIR"
+          if git ls-remote --exit-code --heads origin pages-archive >"$RUNNER_TEMP/myoffice-archive-ref"; then
+            git fetch origin pages-archive:refs/remotes/origin/pages-archive
+            git archive refs/remotes/origin/pages-archive | tar -xf - -C "$PAGES_ARCHIVE_DIR"
+          else
+            ref_status=$?
+            if [ "$ref_status" -ne 2 ]; then exit "$ref_status"; fi
+          fi
+      - name: Preparar catálogo e pré-visualizações
+        run: node scripts/build-pages-history.mjs
+        env:
+          MYOFFICE_BASE_PATH: /MyOffice/
+          PAGES_ARCHIVE_DIR: ${{ runner.temp }}/myoffice-pages-history
+          PAGES_OUTPUT_DIR: ${{ runner.temp }}/myoffice-pages-site
+          BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/myoffice-bun-cache
+      - name: Conservar arquivo de versões
+        env:
+          PAGES_ARCHIVE_DIR: ${{ runner.temp }}/myoffice-pages-history
+          PAGES_ARCHIVE_INDEX: ${{ runner.temp }}/myoffice-pages-index
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash scripts/publish-pages-archive.sh
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: ${{ runner.temp }}/myoffice-pages-site
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
