@@ -1,6 +1,12 @@
 {
-  "currentSha": "d1ec51ba216822334f30b889acd5ecdf03611231",
+  "currentSha": "fe33b6dedd997057445c8ddb0e1f16e1a4d7f4ee",
   "entries": [
+    {
+      "sha": "fe33b6dedd997057445c8ddb0e1f16e1a4d7f4ee",
+      "date": "2026-10-07T22:58:57Z",
+      "title": "Registar a preferência por mensagens de commit em português",
+      "status": "ready"
+    },
     {
       "sha": "d1ec51ba216822334f30b889acd5ecdf03611231",
       "date": "2026-10-07T22:58:43Z",
