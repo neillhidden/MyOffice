@@ -81,4 +81,4 @@ Vários fluxos e verificações automatizadas dependem de `id`s específicos nos
 
 ## Definições — categorias em linhas
 
-A entrada de Definições usa linhas de largura completa com ícone linear, título, descrição e seta. O estado/contagem aparece à direita no desktop e abaixo da descrição em telas pequenas. Linhas têm área de toque mínima de 76px, foco visível e `aria-expanded`. Usar superfícies/bordas/textos dos tokens escuros existentes. Uma categoria abre os detalhes existentes; não adicionar controlos sem configuração real associada. O controlo de tema continua exclusivamente no cabeçalho.
+A entrada de Definições usa linhas de largura completa com ícone linear, título, descrição e seta. O estado/contagem aparece à direita no desktop e abaixo da descrição em telas pequenas. Linhas têm área de toque mínima de 76px, foco visível. Usar superfícies/bordas/textos dos tokens escuros existentes. Uma categoria abre uma tela própria dentro do módulo, substituindo a lista, com título específico e botão Voltar às Definições; não adicionar controlos sem configuração real associada. O controlo de tema continua exclusivamente no cabeçalho.

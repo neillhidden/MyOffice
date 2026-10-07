@@ -145,27 +145,25 @@ export const SettingsView: React.FC = () => {
     <div id="settings-view-container" className="space-y-6">
       <div>
         <h1 id="settings-view-title" className="text-xl font-bold text-slate-900 dark:text-dm-text tracking-tight">
-          Definições do Sistema
+          {activeTab === 'empresas' ? 'Empresas' : activeTab === 'armazens' ? 'Armazéns e lojas' : activeTab === 'reset' ? 'Gestão de dados' : 'Definições do Sistema'}
         </h1>
         <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
-          Gere as empresas, os locais de operação e os dados do MyOffice.
+          {activeTab ? 'Definições do Sistema' : 'Gere as empresas, os locais de operação e os dados do MyOffice.'}
         </p>
       </div>
 
-      <nav aria-label="Categorias de definições" className="space-y-2">
+      {!activeTab && (<nav aria-label="Categorias de definições" className="space-y-2">
         {([
-          { key: 'empresas', id: 'tab-btn-companies', icon: Building2, title: 'Empresas', description: 'Gerir os dados, a moeda e o estado de cada empresa.', status: `${companies.length} registadas`, section: 'section-companies-management' },
-          { key: 'armazens', id: 'tab-btn-warehouses', icon: WarehouseIcon, title: 'Armazéns e lojas', description: 'Organizar os locais de operação, os responsáveis e as empresas associadas.', status: `${warehouses.length} locais`, section: 'section-warehouses-management' },
-          { key: 'reset', id: 'tab-btn-reset', icon: RotateCcw, title: 'Gestão de dados', description: 'Consultar as opções de reposição e a proteção do histórico.', status: canResetData ? 'Reposição disponível' : 'Histórico protegido', section: 'section-reset-management' },
-        ] as const).map(({ key, id, icon: Icon, title, description, status, section }) => (
+          { key: 'empresas', id: 'tab-btn-companies', icon: Building2, title: 'Empresas', description: 'Gerir os dados, a moeda e o estado de cada empresa.', status: `${companies.length} registadas` },
+          { key: 'armazens', id: 'tab-btn-warehouses', icon: WarehouseIcon, title: 'Armazéns e lojas', description: 'Organizar os locais de operação, os responsáveis e as empresas associadas.', status: `${warehouses.length} locais` },
+          { key: 'reset', id: 'tab-btn-reset', icon: RotateCcw, title: 'Gestão de dados', description: 'Consultar as opções de reposição e a proteção do histórico.', status: canResetData ? 'Reposição disponível' : 'Histórico protegido' },
+        ] as const).map(({ key, id, icon: Icon, title, description, status }) => (
           <button
             key={key}
             type="button"
             id={id}
-            aria-expanded={activeTab === key}
-            aria-controls={activeTab === key ? section : undefined}
-            onClick={() => { setActiveTab(activeTab === key ? null : key); setSearchQuery(''); }}
-            className={`group w-full min-h-[76px] flex items-center gap-4 rounded-lg border px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 dark:focus-visible:ring-dm-muted ${activeTab === key ? 'border-slate-400 bg-slate-100 dark:border-dm-muted dark:bg-dm-elevated' : 'border-slate-200/80 bg-white hover:bg-slate-50 dark:border-dm-border dark:bg-dm-surface dark:hover:bg-dm-elevated'}`}
+            onClick={() => { setActiveTab(key); setSearchQuery(''); }}
+            className="group w-full min-h-[76px] flex items-center gap-4 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-50 dark:border-dm-border dark:bg-dm-surface dark:hover:bg-dm-elevated px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 dark:focus-visible:ring-dm-muted"
           >
             <Icon aria-hidden="true" className="w-5 h-5 shrink-0 text-slate-700 dark:text-dm-text" strokeWidth={1.5} />
             <span className="min-w-0 flex-1">
@@ -174,15 +172,15 @@ export const SettingsView: React.FC = () => {
               <span className="block sm:hidden text-[11px] text-slate-500 dark:text-dm-muted mt-1">{status}</span>
             </span>
             <span className="hidden sm:block shrink-0 text-xs text-slate-600 dark:text-dm-muted">{status}</span>
-            <ChevronRight aria-hidden="true" className={`w-4 h-4 shrink-0 text-slate-500 dark:text-dm-muted transition-transform ${activeTab === key ? 'rotate-90' : ''}`} />
+            <ChevronRight aria-hidden="true" className="w-4 h-4 shrink-0 text-slate-500 dark:text-dm-muted" />
           </button>
         ))}
-      </nav>
+      </nav>)}
 
       {activeTab && (
         <button type="button" id="btn-settings-overview" onClick={() => setActiveTab(null)} className="inline-flex items-center gap-2 rounded-lg py-2 pr-3 text-xs font-medium text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500">
           <ArrowLeft aria-hidden="true" className="w-4 h-4" />
-          Fechar detalhes
+          Voltar às Definições
         </button>
       )}
 

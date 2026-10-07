@@ -11,7 +11,7 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 
 - **Último Agente Ativo**: OpenAI Codex — `2026-10-07`
 - **Estado de Validação**: `npm run lint` e `npm run build` passaram; 7 testes unitários passaram; 14 versões históricas abriram sem erros JavaScript, com isolamento de armazenamento, pesquisa e layout móvel verificados. Validações anteriores: 8 regressões da aplicação e 6 testes SQL. Build mantém aviso não bloqueante de bundle grande.
-- **Tarefa em Andamento / Pendente de Retoma**: Redesenho das Definições concluído conforme referência visual: linhas de Empresas, Armazéns e lojas, Gestão de dados; detalhes inicialmente fechados, setas/estados e botão Fechar detalhes. IDs de ações preservados; nenhuma regra de negócio alterada. Testes unitários (7), lint/build e validação em Chromium passaram: formulário de empresa, armazéns, resets bloqueados, claro/escuro e telefone 390px com sidebar recolhida.
+- **Tarefa em Andamento / Pendente de Retoma**: Ajustar Definições conforme esclarecimento: categorias abrem telas próprias no módulo, substituindo a lista, com título específico e botão Voltar às Definições. Sem nova aba do navegador. Concluído; lint/build e navegação entre categorias/regresso, proteção dos resets, temas e telefone verificados.
 - **O que foi concluído**:
   1. IDs novos com UUID aleatório criptográfico; IDs antigos preservados. Validação central de produtos/variações, quantidades, preços e transporte antes de gravar vendas.
   2. Estorno financeiro preserva original e cria compensação vinculada. Bloqueio de estornos duplicados/restauro, cancelamento de venda integrado e pagamentos de dívida preservados com motivo obrigatório.

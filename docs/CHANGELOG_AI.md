@@ -21,6 +21,11 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Telas próprias para as categorias das Definições
+- **Pedido**: Ao selecionar uma opção, abrir uma tela própria em vez de detalhes abaixo da lista.
+- **Alterações**: Categorias ocultadas quando uma secção está aberta, título específico e botão Voltar às Definições. Mantida navegação interna do módulo; nenhuma aba de navegador adicional. IDs e operações preservados.
+- **Validação**: Lint/build e navegação de empresas, armazéns, regresso à lista e bloqueio dos resets verificados no navegador; temas e telefone preservados.
+
 ### [2026-10-07] — OpenAI Codex — Definições em linhas com ícones
 - **Pedido**: Aplicar às Definições o estilo da imagem de referência enviada pelo utilizador.
 - **Alterações**: `SettingsView.tsx` passa a abrir numa lista de categorias em linhas: ícone, título, descrição, estado e seta. Cada linha abre/fecha os detalhes, com botão de fecho. Contagens e proteção de histórico à direita no desktop e abaixo da descrição no telefone. Temas claro/escuro e foco de teclado. IDs existentes e formulários preservados.
