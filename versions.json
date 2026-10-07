@@ -1,6 +1,12 @@
 {
-  "currentSha": "f2d0c0f2a8ac47cdab8bef6d15c58a0d3dd54f1b",
+  "currentSha": "85c85c9019969caf7dde5579fc88daa2bc0f4c6c",
   "entries": [
+    {
+      "sha": "85c85c9019969caf7dde5579fc88daa2bc0f4c6c",
+      "date": "2026-10-07T19:54:21Z",
+      "title": "feat: publish browsable commit history on GitHub Pages",
+      "status": "ready"
+    },
     {
       "sha": "f2d0c0f2a8ac47cdab8bef6d15c58a0d3dd54f1b",
       "date": "2026-10-07T18:06:51Z",
