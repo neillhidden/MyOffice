@@ -1,6 +1,12 @@
 {
-  "currentSha": "0bcdc7c010d13f9d178b9698a2c628b1fd4e95c1",
+  "currentSha": "d1ec51ba216822334f30b889acd5ecdf03611231",
   "entries": [
+    {
+      "sha": "d1ec51ba216822334f30b889acd5ecdf03611231",
+      "date": "2026-10-07T22:58:43Z",
+      "title": "Abrir cada categoria das Definições numa tela própria",
+      "status": "ready"
+    },
     {
       "sha": "0bcdc7c010d13f9d178b9698a2c628b1fd4e95c1",
       "date": "2026-10-07T22:38:50Z",

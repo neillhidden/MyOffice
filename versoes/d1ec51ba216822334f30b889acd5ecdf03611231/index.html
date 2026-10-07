@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt">
+  <head><script>
+(() => {
+  const original = window.localStorage;
+  const prefix = 'myoffice_preview_d1ec51ba216822334f30b889acd5ecdf03611231:';
+  const keys = () => Array.from({length: original.length}, (_, i) => original.key(i)).filter(key => key && key.startsWith(prefix)).map(key => key.slice(prefix.length));
+  const methods = {
+    getItem: key => original.getItem(prefix + String(key)),
+    setItem: (key, value) => original.setItem(prefix + String(key), String(value)),
+    removeItem: key => original.removeItem(prefix + String(key)),
+    clear: () => keys().forEach(key => original.removeItem(prefix + key)),
+    key: index => keys()[index] ?? null,
+  };
+  const storage = new Proxy({}, {
+    get: (_, key) => key === 'length' ? keys().length : Object.hasOwn(methods, key) ? methods[key] : typeof key === 'string' ? methods.getItem(key) : undefined,
+    set: (_, key, value) => { methods.setItem(key, value); return true; },
+    deleteProperty: (_, key) => { methods.removeItem(key); return true; },
+    ownKeys: keys,
+    getOwnPropertyDescriptor: (_, key) => keys().includes(key) ? {configurable: true, enumerable: true, writable: true, value: methods.getItem(key)} : undefined,
+  });
+  Object.defineProperty(window, 'localStorage', {configurable: true, value: storage});
+})();
+</script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyOffice</title>
+    <meta name="description" content="Sistema de gestão empresarial multi-empresa com módulos de Dashboard comparativo, Estoque, Caixa (Vendas e Transporte), Financeiro (Contas, Lançamentos e Dívidas), Contactos, Calendário e Notificações." />
+    <meta property="og:title" content="MyOffice" />
+    <meta property="og:description" content="Sistema de gestão empresarial multi-empresa com módulos de Dashboard comparativo, Estoque, Caixa (Vendas e Transporte), Financeiro (Contas, Lançamentos e Dívidas), Contactos, Calendário e Notificações." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/MyOffice/versoes/d1ec51ba216822334f30b889acd5ecdf03611231/assets/index-DTzjI7RR.js"></script>
+    <link rel="stylesheet" crossorigin href="/MyOffice/versoes/d1ec51ba216822334f30b889acd5ecdf03611231/assets/index-CAfc3zN5.css">
+  </head>
+  <body class="bg-[#fafbfc] text-[#0f172a] antialiased">
+    <div id="root"></div>
+  <a aria-label="Versão d1ec51b · Voltar às versões" href="/MyOffice/versoes/" style="position:fixed;bottom:12px;right:12px;z-index:10000;background:#0f172a;color:white;padding:10px 14px;border-radius:10px;border:1px solid #64748b;font:13px system-ui;text-decoration:none;box-shadow:0 2px 8px #0003">Versão d1ec51b · Voltar às versões</a></body>
+</html>
+
