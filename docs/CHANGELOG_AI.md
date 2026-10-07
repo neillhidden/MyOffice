@@ -21,6 +21,11 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Publicação GitHub Pages (em curso)
+- **Pedido**: Configurar, enviar e verificar o site no GitHub Pages.
+- **Alterações**: Workflow de testes/build/publicação; base do Vite configurável por ambiente para preservar desenvolvimento e Google AI Studio.
+- **Estado**: Validação/publicação em curso; não declarar site online antes da verificação externa.
+
 ### [2026-10-07] — OpenAI Codex — Integridade do front-end e esquema futuro
 - **Pedido**: Resolver problemas 1–3, manter foco no front-end e guardar estrutura de base de dados para conexão futura.
 - **Alterações**:

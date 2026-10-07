@@ -11,7 +11,7 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 
 - **Último Agente Ativo**: OpenAI Codex — `2026-10-07`
 - **Estado de Validação**: `npm run lint` e `npm run build` passaram; 5 testes de regras, 8 regressões de navegador e 6 testes SQL passaram (19 no total). Build mantém aviso não bloqueante de bundle grande.
-- **Tarefa em Andamento / Pendente de Retoma**: Nenhuma tarefa interrompida. Alterações concluídas no checkout, sem commit/push automático.
+- **Tarefa em Andamento / Pendente de Retoma**: Publicação GitHub Pages autorizada pelo utilizador em 2026-10-07. Workflow preparado; validar build com base /MyOffice/, enviar para main e verificar publicação.
 - **O que foi concluído**:
   1. IDs novos com UUID aleatório criptográfico; IDs antigos preservados. Validação central de produtos/variações, quantidades, preços e transporte antes de gravar vendas.
   2. Estorno financeiro preserva original e cria compensação vinculada. Bloqueio de estornos duplicados/restauro, cancelamento de venda integrado e pagamentos de dívida preservados com motivo obrigatório.

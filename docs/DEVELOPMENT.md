@@ -89,3 +89,8 @@ MYOFFICE_PGLITE_MODULE=/workspace/.tools/database/node_modules/@electric-sql/pgl
 ```
 
 Pode configurar `MYOFFICE_CHROMIUM` e `MYOFFICE_TEST_URL` para outros ambientes. Se os módulos estiverem disponíveis no mecanismo normal de resolução Node, as variáveis de caminho são opcionais. Os testes de navegador usam contextos novos, sem afetar o perfil/dados do utilizador. Os testes SQL usam PostgreSQL embutido em memória; não criam uma conexão externa nem executam a migração na aplicação.
+
+
+## GitHub Pages
+
+O workflow `.github/workflows/deploy-pages.yml` testa e publica os commits enviados para `main`. O build de Pages usa `MYOFFICE_BASE_PATH=/MyOffice/`; desenvolvimento e outros builds continuam a usar `/`. Ativar Settings → Pages → Source → GitHub Actions. O site publica apenas o front-end e continua com dados locais do navegador.
