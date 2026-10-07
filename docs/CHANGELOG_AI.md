@@ -21,6 +21,13 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-07] — OpenAI Codex — Central de projetos
+- **Pedido**: Escolher MyOffice ou BANCADA.az numa página e consultar commits/pré-visualizações.
+- **Alterações**: Gerador `scripts/pages-projects.mjs`, integração no build Pages, navegação principal/catálogo e documentação. MyOffice mantém seus URLs; Bancada tem página sem versões porque o repositório está vazio, confirmado por clone, ls-remote e HTML público. Nenhuma alteração no repositório Bancada.
+- **Impacto**: Somente páginas estáticas de navegação/publicação. Sem mudanças nas regras de negócio ou dados locais.
+- **Validação**: 7 testes unitários, lint e build passaram; regressão de seleção, abertura de versão, estado vazio e retorno em desktop/mobile em `tests/projects-browser-regression.mjs`.
+- **Pendente**: Código da BANCADA.az para configurar seu build e catálogo reais.
+
 ### [2026-10-07] — OpenAI Codex — Catálogo de versões
 - **Pedido**: Escolher e testar versões anteriores sem substituir o site principal.
 - **Escopo**: Catálogo em /versoes/, builds por commit, arquivo persistente de versões e isolamento do armazenamento de cada pré-visualização.

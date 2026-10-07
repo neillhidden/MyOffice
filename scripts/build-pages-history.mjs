@@ -3,6 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { navigationLink, preparePreview, writeCatalog } from './pages-catalog.mjs';
+import { writeProjects } from './pages-projects.mjs';
 
 const root = process.cwd();
 const base = process.env.MYOFFICE_BASE_PATH || '/MyOffice/';
@@ -58,6 +59,7 @@ for (const commit of history) {
   } finally { if (workspace) await rm(workspace, { recursive: true, force: true }); }
 }
 await writeCatalog(output, [...entries.values()], current, base, repository);
+await writeProjects(output, base);
 const index = path.join(output, 'index.html');
 await writeFile(index, (await readFile(index, 'utf8')).replace('</body>', navigationLink(base) + '</body>'));
 await mkdir(archiveDir, { recursive: true });
