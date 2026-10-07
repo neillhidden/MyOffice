@@ -1,0 +1,96 @@
+{
+  "currentSha": "f2d0c0f2a8ac47cdab8bef6d15c58a0d3dd54f1b",
+  "entries": [
+    {
+      "sha": "f2d0c0f2a8ac47cdab8bef6d15c58a0d3dd54f1b",
+      "date": "2026-10-07T18:06:51Z",
+      "title": "docs: record successful GitHub Pages deployment",
+      "status": "ready"
+    },
+    {
+      "sha": "b0aeecd628ff709ed9b8aa80ecfce407549cbd42",
+      "date": "2026-10-07T18:04:06Z",
+      "title": "ci: publish MyOffice frontend to GitHub Pages",
+      "status": "ready"
+    },
+    {
+      "sha": "f2fcba2759c4f281f0b8990a13ba86f680cd8ece",
+      "date": "2026-10-07T17:13:37Z",
+      "title": "fix: preserve financial audit and validate sales; prepare database schema",
+      "status": "ready"
+    },
+    {
+      "sha": "7e34c6baf55a7db57c3bf076da2fcb2fcc58df7d",
+      "date": "2026-10-07T11:10:24+01:00",
+      "title": "feat(caixa): add bank selection to sales and reconcile transport costs",
+      "status": "ready"
+    },
+    {
+      "sha": "5bff841af253d8e3debc34a3dfebb23c2b0b4f6e",
+      "date": "2026-10-06T03:49:07+01:00",
+      "title": "docs: prioritize handoff status in agent guidelines",
+      "status": "ready"
+    },
+    {
+      "sha": "cb5a1c68c293a3f1d3c4b19fc49bca25a1cf1379",
+      "date": "2026-10-06T02:51:09+01:00",
+      "title": "refactor: improve layout structure and add agent documentation",
+      "status": "ready"
+    },
+    {
+      "sha": "021d5c75cf96f3f53d851a0f4b37ee71b12f824e",
+      "date": "2026-10-06T02:11:16+01:00",
+      "title": "feat(caixa): add navigation links to sale records",
+      "status": "ready"
+    },
+    {
+      "sha": "1bce5a0d5a33845283de37c1933d08a1e36f1632",
+      "date": "2026-10-05T11:25:38+01:00",
+      "title": "refactor: standardize UI components and styling",
+      "status": "ready"
+    },
+    {
+      "sha": "7197f23be6189bb00545358505ef9538bd3aeb8f",
+      "date": "2026-10-03T15:11:56+01:00",
+      "title": "feat: implement restricted access for disabled companies",
+      "status": "ready"
+    },
+    {
+      "sha": "9e7f59536fc29b8ea061da9267be1afbc678a694",
+      "date": "2026-09-24T23:37:49+01:00",
+      "title": "feat(banks): implement bank movement audit and control",
+      "status": "ready"
+    },
+    {
+      "sha": "81559a5523928065f162bf88518036aac4a9f93e",
+      "date": "2026-09-22T23:04:47+01:00",
+      "title": "feat(ui): implement dark mode support for bank views",
+      "status": "ready"
+    },
+    {
+      "sha": "1421f113816f844ee876182d17ee438f7612c5d4",
+      "date": "2026-09-21T22:46:32+01:00",
+      "title": "feat: add finance module and update account types",
+      "status": "ready"
+    },
+    {
+      "sha": "694f8d488d4401f466beb624f40dfc93e242934b",
+      "date": "2026-09-16T07:48:38+01:00",
+      "title": "feat: expand system modules and features",
+      "status": "ready"
+    },
+    {
+      "sha": "42c04c0222f27c06529960b31f2bfc526a5a7e5f",
+      "date": "2026-09-09T11:53:07+01:00",
+      "title": "feat: initialize project infrastructure",
+      "status": "ready"
+    },
+    {
+      "sha": "81c5e623c1d7c8c860b3366611864473c5a1c627",
+      "date": "2026-09-09T11:50:20+01:00",
+      "title": "Initial commit",
+      "status": "unavailable",
+      "reason": "Este commit ainda não contém a aplicação."
+    }
+  ]
+}
