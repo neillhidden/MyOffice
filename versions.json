@@ -1,6 +1,12 @@
 {
-  "currentSha": "85c85c9019969caf7dde5579fc88daa2bc0f4c6c",
+  "currentSha": "1e2aa36d6f06c10a968596bc3fd8b4d676f860cc",
   "entries": [
+    {
+      "sha": "1e2aa36d6f06c10a968596bc3fd8b4d676f860cc",
+      "date": "2026-10-07T20:11:49Z",
+      "title": "feat: add project selector for MyOffice and BANCADA.az",
+      "status": "ready"
+    },
     {
       "sha": "85c85c9019969caf7dde5579fc88daa2bc0f4c6c",
       "date": "2026-10-07T19:54:21Z",
