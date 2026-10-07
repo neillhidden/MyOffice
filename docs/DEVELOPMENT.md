@@ -94,3 +94,7 @@ Pode configurar `MYOFFICE_CHROMIUM` e `MYOFFICE_TEST_URL` para outros ambientes.
 ## GitHub Pages
 
 O workflow `.github/workflows/deploy-pages.yml` testa e publica os commits enviados para `main`. O build de Pages usa `MYOFFICE_BASE_PATH=/MyOffice/`; desenvolvimento e outros builds continuam a usar `/`. Ativar Settings → Pages → Source → GitHub Actions. O site publica apenas o front-end e continua com dados locais do navegador.
+
+## Mensagens de commit
+
+Preferência explícita do utilizador: escrever as mensagens dos novos commits em português, com uma descrição clara da alteração. Preservar os commits já publicados; não reescrever o histórico apenas para traduzir mensagens antigas.
