@@ -1,6 +1,12 @@
 {
-  "currentSha": "12bbbaba4c44fbef2d04b840cdd4a9e46886047a",
+  "currentSha": "0bcdc7c010d13f9d178b9698a2c628b1fd4e95c1",
   "entries": [
+    {
+      "sha": "0bcdc7c010d13f9d178b9698a2c628b1fd4e95c1",
+      "date": "2026-10-07T22:38:50Z",
+      "title": "Melhorar o design das Definições com categorias em linhas",
+      "status": "ready"
+    },
     {
       "sha": "12bbbaba4c44fbef2d04b840cdd4a9e46886047a",
       "date": "2026-10-07T21:07:57Z",
