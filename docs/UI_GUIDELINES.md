@@ -82,3 +82,7 @@ Vários fluxos e verificações automatizadas dependem de `id`s específicos nos
 ## Definições — categorias em linhas
 
 A entrada de Definições usa linhas de largura completa com ícone linear, título, descrição e seta. O estado/contagem aparece à direita no desktop e abaixo da descrição em telas pequenas. Linhas têm área de toque mínima de 76px, foco visível. Usar superfícies/bordas/textos dos tokens escuros existentes. Uma categoria abre uma tela própria dentro do módulo, substituindo a lista, com título específico e botão Voltar às Definições; não adicionar controlos sem configuração real associada. O controlo de tema continua exclusivamente no cabeçalho.
+
+## Seletor Home | Business
+
+O seletor fica abaixo do logótipo, antes do menu, sem alterar a altura de 56px da marca/cabeçalho. Expandido: dois botões com aria-pressed e modo ativo destacado. Recolhido: select nativo compacto, acessível ao toque/teclado. Em ecrãs pequenos a sidebar começa recolhida. Home mantém tokens claro/escuro, formulários com foco visível e modais com foco contido/Escape. O tema continua apenas no cabeçalho; notificações empresariais não aparecem no Home.

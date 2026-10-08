@@ -9,16 +9,17 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 > **INSTRUÇÃO PARA O PRÓXIMO AGENTE (Claude Code / Gemini / Codex)**:
 > Sempre que iniciares uma sessão neste repositório, lê este bloco primeiro e verifica `git status` e `git diff`. Se o agente anterior tiver sido interrompido a meio de uma tarefa (por limite de quota ou contexto), retoma a partir do ponto indicado abaixo. Ao trabalhares numa tarefa, mantém este bloco atualizado.
 
-- **Último Agente Ativo**: OpenAI Codex — `2026-10-07`
-- **Estado de Validação**: `npm run lint` e `npm run build` passaram; 7 testes unitários passaram; 14 versões históricas abriram sem erros JavaScript, com isolamento de armazenamento, pesquisa e layout móvel verificados. Validações anteriores: 8 regressões da aplicação e 6 testes SQL. Build mantém aviso não bloqueante de bundle grande.
-- **Tarefa em Andamento / Pendente de Retoma**: Ajustar Definições conforme esclarecimento: categorias abrem telas próprias no módulo, substituindo a lista, com título específico e botão Voltar às Definições. Sem nova aba do navegador. Concluído; lint/build e navegação entre categorias/regresso, proteção dos resets, temas e telefone verificados.
+- **Último Agente Ativo**: OpenAI Codex — `2026-10-08`
+- **Estado de Validação**: 12 testes unitários, 8 regressões Business e percurso Home completo no navegador passaram. Isolamento, saldo/reservas, pagamentos, backup/restauro, persistência, telefone, escuro, quota, conflito de abas e corrupção verificados. Lint/build passaram; aviso conhecido de bundle grande.
+- **Tarefa em Andamento / Pendente de Retoma**: Home/Business e sete áreas pessoais implementados e testados. Seletor abaixo da marca, compacto no telefone. Home em chave separada, sem conexão externa; dashboard, contas/lancamentos/estornos, orçamento, mensalidades, metas/reservas, agenda e backup JSON. Código concluído; publicação automática pelo workflow de main. Ver HOME.md.
 - **O que foi concluído**:
   1. IDs novos com UUID aleatório criptográfico; IDs antigos preservados. Validação central de produtos/variações, quantidades, preços e transporte antes de gravar vendas.
   2. Estorno financeiro preserva original e cria compensação vinculada. Bloqueio de estornos duplicados/restauro, cancelamento de venda integrado e pagamentos de dívida preservados com motivo obrigatório.
   3. Migração idempotente das remoções financeiras antigas sem alterar saldo. Bloqueio central e visual de resets quando existe histórico operacional/financeiro.
   4. Esquema PostgreSQL offline (36 tabelas, 4 vistas), estrutura Pessoal/Business, instruções de migração e testes locais em `database/` e `tests/`. Sem conexão/backend/novas credenciais.
   5. Ideologia e requisitos aceites registados em `docs/PRODUCT_DIRECTION.md` para continuidade entre ferramentas.
-- **Próximos Passos**: Front-end de alternância Pessoal/Business, telas pessoais e responsividade conforme `PRODUCT_DIRECTION.md`. Base de dados, autenticação e autorização serão uma fase posterior por pedido do utilizador; consultar `database/README.md` antes de qualquer conexão. Não declarar conformidade fiscal ou segurança de backend na versão local.
+  6. Home pessoal funcional e separado do Business, com documentação e backup JSON.
+- **Próximos Passos**: Recolher feedback do Home implementado conforme `PRODUCT_DIRECTION.md` e `HOME.md`. Base de dados, autenticação e autorização serão uma fase posterior por pedido do utilizador; consultar `database/README.md` antes de qualquer conexão. Não declarar conformidade fiscal ou segurança de backend na versão local.
 
 ---
 

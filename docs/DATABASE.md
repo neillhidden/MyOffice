@@ -106,3 +106,7 @@ erDiagram
 - `Bank`: `id`, `name`, `code`, `accountNumber`, `iban`, `currency`, `balance`, `companyId`, `type` (`'banco' | 'caixa_fisico'`), `status`.
 - `BankMovement`: `id`, `bankId`, `destinationBankId?`, `type` (`'entrada' | 'saida' | 'transferencia'`), `amount`, `date`, `category`, `description`, `reference?`, `responsible`, `saleId?`, `purchaseListId?`, `debtId?`, `isReversed?`, `reversedAt?`, `reversalReason?`, `reversedBy?`, `reversalOfId?`.
 - `Debt`: `id`, `type` (`'receber' | 'pagar'`), `entityName`, `entityContact?`, `companyId`, `originalAmount`, `remainingAmount`, `currency`, `issueDate`, `dueDate`, `status` (`'pendente' | 'parcial' | 'paga' | 'vencida'`), `description`, `payments` (`DebtPayment[]`), `increments` (`DebtIncrement[]`).
+
+## Documento pessoal Home
+
+`myoffice-home-v1` guarda o documento validado de versão 1: nome da casa, contas/saldos iniciais, lançamentos/estornos/transferências, limites mensais, contas recorrentes, metas e tarefas. `myoffice-mode` guarda home/business. Ambas usam hífen para não participar do reset Business. Ver `src/types/home.ts`, `src/utils/home.ts` e `HOME.md`. Sem conexão remota; exportação/importação é JSON, não SQL.

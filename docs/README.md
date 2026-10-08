@@ -44,3 +44,7 @@ Sempre que um agente de IA ou programador:
 4. introduzir backend, base de dados ou integrações externas;
 
 **deve atualizar o documento correspondente nesta pasta `docs/` e adicionar uma entrada em [`CHANGELOG_AI.md`](./CHANGELOG_AI.md).**
+
+### Home — gestão pessoal
+
+[HOME.md](HOME.md) explica como começar, usar finanças, contas da casa, orçamentos, metas, agenda e cópias de segurança, além da separação Home/Business.

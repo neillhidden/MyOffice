@@ -146,3 +146,7 @@ Este documento detalha todos os módulos e submódulos existentes na aplicação
 - **Aba `Armazéns`**: Criação, edição e remoção de armazéns e lojas físicas associados a uma empresa.
 - **Aba `Repor Dados` (`ResetSettingsModal.tsx`)**:
   - **Zerar Histórico / Zerar Tudo**: Bloqueados quando existe histórico operacional ou financeiro, tanto na interface como nas funções centrais. Não podem apagar transações auditáveis. Disponíveis apenas numa instalação sem esses registos.
+
+## Home — espaço pessoal
+
+O seletor abaixo do logótipo troca o menu Business por Dashboard, Finanças, Orçamento, Contas da casa, Metas e sonhos, Agenda e Definições. Dados pessoais, contadores, pesquisa financeira e cabeçalho são próprios. Operações implementadas e limitações em [HOME.md](HOME.md).

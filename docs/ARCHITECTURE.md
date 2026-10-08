@@ -144,4 +144,8 @@ Quando a aplicação arranca no navegador:
 
 ## Preparação para Pessoal e Business
 
-`database/README.md` descreve a futura separação por espaços e membros. O React/Context API e `localStorage` permanecem ativos. `src/utils/ids.ts`, `saleValidation.ts` e `financialAudit.ts` centralizam geração de IDs, validação e compensações, sem introduzir outra biblioteca de estado. O futuro botão Pessoal/Business deverá selecionar o espaço corrente; essa navegação ainda não foi implementada nesta correção.
+`database/README.md` descreve a futura separação por espaços e membros. O React/Context API e `localStorage` permanecem ativos. `src/utils/ids.ts`, `saleValidation.ts` e `financialAudit.ts` centralizam geração de IDs, validação e compensações, sem introduzir outra biblioteca de estado. A alternância Home/Business foi implementada; HomeProvider mantém um documento pessoal separado de StockContext, com sete telas e cópia local. Consultar HOME.md para regras e limites.
+
+## Home/Business no front-end
+
+`HomeProvider` envolve AppContent sem substituir os providers Business. `AppContent` seleciona o modo persistido e mantém navegação própria para cada modo. HomeView/HomeHeader renderizam o espaço pessoal; o Business preserva Header, módulos e modais. Sidebar inclui o seletor e troca os menus. As chaves pessoais usam hífen, evitando a limpeza Business de chaves com prefixo `myoffice_`. Dados financeiros do Home não chamam funções de StockContext. Essa organização local não substitui autorização de backend.

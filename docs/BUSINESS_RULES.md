@@ -153,3 +153,7 @@ Implementadas em `src/types/importSimulator.ts` e `src/components/analytics/Impo
 `resetHistory`, `resetAll` e `resetToDefaults` recusam operações quando existem movimentos de estoque, lançamentos bancários, vendas, transportes, pagamentos, dívidas, defeituosos ou listas de compras concluídas. O bloqueio está nas funções centrais e nos controlos da interface. Reposição só pode ocorrer sem histórico operacional/financeiro; não é um mecanismo para apagar registos auditáveis. A limpeza autorizada de uma instalação vazia afeta apenas chaves `myoffice_*`.
 
 Esta proteção é de integridade do front-end. Sem backend/autenticação, não representa proteção contra manipulação direta do armazenamento do navegador.
+
+## Home pessoal
+
+Regras Business acima preservadas. Home tem ledger próprio, não chama funções financeiras empresariais. Transferências/reservas conservam património e não são despesas. Um pagamento por conta recorrente/mês, desbloqueado apenas por estorno. Estornos mantêm original e motivo; saldos negativos/estornos repetidos são recusados. Importações são validadas antes da escrita. Ver HOME.md para a distinção entre saldo inicial, receita do mês e reserva.

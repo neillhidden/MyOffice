@@ -36,14 +36,32 @@ import {
 } from './components/contacts';
 import { Product, ProductDraft } from './types/stock';
 
+import { HomeProvider } from './context/HomeContext';
+import { HomeView } from './components/home/HomeView';
+import { HomeHeader } from './components/home/HomeHeader';
+import { OfficeMode, HomeSection } from './types/home';
+
 function AppContent() {
+  const [mode, setMode] = useState<OfficeMode>(() => {
+    try { return localStorage.getItem('myoffice-mode') === 'home' ? 'home' : 'business'; }
+    catch { return 'business'; }
+  });
+  const [homeSection, setHomeSection] = useState<HomeSection>('Dashboard');
+  const changeMode = (next: OfficeMode) => {
+    setMode(next);
+    try { localStorage.setItem('myoffice-mode', next); } catch { /* Mode still works for this visit. */ }
+    setIsAddProductOpen(false);
+    setSelectedProductId(null);
+    setIsDraftsModalOpen(false);
+    setIsMovementModalOpen(false);
+  };
   // Navigation state
   const [activeModule, setActiveModule] = useState<MainModule>('Estoque');
   const [activeSubmodule, setActiveSubmodule] = useState<EstoqueSubmodule>('Armazém');
   const [activeCaixaSubmodule, setActiveCaixaSubmodule] = useState<CaixaSubmodule>('Venda');
   const [activeContactosSubmodule, setActiveContactosSubmodule] = useState<ContactosSubmodule>('Funcionários');
   const [activeFinanceiroSubmodule, setActiveFinanceiroSubmodule] = useState<FinanceiroSubmodule>('Contas');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(()=>window.matchMedia('(max-width: 767px)').matches);
 
   // Search state passed to views (for non-Armazém modules)
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -142,6 +160,10 @@ function AppContent() {
     >
       {/* Sidebar Navigation */}
       <Sidebar
+        mode={mode}
+        onModeChange={changeMode}
+        homeSection={homeSection}
+        onSelectHomeSection={setHomeSection}
         activeModule={activeModule}
         activeSubmodule={activeSubmodule}
         activeCaixaSubmodule={activeCaixaSubmodule}
@@ -178,7 +200,7 @@ function AppContent() {
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Header Bar */}
-        <Header
+        {mode === 'home' ? <HomeHeader section={homeSection}/> : <Header
           currentModule={activeModule}
           currentSubmodule={
             activeModule === 'Estoque'
@@ -197,10 +219,16 @@ function AppContent() {
           searchQuery={currentSearchQuery}
           onSearchChange={handleSearchChange}
           onNavigateToModule={handleNavigateToModule}
-        />
+        />}
 
         {/* Dynamic Main Workspace */}
-        {activeModule === 'Calendário' ? (
+        {mode === 'home' ? (
+          <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-20">
+            <div className="w-full max-w-7xl mx-auto">
+              <HomeView section={homeSection} onNavigate={setHomeSection} />
+            </div>
+          </main>
+        ) : activeModule === 'Calendário' ? (
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <CalendarView onNavigateToModule={handleNavigateToModule} />
           </div>
@@ -299,6 +327,7 @@ function AppContent() {
       </div>
 
       {/* Global Modals */}
+      {mode === 'business' && <>
       <ProductCreateModal
         isOpen={isAddProductOpen}
         onClose={() => {
@@ -339,6 +368,7 @@ function AppContent() {
         preSelectedWarehouseId={movementWarehouseId}
         preSelectedVariationId={movementVariationId}
       />
+      </>}
     </div>
   );
 }
@@ -348,7 +378,7 @@ export default function App() {
     <ThemeProvider>
       <StockProvider>
         <WarehouseFilterProvider>
-          <AppContent />
+          <HomeProvider><AppContent /></HomeProvider>
         </WarehouseFilterProvider>
       </StockProvider>
     </ThemeProvider>

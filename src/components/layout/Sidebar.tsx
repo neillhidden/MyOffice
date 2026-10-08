@@ -20,7 +20,14 @@ import {
   UserRound,
   Share2,
   HandCoins,
+  Wallet,
+  Target,
+  House,
+  ListChecks,
 } from 'lucide-react';
+
+import { HomeSection, OfficeMode } from '../../types/home';
+import { ModeSwitcher } from '../home/ModeSwitcher';
 
 export type MainModule =
   | 'Dashboard'
@@ -57,6 +64,10 @@ export type FinanceiroSubmodule =
   | 'Dívidas';
 
 interface SidebarProps {
+  mode: OfficeMode;
+  onModeChange: (mode: OfficeMode) => void;
+  homeSection: HomeSection;
+  onSelectHomeSection: (section: HomeSection) => void;
   activeModule: MainModule;
   activeSubmodule: EstoqueSubmodule;
   activeCaixaSubmodule: CaixaSubmodule;
@@ -133,6 +144,7 @@ const MODULE_SUBMODULES: Partial<Record<MainModule, SubmoduleItem[]>> = {
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  mode, onModeChange, homeSection, onSelectHomeSection,
   activeModule,
   activeSubmodule,
   activeCaixaSubmodule,
@@ -374,8 +386,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
+      <ModeSwitcher mode={mode} compact={isCollapsed} onChange={(value) => {
+        setHoveredFlyout(null);
+        onModeChange(value);
+      }} />
+      {mode === 'home' && (
+        <nav aria-label="Menu Home" className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
+          {([
+            { section: 'Dashboard', icon: LayoutDashboard },
+            { section: 'Finanças', icon: Wallet },
+            { section: 'Orçamento', icon: Calculator },
+            { section: 'Contas da casa', icon: House },
+            { section: 'Metas e sonhos', icon: Target },
+            { section: 'Agenda', icon: ListChecks },
+            { section: 'Definições', icon: Settings },
+          ] as const).map(({ section, icon: Icon }, index) => (
+            <button type="button" key={section} id={`home-nav-${index}`}
+              title={isCollapsed ? section : undefined} aria-label={section}
+              aria-current={homeSection === section ? 'page' : undefined}
+              onClick={() => onSelectHomeSection(section)}
+              className={`w-full min-h-11 flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-xs font-medium ${homeSection === section
+                ? 'bg-slate-900 dark:bg-dm-elevated text-white dark:text-dm-text'
+                : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}
+            >
+              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+              {!isCollapsed && <span className="min-w-0">{section}</span>}
+            </button>
+          ))}
+        </nav>
+      )}
       {/* Navigation List: começa exatamente abaixo da barra de topo h-14 */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1 flex flex-col">
+      <nav hidden={mode !== 'business'} style={mode !== 'business' ? {display:'none'} : undefined} className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1 flex flex-col">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const submodules = MODULE_SUBMODULES[item.id];
@@ -499,7 +540,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Submenu Flutuante com Portal (Estado Recolhido) */}
-      {isCollapsed && hoveredFlyout && createPortal(
+      {mode === 'business' && isCollapsed && hoveredFlyout && createPortal(
         <div
           key={hoveredFlyout.id}
           role="region"

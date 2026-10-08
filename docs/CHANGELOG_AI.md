@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-08] — OpenAI Codex — Home e Business com gestão pessoal
+- **Pedido**: Seletor abaixo do logótipo e Home pessoal com dashboard, metas e funções relacionadas.
+- **Alterações**: HomeProvider/documento pessoal e validadores; seletor expandido/compacto; menu e cabeçalho próprios; sete áreas com dados reais inicialmente vazios, contas, receitas/despesas/transferências/estornos, orçamento mensal, contas recorrentes, metas/reservas, tarefas e backup JSON. Barra recolhida por padrão no telefone. Link flutuante do Pages ajustado para não cobrir diálogos, com espaço inferior no Home. IDs e fluxos Business preservados.
+- **Regras**: Saldo disponível e reservas separados, transferências sem despesa, estornos rastreáveis, pagamentos únicos por mensalidade/mês, validação de cópia, escrita antes de atualizar estado e proteção contra conflito de abas. Nenhuma conexão/backend introduzida.
+- **Validação**: 12 testes unitários passaram; fluxo Home completo no navegador passou, incluindo isolamento Business, persistência, backup/restauro, mobile/escuro, quota, conflito e corrupção. 8 regressões Business passaram. Lint e build passaram, com aviso conhecido de bundle grande. Documentação em HOME.md.
+
 ### [2026-10-07] — OpenAI Codex — Telas próprias para as categorias das Definições
 - **Pedido**: Ao selecionar uma opção, abrir uma tela própria em vez de detalhes abaixo da lista.
 - **Alterações**: Categorias ocultadas quando uma secção está aberta, título específico e botão Voltar às Definições. Mantida navegação interna do módulo; nenhuma aba de navegador adicional. IDs e operações preservados.
