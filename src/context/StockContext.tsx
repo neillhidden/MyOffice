@@ -1,3 +1,4 @@
+import { BUSINESS_SUBCATEGORIES, categoryChildren, validateCategoryTree } from '../utils/categories';
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import {
   Product,
@@ -101,6 +102,7 @@ interface StockContextType {
   movements: Movement[];
   defectiveRecords: DefectiveRecord[];
   categories: string[];
+  subcategories: Record<string, string[]>;
   productDrafts: ProductDraft[];
   purchaseGroups: PurchaseGroup[];
   purchaseLists: PurchaseList[];
@@ -161,6 +163,7 @@ interface StockContextType {
   updateSupplier: (id: string, updates: Partial<Omit<Supplier, 'id' | 'createdAt'>>) => void;
   deleteSupplier: (id: string) => { success: boolean; message?: string };
   addCategory: (categoryName: string) => void;
+  addSubcategory: (category: string, name: string) => void;
 
   recordMovement: (
     movement: Omit<Movement, 'id' | 'date'> & { date?: string },
@@ -467,6 +470,17 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
     return INITIAL_CATEGORIES;
   });
+
+  const [subcategories, setSubcategories] = useState<Record<string, string[]>>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}subcategories`);
+    if (saved) {
+      try { const parsed = JSON.parse(saved); validateCategoryTree(parsed); return parsed; } catch { /* Preserve products and use selector defaults. */ }
+    }
+    return structuredClone(BUSINESS_SUBCATEGORIES);
+  });
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}subcategories`, JSON.stringify(subcategories));
+  }, [subcategories]);
 
   const [productDrafts, setProductDrafts] = useState<ProductDraft[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}productDrafts`);
@@ -1415,6 +1429,16 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (trimmed && !categories.includes(trimmed)) {
       setCategories((prev) => [...prev, trimmed]);
     }
+  };
+
+  const addSubcategory = (category: string, name: string) => {
+    const value = name.trim();
+    if (!categories.includes(category) || !value || value.length > 300) throw new Error('Categoria ou subcategoria inválida.');
+    setSubcategories(previous => {
+      const children = categoryChildren(previous, category);
+      if (children.some(c => c.toLocaleLowerCase() === value.toLocaleLowerCase())) return previous;
+      return {...previous, [category]: [...children, value]};
+    });
   };
 
   // Record a Movement (Audit Rule: Never edit directly, only append!)
@@ -2986,6 +3010,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setMovements(INITIAL_MOVEMENTS);
     setDefectiveRecords(INITIAL_DEFECTIVE_RECORDS);
     setCategories(INITIAL_CATEGORIES);
+    setSubcategories(structuredClone(BUSINESS_SUBCATEGORIES));
     setProductDrafts([]);
     setPurchaseGroups(INITIAL_PURCHASE_GROUPS);
     setPurchaseLists(INITIAL_PURCHASE_LISTS);
@@ -3125,6 +3150,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       movements,
       defectiveRecords,
       categories,
+      subcategories,
       productDrafts,
       purchaseGroups,
       purchaseLists,
@@ -3160,6 +3186,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updateSupplier,
       deleteSupplier,
       addCategory,
+      addSubcategory,
       recordMovement,
       removeStockMovement,
       restoreStockMovement,
@@ -3255,6 +3282,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       movements,
       defectiveRecords,
       categories,
+      subcategories,
       productDrafts,
       purchaseGroups,
       purchaseLists,

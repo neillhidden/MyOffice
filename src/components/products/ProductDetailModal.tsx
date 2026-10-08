@@ -147,7 +147,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                  {product.category}
+                  {product.category}{product.subcategory ? ` / ${product.subcategory}` : ''}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
                   SKU: {product.sku}

@@ -149,4 +149,8 @@ Este documento detalha todos os módulos e submódulos existentes na aplicação
 
 ## Home — espaço pessoal
 
-O seletor abaixo do logótipo troca o menu Business por Dashboard, Finanças, Orçamento, Contas da casa, Metas e sonhos, Agenda e Definições. Dados pessoais, contadores, pesquisa financeira e cabeçalho são próprios. Operações implementadas e limitações em [HOME.md](HOME.md).
+O seletor no rodapé da barra lateral troca o menu Business por Dashboard, Finanças, Orçamento, Contas da casa, Metas e sonhos, Agenda, Definições e Compras. Dados pessoais, contadores, pesquisa financeira e cabeçalho são próprios. Operações implementadas e limitações em [HOME.md](HOME.md).
+
+### Categorias, compras e melhorias de 2026-10-08
+
+[Guia funcional](CATEGORIES.md): catálogo Business com produtos por categoria/subcategoria, compras pessoais com pagamento auditável, aparência nos dois modos, dashboard com alertas/previsão e calendário baseado na data local com atualização diária.

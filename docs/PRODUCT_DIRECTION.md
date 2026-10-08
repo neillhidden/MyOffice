@@ -17,7 +17,7 @@ Hoje, `src/components/` contém as telas Business; `StockContext` coordena as op
 
 A estrutura futura de dados está em `database/`: espaços, membros, empresas e finanças partilhadas; estruturas pessoais para categorias, orçamentos, contas recorrentes e objetivos. Essa preparação não acrescenta conexão nem backend.
 
-O seletor Home/Business e as sete áreas pessoais foram implementados em 2026-10-08; consultar `HOME.md`. Quando forem implementados, devem selecionar explicitamente um espaço e apresentar uma identidade clara de modo/empresa. O acesso persistente e a autorização entre espaços serão assegurados pelo backend na etapa posterior, não apenas por filtros visuais.
+O seletor Home/Business e as oito áreas pessoais foram implementados em 2026-10-08; consultar `HOME.md`. Quando forem implementados, devem selecionar explicitamente um espaço e apresentar uma identidade clara de modo/empresa. O acesso persistente e a autorização entre espaços serão assegurados pelo backend na etapa posterior, não apenas por filtros visuais.
 
 ## Etapa concluída nesta intervenção
 
@@ -27,4 +27,6 @@ A conexão da base de dados, autenticação e permissões continuam adiadas por 
 
 ## Decisões de 2026-10-08
 
-Nome confirmado: **Home | Business**. Seletor abaixo do logótipo, antes do menu; compacto com escolha de modo no telefone/barra recolhida. O Home deve organizar a vida pessoal, metas e dashboard. Implementação documentada em `HOME.md`; integração remota continua adiada.
+Nome confirmado: **Home | Business**. Seletor no rodapé da barra lateral; compacto com escolha de modo no telefone/barra recolhida. O Home deve organizar a vida pessoal, metas e dashboard. Implementação documentada em `HOME.md`; integração remota continua adiada.
+
+Pedido adicional de 2026-10-08: seletor na parte inferior, calendário baseado na data real, categorias e subcategorias nos dois modos (Games → Jogos/Consoles), produtos por classificação, modo Anoitecer nas Definições e melhorias dos dashboards. Implementação e uso em [CATEGORIES.md](CATEGORIES.md).

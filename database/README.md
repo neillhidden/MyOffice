@@ -28,7 +28,7 @@ erDiagram
 - **Identidade e espaços**: utilizadores, membros, empresas, preferências de utilizador e do espaço. IDs de autenticação são referências ao futuro fornecedor, nunca palavras-passe.
 - **Business**: armazéns, contactos, produtos/variações, configurações de estoque, compras/fontes, vendas/itens, transportes, defeituosos, rascunhos e simulações de importação.
 - **Finanças partilhadas**: contas, lançamentos, dívidas, pagamentos e acréscimos. Uma conta Business exige empresa; uma conta pessoal não pode pertencer a empresa.
-- **Pessoal**: categorias, orçamentos por período, contas recorrentes, objetivos e contribuições. Estas estruturas estão preparadas; as telas pessoais ainda não foram implementadas.
+- **Pessoal**: categorias, orçamentos por período, contas recorrentes, objetivos e contribuições. As telas Home estão implementadas com persistência local; a conexão continua adiada.
 - **Organização e auditoria**: agendas, eventos, notificações e eventos de auditoria.
 
 ## Garantias presentes no esquema
@@ -84,3 +84,9 @@ O arredondamento dos itens SQL é a duas casas; validar e reconciliar os número
 ## Validação offline
 
 `tests/database-regression.mjs` aplica a migração em PostgreSQL local embutido (PGlite), sem ligar a um servidor externo. Verifica criação/RLS, separação dos espaços, quantidades/preços, referências, estornos, bloqueio de alteração do histórico e planeamento pessoal. Instruções de ferramentas de teste em `docs/DEVELOPMENT.md`.
+
+## Extensão offline 002
+
+Depois de `001_initial.sql`, aplicar `002_categories_and_home_shopping.sql` na futura migração: categorias/subcategorias Business com vínculo de produto, subcategorias pessoais e lista de compras com referência financeira. Total: 40 tabelas com RLS habilitada. Dois níveis explícitos impedem ciclos; FKs compostas impedem misturar espaços ou subcategorias de outra categoria. Nenhuma migração é executada pelo frontend.
+
+Mapear `Product.category/subcategory` e os nomes locais para IDs; preservar campos de `details` existentes. Mapear `HomeData.shopping` para `personal_shopping_items` e `entryId` para o lançamento. A futura API terá de validar tipo/valor do pagamento e aplicar autenticação/RLS antes da conexão. Teste adicional: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/categories-database-regression.mjs`.

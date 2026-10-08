@@ -82,6 +82,8 @@ function AppContent() {
 
   // Modals state
   const [isAddProductOpen, setIsAddProductOpen] = useState<boolean>(false);
+  const [newProductCategory, setNewProductCategory] = useState<string | undefined>();
+  const [newProductSubcategory, setNewProductSubcategory] = useState<string | undefined>();
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [draftToResume, setDraftToResume] = useState<ProductDraft | null>(null);
   const [isDraftsModalOpen, setIsDraftsModalOpen] = useState<boolean>(false);
@@ -92,7 +94,9 @@ function AppContent() {
   const [movementWarehouseId, setMovementWarehouseId] = useState<string | null>(null);
   const [movementVariationId, setMovementVariationId] = useState<string | null>(null);
 
-  const handleOpenNewProduct = () => {
+  const handleOpenNewProduct = (category?: string, subcategory?: string) => {
+    setNewProductCategory(category);
+    setNewProductSubcategory(subcategory);
     setProductToEdit(null);
     setDraftToResume(null);
     setIsAddProductOpen(true);
@@ -236,7 +240,7 @@ function AppContent() {
           <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
             <div className="w-full max-w-7xl mx-auto">
               {activeModule === 'Definições' ? (
-                <SettingsView />
+                <SettingsView onCreateProduct={handleOpenNewProduct} onViewProduct={setSelectedProductId} />
               ) : activeModule === 'Financeiro' || activeModule === 'Banco' ? (
                 <FinanceiroView
                   activeSubmodule={activeFinanceiroSubmodule}
@@ -335,6 +339,8 @@ function AppContent() {
           setProductToEdit(null);
           setDraftToResume(null);
         }}
+        initialCategory={newProductCategory}
+        initialSubcategory={newProductSubcategory}
         productToEdit={productToEdit}
         draftToResume={draftToResume}
         onViewProduct={(id) => setSelectedProductId(id)}

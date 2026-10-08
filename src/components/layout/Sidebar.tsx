@@ -386,10 +386,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      <ModeSwitcher mode={mode} compact={isCollapsed} onChange={(value) => {
-        setHoveredFlyout(null);
-        onModeChange(value);
-      }} />
       {mode === 'home' && (
         <nav aria-label="Menu Home" className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
           {([
@@ -400,6 +396,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { section: 'Metas e sonhos', icon: Target },
             { section: 'Agenda', icon: ListChecks },
             { section: 'Definições', icon: Settings },
+            { section: 'Compras', icon: ShoppingCart },
           ] as const).map(({ section, icon: Icon }, index) => (
             <button type="button" key={section} id={`home-nav-${index}`}
               title={isCollapsed ? section : undefined} aria-label={section}
@@ -519,6 +516,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
+      <ModeSwitcher mode={mode} compact={isCollapsed} onChange={(value) => {
+        setHoveredFlyout(null);
+        onModeChange(value);
+      }} />
       {/* Bottom Section: Footer info (sem o controlo de tema) */}
       <div className="border-t border-slate-200/80 dark:border-dm-border p-2 shrink-0 overflow-hidden">
         <div className="h-7 flex items-center px-2 overflow-hidden">

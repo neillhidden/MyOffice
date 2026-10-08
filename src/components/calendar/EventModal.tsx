@@ -1,3 +1,4 @@
+import { todayLocal } from '../../utils/home';
 import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { Agenda, CalendarEvent, EventStatus } from '../../types/calendar';
@@ -35,7 +36,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   const [agendaId, setAgendaId] = useState(defaultAgendaId);
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState('2026-09-13');
+  const [date, setDate] = useState(() => todayLocal());
   const [time, setTime] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<EventStatus>('pendente');
@@ -142,7 +143,8 @@ export const EventModal: React.FC<EventModalProps> = ({
             >
               {activeAgendas.map((ag) => (
                 <option key={ag.id} value={ag.id}>
-                  {ag.name} ({ag.origin === 'automatica' ? 'Automática' : 'Manual'})
+                  {ag.name} (
+                  {ag.origin === 'automatica' ? 'Automática' : 'Manual'})
                 </option>
               ))}
             </select>
@@ -201,7 +203,9 @@ export const EventModal: React.FC<EventModalProps> = ({
 
           {/* Status Segmented Control */}
           <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">Status</label>
+            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
+              Status
+            </label>
             <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200/60 dark:border-slate-700/80 w-full sm:w-auto">
               <button
                 type="button"

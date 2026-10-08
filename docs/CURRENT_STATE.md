@@ -10,8 +10,8 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 > Sempre que iniciares uma sessão neste repositório, lê este bloco primeiro e verifica `git status` e `git diff`. Se o agente anterior tiver sido interrompido a meio de uma tarefa (por limite de quota ou contexto), retoma a partir do ponto indicado abaixo. Ao trabalhares numa tarefa, mantém este bloco atualizado.
 
 - **Último Agente Ativo**: OpenAI Codex — `2026-10-08`
-- **Estado de Validação**: 12 testes unitários, 8 regressões Business e percurso Home completo no navegador passaram. Isolamento, saldo/reservas, pagamentos, backup/restauro, persistência, telefone, escuro, quota, conflito de abas e corrupção verificados. Lint/build passaram; aviso conhecido de bundle grande.
-- **Tarefa em Andamento / Pendente de Retoma**: Home/Business e sete áreas pessoais implementados e testados. Seletor abaixo da marca, compacto no telefone. Home em chave separada, sem conexão externa; dashboard, contas/lancamentos/estornos, orçamento, mensalidades, metas/reservas, agenda e backup JSON. Código concluído; publicação automática pelo workflow de main. Ver HOME.md.
+- **Estado de Validação**: 14 testes unitários, 8 regressões Business, percurso Home completo e regressão de calendário/categorias/compras/tema passaram. 7 testes SQL offline passaram (esquema inicial e extensão). Lint/build passaram; aviso conhecido de bundle grande.
+- **Tarefa em Andamento / Pendente de Retoma**: Código concluído para seletor no rodapé, calendário real com atualização diária, categorias/subcategorias nos dois modos, compras Home com pagamento auditável, aparência e dashboards. Documentação em HOME.md e CATEGORIES.md. Publicação automática pelo workflow de main; sem backend ou conexão externa.
 - **O que foi concluído**:
   1. IDs novos com UUID aleatório criptográfico; IDs antigos preservados. Validação central de produtos/variações, quantidades, preços e transporte antes de gravar vendas.
   2. Estorno financeiro preserva original e cria compensação vinculada. Bloqueio de estornos duplicados/restauro, cancelamento de venda integrado e pagamentos de dívida preservados com motivo obrigatório.
@@ -19,6 +19,7 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
   4. Esquema PostgreSQL offline (36 tabelas, 4 vistas), estrutura Pessoal/Business, instruções de migração e testes locais em `database/` e `tests/`. Sem conexão/backend/novas credenciais.
   5. Ideologia e requisitos aceites registados em `docs/PRODUCT_DIRECTION.md` para continuidade entre ferramentas.
   6. Home pessoal funcional e separado do Business, com documentação e backup JSON.
+  7. Categorias/subcategorias e compras pessoais, aparência, datas dinâmicas e indicadores de dashboard. Migração offline 002 acrescenta quatro tabelas, totalizando 40.
 - **Próximos Passos**: Recolher feedback do Home implementado conforme `PRODUCT_DIRECTION.md` e `HOME.md`. Base de dados, autenticação e autorização serão uma fase posterior por pedido do utilizador; consultar `database/README.md` antes de qualquer conexão. Não declarar conformidade fiscal ou segurança de backend na versão local.
 
 ---

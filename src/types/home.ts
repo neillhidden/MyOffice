@@ -6,7 +6,8 @@ export type HomeSection =
   | 'Contas da casa'
   | 'Metas e sonhos'
   | 'Agenda'
-  | 'Definições';
+  | 'Definições'
+  | 'Compras';
 export interface HomeAccount {
   id: string;
   name: string;
@@ -55,6 +56,9 @@ export interface HomeTask {
   done: boolean;
 }
 export interface HomeData {
+  categories?: string[];
+  subcategories?: Record<string, string[]>;
+  shopping?: HomeShoppingItem[];
   version: 1;
   name: string;
   accounts: HomeAccount[];
@@ -63,4 +67,15 @@ export interface HomeData {
   bills: HomeBill[];
   goals: HomeGoal[];
   tasks: HomeTask[];
+}
+
+export interface HomeShoppingItem {
+  subcategory?: string;
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unitPrice: number;
+  entryId?: string;
+  archived: boolean;
 }

@@ -32,7 +32,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const current = useRef(data);
   const savedRaw = useRef(initial.raw);
   const save = (next: HomeData) => {
-    validateHomeData(next);
+    next = validateHomeData(next);
     try {
       const stored = localStorage.getItem(HOME_STORAGE_KEY);
       if (savedRaw.current !== undefined && stored !== savedRaw.current)

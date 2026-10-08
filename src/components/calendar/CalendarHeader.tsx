@@ -82,8 +82,10 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   const handlePrev = () => {
     const next = new Date(currentDate);
     if (viewMode === 'ano') {
+      next.setDate(1);
       next.setFullYear(next.getFullYear() - 1);
     } else if (viewMode === 'mes') {
+      next.setDate(1);
       next.setMonth(next.getMonth() - 1);
     } else {
       next.setDate(next.getDate() - 7);
@@ -94,8 +96,10 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   const handleNext = () => {
     const next = new Date(currentDate);
     if (viewMode === 'ano') {
+      next.setDate(1);
       next.setFullYear(next.getFullYear() + 1);
     } else if (viewMode === 'mes') {
+      next.setDate(1);
       next.setMonth(next.getMonth() + 1);
     } else {
       next.setDate(next.getDate() + 7);

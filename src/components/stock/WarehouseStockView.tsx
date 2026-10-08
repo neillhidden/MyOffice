@@ -167,7 +167,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
         const matchesSku = product.sku.toLowerCase().includes(query);
         const matchesBrand = product.brand.toLowerCase().includes(query);
         const matchesBarcode = product.barcode?.toLowerCase().includes(query);
-        if (!matchesName && !matchesSku && !matchesBrand && !matchesBarcode) {
+        if (!matchesName && !matchesSku && !matchesBrand && !matchesBarcode && !`${product.category} ${product.subcategory ?? ''}`.toLowerCase().includes(query)) {
           return false;
         }
       }
@@ -770,7 +770,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex flex-col items-start gap-1">
                           <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                            {product.category}
+                            {product.category}{product.subcategory ? ` / ${product.subcategory}` : ''}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                             {product.condition === 'novo'

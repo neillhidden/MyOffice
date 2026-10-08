@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useToday } from '../../hooks/useToday';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useStock } from '../../context/StockContext';
 import {
   CalendarViewMode,
@@ -35,25 +36,42 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
     deleteEvent,
   } = useStock();
 
+  const today = useToday();
+  const previousToday = useRef(today);
   // Calendar State
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 8, 13)); // 13 Setembro 2026
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const previous = previousToday.current;
+    if (previous !== today) {
+      setCurrentDate((current) => {
+        const local = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+        return local === previous ? new Date(`${today}T12:00:00`) : current;
+      });
+      previousToday.current = today;
+    }
+  }, [today]);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('mes');
   const [displayType, setDisplayType] = useState<CalendarDisplayType>('grade');
 
   // Visible Agendas Filter (Set of agenda IDs)
   const [visibleAgendaIds, setVisibleAgendaIds] = useState<Set<string>>(() => {
-    return new Set(agendas.filter((a) => a.status === 'ativa').map((a) => a.id));
+    return new Set(
+      agendas.filter((a) => a.status === 'ativa').map((a) => a.id),
+    );
   });
 
   // Modal States
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
-  const [defaultEventDate, setDefaultEventDate] = useState<string | undefined>(undefined);
+  const [defaultEventDate, setDefaultEventDate] = useState<string | undefined>(
+    undefined,
+  );
 
   const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
   const [editingAgenda, setEditingAgenda] = useState<Agenda | null>(null);
 
-  const [selectedDetailEvent, setSelectedDetailEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDetailEvent, setSelectedDetailEvent] =
+    useState<CalendarEvent | null>(null);
 
   // Toggle single agenda visibility
   const handleToggleAgendaVisibility = (agendaId: string) => {
@@ -93,7 +111,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
 
   // Today handler
   const handleToday = () => {
-    setCurrentDate(new Date(2026, 8, 13));
+    setCurrentDate(new Date());
   };
 
   // Event handlers
@@ -154,7 +172,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
   }, [selectedDetailEvent, agendas]);
 
   return (
-    <div id="calendar-module-root" className="flex-1 flex flex-col h-full bg-slate-100 overflow-hidden">
+    <div
+      id="calendar-module-root"
+      className="flex-1 flex flex-col h-full bg-slate-100 overflow-hidden"
+    >
       {/* Top Header Toolbar */}
       <CalendarHeader
         currentDate={currentDate}
@@ -237,6 +258,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
               agendas={agendas}
               onSelectMonth={(monthIdx) => {
                 const next = new Date(currentDate);
+                next.setDate(1);
                 next.setMonth(monthIdx);
                 setCurrentDate(next);
                 setViewMode('mes');
@@ -278,9 +300,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigateToModule }
             prev && prev.id === id
               ? {
                   ...prev,
-                  status: prev.status === 'concluido' ? 'pendente' : 'concluido',
+                  status:
+                    prev.status === 'concluido' ? 'pendente' : 'concluido',
                 }
-              : prev
+              : prev,
           );
         }}
         onEdit={(ev) => {

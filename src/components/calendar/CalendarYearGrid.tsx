@@ -1,3 +1,4 @@
+import { useToday } from '../../hooks/useToday';
 import React from 'react';
 import { CalendarEvent, Agenda } from '../../types/calendar';
 
@@ -32,13 +33,7 @@ export const CalendarYearGrid: React.FC<CalendarYearGridProps> = ({
     'Dezembro',
   ];
 
-  const todayStr = React.useMemo(() => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }, []);
+  const todayStr = useToday();
 
   // Group events by month (0..11)
   const eventsByMonth = React.useMemo(() => {

@@ -1,3 +1,4 @@
+import { useToday } from '../../hooks/useToday';
 import React from 'react';
 import { Check, Clock, Plus, Users, Truck, Calendar } from 'lucide-react';
 import { Agenda, CalendarEvent } from '../../types/calendar';
@@ -26,13 +27,7 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
   }, [agendas]);
 
   // Today string in local time
-  const todayStr = React.useMemo(() => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }, []);
+  const todayStr = useToday();
 
   // Calculate the 7 days of the week starting from Monday
   const weekDays = React.useMemo(() => {

@@ -4,7 +4,7 @@ Implementado em 8 de outubro de 2026. O nome **Home** foi escolhido pelo utiliza
 
 ## Começar
 
-1. Abaixo do logótipo MyOffice, escolhe **Home**. Na barra recolhida/telefone, usa o seletor compacto. O modo escolhido é guardado; Business é o padrão para instalações existentes.
+1. Na parte inferior da barra lateral, escolhe **Home**. Na barra recolhida/telefone, usa o seletor compacto. O modo escolhido é guardado; Business é o padrão para instalações existentes.
 2. Em **Finanças**, adiciona as tuas contas pessoais com o saldo atual. A Carteira inicial começa em zero, sem dados fictícios. O saldo inicial é património já existente, não receita do mês.
 3. Regista receitas e despesas, indicando conta, data e categoria. Os valores são em Kwanza; receitas/despesas futuras são planeadas nas contas ou agenda, não lançadas como realizadas.
 4. Em **Orçamento**, define um limite por categoria e mês. As despesas efetivamente pagas atualizam o progresso.
@@ -31,7 +31,7 @@ Os dados ficam no navegador, sem login, servidor, ligação bancária, base de d
 
 Em **Home → Definições**:
 
-- Define o nome da casa.
+- Define o nome da casa, as categorias/subcategorias e a aparência Claro/Anoitecer/Sistema.
 - **Exportar Home** descarrega uma cópia JSON dos dados pessoais.
 - **Importar cópia** valida o ficheiro antes de permitir a restauração. Digita **RESTAURAR** para substituir os dados atuais. O sistema descarrega uma cópia dos dados atuais antes de restaurar. Os dados Business não são importados nem substituídos.
 
@@ -44,12 +44,12 @@ Falhas ao guardar são mostradas; o estado só é atualizado após a escrita bem
 - `src/types/home.ts`: modo, secções e entidades pessoais.
 - `src/context/HomeContext.tsx`: documento pessoal e persistência atómica local.
 - `src/utils/home.ts`: validação, valores em centavos, saldos, transferências, estornos e referências mensais.
-- `src/components/home/ModeSwitcher.tsx`: seletor abaixo do logótipo.
+- `src/components/home/ModeSwitcher.tsx`: seletor no rodapé da barra lateral.
 - `HomeHeader.tsx`: cabeçalho sem pesquisas/notificações empresariais; tema continua no cabeçalho.
-- `HomeView.tsx`: sete áreas e formulários, com diálogo acessível e navegação por teclado.
+- `HomeView.tsx`: oito áreas e formulários, com diálogo acessível e navegação por teclado.
 - `App.tsx` e `Sidebar.tsx`: alternância entre menus; navegação Business e IDs existentes preservados. A barra começa recolhida em ecrãs pequenos.
 
-A estrutura PostgreSQL offline continua em `database/`. Futuro mapeamento: contas pessoais para contas de workspace `personal`, lançamentos/estornos para o ledger, limites para `personal_budgets`, mensalidades para `recurring_bills`, metas/reservas para `personal_goals` e contribuições/movimentos, tarefas para a agenda do workspace pessoal. Categorias locais hoje são nomes; a migração deverá atribuir IDs. Saldos iniciais precisarão de lançamento de abertura rastreável. Esse mapeamento não ativa conexão e deverá ser validado na fase de backend.
+A estrutura PostgreSQL offline continua em `database/`. Futuro mapeamento: contas pessoais para contas de workspace `personal`, lançamentos/estornos para o ledger, limites para `personal_budgets`, mensalidades para `recurring_bills`, metas/reservas para `personal_goals` e contribuições/movimentos, tarefas para a agenda do workspace pessoal; categorias/subcategorias e compras pessoais para as tabelas da migração offline 002. Categorias locais hoje são nomes; a migração deverá atribuir IDs. Saldos iniciais precisarão de lançamento de abertura rastreável. Esse mapeamento não ativa conexão e deverá ser validado na fase de backend.
 
 ## Verificação
 
@@ -66,3 +66,7 @@ HOME_TEST_URL=http://127.0.0.1:4191/ PLAYWRIGHT_MODULE=/caminho/playwright/index
 ```
 
 O teste usa dados fictícios num contexto isolado: receitas/despesas, orçamento, mensalidade, reserva, tarefa, alternância, exportação/importação, persistência, telefone, tema escuro, falta de espaço, conflito entre abas e preservação de dados corrompidos. `tests/home.test.ts` verifica invariantes financeiras e validação de cópias.
+
+## Categorias e compras
+
+A oitava área, **Compras**, organiza itens e regista os pagamentos no ledger pessoal. Instruções completas em [CATEGORIES.md](CATEGORIES.md). Campos `categories`, `subcategories` e `shopping` são normalizados na leitura de cópias antigas de versão 1; a chave permanece `myoffice-home-v1`.

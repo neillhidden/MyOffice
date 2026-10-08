@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addHomeEntry,
+  payHomeShopping,
   balances,
   billPaid,
   dueDate,
@@ -129,4 +130,78 @@ test('restoring a backup validates identifiers, references, duplicate payments a
     ),
   );
   assert.throws(() => validateHomeData({ version: 2 }));
+});
+
+test('legacy Home backups migrate without changing the original and reject invalid subcategories', () => {
+  const old = emptyHome();
+  delete old.categories;
+  delete old.subcategories;
+  delete old.shopping;
+  const migrated = validateHomeData(old);
+  assert.equal(old.shopping, undefined);
+  assert.ok(migrated.categories?.includes('Games'));
+  assert.deepEqual(migrated.subcategories?.Games, [
+    'Jogos',
+    'Consoles',
+    'Comandos e acessórios',
+  ]);
+  assert.deepEqual(migrated.shopping, []);
+  assert.deepEqual(balances(migrated), balances(old));
+  assert.throws(
+    () =>
+      validateHomeData({
+        ...migrated,
+        shopping: [
+          {
+            id: 'item',
+            name: 'Console',
+            category: 'Games',
+            subcategory: 'inexistente',
+            quantity: 1,
+            unitPrice: 100,
+            archived: false,
+          },
+        ],
+      }),
+    /Subcategoria/,
+  );
+});
+test('shopping payments debit the account once, preserve history and allow repayment after reversal', () => {
+  let d = addHomeEntry(emptyHome(), entry());
+  d.shopping = [
+    {
+      id: 'item',
+      name: 'Jogo',
+      category: 'Games',
+      subcategory: 'Jogos',
+      quantity: 2,
+      unitPrice: 125,
+      archived: false,
+    },
+  ];
+  const unpaid = structuredClone(d);
+  d = payHomeShopping(d, 'item', 'home-wallet', todayLocal());
+  assert.equal(balances(d)['home-wallet'], 750);
+  assert.equal(d.entries[0]?.category, 'Games');
+  assert.equal(d.shopping[0].entryId, d.entries[0]?.id);
+  validateHomeData(d);
+  assert.throws(
+    () => payHomeShopping(d, 'item', 'home-wallet', todayLocal()),
+    /já foi paga/,
+  );
+  assert.equal(unpaid.entries.length, 1);
+  assert.throws(
+    () =>
+      validateHomeData({
+        ...d,
+        shopping: [{ ...d.shopping[0], unitPrice: 200 }],
+      }),
+    /Pagamento de compras/,
+  );
+  d = reverseHomeEntry(d, d.shopping[0].entryId!, 'Pagamento incorreto');
+  assert.equal(balances(d)['home-wallet'], 1000);
+  d = payHomeShopping(d, 'item', 'home-wallet', todayLocal());
+  assert.equal(balances(d)['home-wallet'], 750);
+  assert.equal(d.entries.length, 4);
+  validateHomeData(d);
 });

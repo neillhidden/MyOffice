@@ -9,6 +9,13 @@ Este ficheiro regista cronologicamente as intervenções realizadas por diferent
 Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada no topo da secção **Histórico de Intervenções** seguindo este formato:
 
 ```markdown
+### [2026-10-08] — OpenAI Codex — Calendário real, categorias e compras nos dois modos
+- **Pedido**: Seletor Home/Business em baixo; calendário sem setembro fixo; categorias/subcategorias (Games → Jogos/Consoles), produtos em cada categoria, Anoitecer nas configurações e dashboards úteis.
+- **Alterações**: Seletor no rodapé, datas locais atuais e atualização à meia-noite/foco, navegação mensal sem overflow de dia 31. Catálogo Business nas Definições, criação de produtos pré-classificados e subcategoria em cadastro/edição/rascunhos/detalhes. Home inclui taxonomia e compras com quantidade/preço, filtros, edição pré-pagamento, arquivo/restauro e despesa ligada ao pagamento. Aparência Claro/Anoitecer/Dispositivo partilhada. Dashboard Home inclui previsão/alertas/atalhos; Business inclui mínimos de estoque/entregas pendentes/data atual.
+- **Integridade**: Backups Home v1 antigos normalizados sem perda; pagamentos únicos e reversíveis, débito e vínculo atómicos; histórico preservado. Nenhum dado financeiro fictício acrescentado. Temas nas Definições por pedido explícito do utilizador, mantendo atalho do cabeçalho.
+- **Base futura**: Migração offline 002 prepara categorias/subcategorias e compras (40 tabelas após ambas as migrações). Sem conexão ou novos serviços.
+- **Validação**: 14 testes unitários, 8 regressões Business, Home completo e regressão adicional Chromium (datas de outubro, viragem de dia, janeiro/fevereiro, rodapé, pagamento/persistência, rascunho com subcategoria, aparência e mobile), 7 testes SQL, lint/build passaram. Aviso conhecido de bundle grande. Guia CATEGORIES.md.
+
 ### [AAAA-MM-DD] — <Nome do Agente / Ferramenta> — <Título Curto da Tarefa>
 - **Objetivo**: Breve descrição do pedido do utilizador.
 - **Ficheiros Modificados / Criados**:

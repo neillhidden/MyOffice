@@ -1,3 +1,4 @@
+import { useToday } from '../../hooks/useToday';
 import React from 'react';
 import { Check, Clock, Plus, Users, Truck } from 'lucide-react';
 import { Agenda, CalendarEvent } from '../../types/calendar';
@@ -38,13 +39,7 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
   }, [events]);
 
   // Today string in local time
-  const todayStr = React.useMemo(() => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }, []);
+  const todayStr = useToday();
 
   // Build grid calendar days
   const calendarDays = React.useMemo(() => {

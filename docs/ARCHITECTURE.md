@@ -149,3 +149,7 @@ Quando a aplicação arranca no navegador:
 ## Home/Business no front-end
 
 `HomeProvider` envolve AppContent sem substituir os providers Business. `AppContent` seleciona o modo persistido e mantém navegação própria para cada modo. HomeView/HomeHeader renderizam o espaço pessoal; o Business preserva Header, módulos e modais. Sidebar inclui o seletor e troca os menus. As chaves pessoais usam hífen, evitando a limpeza Business de chaves com prefixo `myoffice_`. Dados financeiros do Home não chamam funções de StockContext. Essa organização local não substitui autorização de backend.
+
+### Extensões de 2026-10-08
+
+Home v1 normaliza campos opcionais de categorias/subcategorias/compras na leitura; `HomeContext.save` guarda o resultado validado. Pagamento de item e lançamento são uma atualização única. `StockContext` guarda subcategorias Business em `myoffice_estoque_subcategories`; produtos/rascunhos mantêm `subcategory` já previsto nos tipos. `AppearanceSettings` reutiliza `ThemeContext`, sem estado de tema duplicado. `useToday` atualiza datas à meia-noite/foco/visibilidade e é partilhado pelo calendário e dashboards; seleções históricas são preservadas.

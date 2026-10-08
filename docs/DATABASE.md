@@ -110,3 +110,7 @@ erDiagram
 ## Documento pessoal Home
 
 `myoffice-home-v1` guarda o documento validado de versão 1: nome da casa, contas/saldos iniciais, lançamentos/estornos/transferências, limites mensais, contas recorrentes, metas e tarefas. `myoffice-mode` guarda home/business. Ambas usam hífen para não participar do reset Business. Ver `src/types/home.ts`, `src/utils/home.ts` e `HOME.md`. Sem conexão remota; exportação/importação é JSON, não SQL.
+
+## Categorias e compras (2026-10-08)
+
+Business: `myoffice_estoque_subcategories` contém mapa categoria → nomes das subcategorias. `Product.subcategory`/`ProductDraft.subcategory` guardam a classificação; produtos antigos permanecem compatíveis. Home: o JSON v1 inclui categorias, mapa de subcategorias e itens de compras (`id`, `name`, `category`, `subcategory?`, `quantity`, `unitPrice`, `entryId?`, `archived`). Cópias sem esses campos são normalizadas. O vínculo ao pagamento exige despesa real, categoria/montante correspondentes e referência única. Migração SQL offline 002 prepara quatro tabelas adicionais e vínculos de produtos, totalizando 40 tabelas; nenhuma conexão é ativada.

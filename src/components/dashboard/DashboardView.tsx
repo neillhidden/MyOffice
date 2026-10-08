@@ -1,3 +1,4 @@
+import { useToday } from '../../hooks/useToday';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Building2,
@@ -7,13 +8,19 @@ import {
   Layers,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
-import { DashboardPeriod, computeDashboardData, computeTopProducts } from './dashboardUtils';
+import { DashboardPeriod, computeDashboardData, computeTopProducts,
+} from './dashboardUtils';
 import { DashboardMetricCard } from './DashboardMetricCard';
 import { DashboardChart } from './DashboardChart';
 import { TopProductsList } from './TopProductsList';
 
 export const DashboardView: React.FC = () => {
-  const { sales, warehouses, companies, products } = useStock();
+  const today = useToday();
+  const { sales, warehouses, companies, products,
+    stockConfigs,
+    getCurrentStock,
+    transports,
+  } = useStock();
 
   // Filter States
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('todas');
@@ -63,18 +70,28 @@ export const DashboardView: React.FC = () => {
   } = useMemo(() => {
     return computeDashboardData({
       sales,
+      referenceDate: new Date(`${today}T12:00:00`),
       period: selectedPeriod,
       selectedCompanyId,
       selectedCurrency,
       warehouses,
       companies,
     });
-  }, [sales, selectedPeriod, selectedCompanyId, selectedCurrency, warehouses, companies]);
+  }, [
+    today,
+    sales,
+    selectedPeriod,
+    selectedCompanyId,
+    selectedCurrency,
+    warehouses,
+    companies,
+  ]);
 
   // Compute Top Selling Products
   const topProducts = useMemo(() => {
     return computeTopProducts({
       sales,
+      referenceDate: new Date(`${today}T12:00:00`),
       period: selectedPeriod,
       selectedCompanyId,
       selectedCurrency,
@@ -83,8 +100,46 @@ export const DashboardView: React.FC = () => {
       products,
       limit: 8,
     });
-  }, [sales, selectedPeriod, selectedCompanyId, selectedCurrency, warehouses, companies, products]);
+  }, [
+    today,
+    sales,
+    selectedPeriod,
+    selectedCompanyId,
+    selectedCurrency,
+    warehouses,
+    companies,
+    products,
+  ]);
 
+  const eligibleWarehouses = new Set(
+    warehouses
+      .filter((w) => {
+        const company = companies.find((c) => c.id === w.companyId);
+        return (
+          company?.status !== 'desativada' &&
+          !!company &&
+          (selectedCompanyId === 'todas' || company.id === selectedCompanyId)
+        );
+      })
+      .map((w) => w.id),
+  );
+  const lowStock = stockConfigs.filter(
+    (config) =>
+      !config.variationId &&
+      eligibleWarehouses.has(config.warehouseId) &&
+      config.minLimit > 0 &&
+      getCurrentStock(config.productId, config.warehouseId) < config.minLimit,
+  ).length;
+  const pendingDeliveries = transports.filter(
+    (t) =>
+      (t.status === 'pendente' || t.status === 'em_transito') &&
+      sales.some(
+        (s) =>
+          s.id === t.saleId &&
+          eligibleWarehouses.has(s.warehouseId) &&
+          s.status === 'concluida',
+      ),
+  ).length;
   // Subtitle comparison text based on period
   const comparisonPeriodLabel = useMemo(() => {
     switch (selectedPeriod) {
@@ -104,14 +159,17 @@ export const DashboardView: React.FC = () => {
         {/* Left Title & Status */}
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard de Vendas</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Dashboard de Vendas
+            </h1>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
               Tempo Real
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Visão consolidada de desempenho comercial e análise comparativa de períodos.
+            Visão consolidada de desempenho comercial e análise comparativa de
+            períodos.
           </p>
         </div>
 
@@ -153,7 +211,11 @@ export const DashboardView: React.FC = () => {
               })}
             </select>
             <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-              <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                className="w-3.5 h-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path
                   fillRule="evenodd"
                   d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
@@ -205,13 +267,16 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
             <Layers className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
             <span>
-              As empresas cadastradas utilizam moedas diferentes. Os totais são calculados
-              separadamente por moeda para preservar a precisão contabilística.
+              As empresas cadastradas utilizam moedas diferentes. Os totais são
+              calculados separadamente por moeda para preservar a precisão
+              contabilística.
             </span>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-            <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300">Visualizar moeda:</span>
+            <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
+              Visualizar moeda:
+            </span>
             <div className="inline-flex bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-amber-200 dark:border-amber-900/60 shadow-2xs">
               {availableCurrencies.map((curr) => (
                 <button
@@ -270,6 +335,51 @@ export const DashboardView: React.FC = () => {
         />
       </div>
 
+      <section
+        id="dashboard-operational-summary"
+        className="rounded-xl border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-surface p-4 space-y-3"
+      >
+        <div>
+          <h2 className="text-sm font-semibold">Acompanhamento operacional</h2>
+          <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
+            Situação atual das empresas selecionadas ·{' '}
+            {new Date(`${today}T12:00:00`).toLocaleDateString('pt-PT')}
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-dm-muted">
+              Produtos abaixo do mínimo por armazém
+            </p>
+            <p className="text-xl font-semibold mt-1">{lowStock}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 dark:text-dm-muted">
+              Entregas por concluir
+            </p>
+            <p className="text-xl font-semibold mt-1">{pendingDeliveries}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 dark:text-dm-muted">
+              Empresas visíveis neste âmbito
+            </p>
+            <p className="text-xl font-semibold mt-1">
+              {
+                visibleCompanies.filter(
+                  (c) =>
+                    selectedCompanyId === 'todas' || c.id === selectedCompanyId,
+                ).length
+              }
+            </p>
+          </div>
+        </div>
+        {!metrics.currentCount && (
+          <p className="text-xs text-slate-500 dark:text-dm-muted">
+            Não há vendas concluídas no período e moeda selecionados. Podes
+            mudar os filtros para consultar o histórico.
+          </p>
+        )}
+      </section>
       {/* Main Chart Section: Comparison of Periods */}
       <DashboardChart
         id="dashboard-main-chart"

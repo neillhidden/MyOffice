@@ -1,3 +1,4 @@
+import { categoryChildren } from '../../utils/categories';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
@@ -44,6 +45,8 @@ import { generateSKU, formatKwanza } from '../../utils/formatters';
 import { ColorPickerInput } from './ColorPickerInput';
 
 interface ProductCreateModalProps {
+  initialCategory?: string;
+  initialSubcategory?: string;
   isOpen: boolean;
   onClose: () => void;
   productToEdit?: Product | null;
@@ -134,6 +137,8 @@ const DEFAULT_IMAGE =
 
 export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   isOpen,
+  initialCategory,
+  initialSubcategory,
   onClose,
   productToEdit,
   draftToResume,
@@ -143,6 +148,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const {
     suppliers,
     categories,
+    subcategories,
     warehouses,
     companies,
     stockConfigs,
@@ -163,6 +169,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
   // Step 1 State: Produto
   const [name, setName] = useState('');
+  const [subcategory, setSubcategory] = useState('');
   const [category, setCategory] = useState('Eletrónicos');
   const [condition, setCondition] = useState<ProductCondition>('novo');
   const [description, setDescription] = useState('');
@@ -326,6 +333,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const computeSnapshot = (data: {
     name: string;
     category: string;
+    subcategory?: string;
     condition: string;
     description: string;
     brand: string;
@@ -358,6 +366,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     return JSON.stringify({
       name: data.name.trim(),
       category: data.category,
+      subcategory: data.subcategory,
       condition: data.condition,
       description: data.description.trim(),
       brand: data.brand.trim(),
@@ -445,6 +454,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       // Pre-fill from existing product
       setName(productToEdit.name);
       setCategory(productToEdit.category);
+      setSubcategory(productToEdit.subcategory ?? '');
       setCondition(productToEdit.condition || 'novo');
       setDescription(productToEdit.description || '');
       setBrand(productToEdit.brand);
@@ -518,6 +528,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       initialSnapshotRef.current = computeSnapshot({
         name: productToEdit.name,
         category: productToEdit.category,
+        subcategory: productToEdit.subcategory ?? '',
         condition: productToEdit.condition || 'novo',
         description: productToEdit.description || '',
         brand: productToEdit.brand,
@@ -587,6 +598,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
       setName(draftToResume.name || '');
       setCategory(draftToResume.category || 'Eletrónicos');
+      setSubcategory(draftToResume.subcategory ?? '');
       setCondition(draftCond);
       setDescription(draftToResume.description || '');
       setBrand(draftToResume.brand || '');
@@ -606,6 +618,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       initialSnapshotRef.current = computeSnapshot({
         name: draftToResume.name || '',
         category: draftToResume.category || 'Eletrónicos',
+        subcategory: draftToResume.subcategory ?? '',
         condition: draftCond,
         description: draftToResume.description || '',
         brand: draftToResume.brand || '',
@@ -623,7 +636,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     } else {
       // New clean product
       setActiveDraftId(undefined);
-      const defaultCat = categories[0] || 'Eletrónicos';
+      const defaultCat = initialCategory || categories[0] || 'Eletrónicos';
       const defaultCond: ProductCondition = 'novo';
       const matchedCompanyWh =
         selectedCompanyIds && selectedCompanyIds.length === 1
@@ -653,6 +666,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
       setName('');
       setCategory(defaultCat);
+      setSubcategory(initialSubcategory ?? '');
       setCondition(defaultCond);
       setDescription('');
       setBrand('');
@@ -675,6 +689,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       initialSnapshotRef.current = computeSnapshot({
         name: '',
         category: defaultCat,
+        subcategory: initialSubcategory ?? '',
         condition: defaultCond,
         description: '',
         brand: '',
@@ -694,7 +709,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     setCreatedProductResult(null);
     setValidationError(null);
     setShowCloseConfirmation(false);
-  }, [isOpen, productToEdit, draftToResume]);
+  }, [isOpen, productToEdit, draftToResume, initialCategory, initialSubcategory]);
 
   if (!isOpen) return null;
 
@@ -704,6 +719,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       computeSnapshot({
         name,
         category,
+        subcategory,
         condition,
         description,
         brand,
@@ -759,6 +775,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       const productPayload: Partial<Product> = {
         name: name.trim() || productToEdit.name,
         category: category.trim() || productToEdit.category,
+        subcategory: subcategory || undefined,
         condition,
         description: description.trim(),
         brand: brand.trim(),
@@ -777,6 +794,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       initialSnapshotRef.current = computeSnapshot({
         name,
         category,
+        subcategory,
         condition,
         description,
         brand,
@@ -800,6 +818,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
         id: targetDraftId,
         name: name.trim() || 'Produto sem título',
         category,
+        subcategory,
         condition,
         brand,
         unitOfMeasure,
@@ -831,6 +850,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       initialSnapshotRef.current = computeSnapshot({
         name,
         category,
+        subcategory,
         condition,
         description,
         brand,
@@ -1218,6 +1238,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     const productPayload: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
       name: name.trim(),
       category: category.trim(),
+      subcategory: subcategory || undefined,
       condition,
       description: description.trim(),
       brand: brand.trim() || 'Genérica',
@@ -1317,6 +1338,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const handleResetForAnother = () => {
     setName('');
     setCategory(categories[0] || 'Eletrónicos');
+    setSubcategory('');
     setCondition('novo');
     setDescription('');
     setBrand('');
@@ -1359,6 +1381,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     if (newCategoryInput.trim()) {
       addCategory(newCategoryInput.trim());
       setCategory(newCategoryInput.trim());
+      setSubcategory('');
       setNewCategoryInput('');
       setShowNewCategoryModal(false);
     }
@@ -1728,7 +1751,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                         id="select-product-category"
                         aria-label="Categoria do Produto"
                         value={category}
-                        onChange={(e) => setCategory(e.target.value)}
+                        onChange={(e) => {setCategory(e.target.value);setSubcategory('');}}
                         className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
                       >
                         {categories.map((cat) => (
@@ -1744,6 +1767,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                     </div>
                   </div>
 
+                  <div><label htmlFor="select-product-subcategory" className="block text-xs font-semibold mb-1">Subcategoria</label><select id="select-product-subcategory" aria-label="Subcategoria do Produto" value={subcategory} onChange={e => setSubcategory(e.target.value)} className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-elevated"><option value="">Sem subcategoria</option>{Array.from(new Set([...categoryChildren(subcategories, category), ...(subcategory ? [subcategory] : [])])).map(c => <option key={c}>{c}</option>)}</select></div>
                   {/* Marca */}
                   <div>
                     <label htmlFor="input-product-brand" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

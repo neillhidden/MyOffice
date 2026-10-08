@@ -1,3 +1,8 @@
+import {
+  HOME_SUBCATEGORIES,
+  validateCategoryTree,
+  categoryChildren,
+} from './categories';
 import { HomeData, HomeEntry } from '../types/home';
 import { createId } from './ids';
 
@@ -11,6 +16,7 @@ export const HOME_CATEGORIES = [
   'Serviços',
   'Lazer',
   'Outros',
+  'Games',
 ];
 export const todayLocal = () => {
   const d = new Date();
@@ -27,6 +33,9 @@ export const emptyHome = (): HomeData => ({
   bills: [],
   goals: [],
   tasks: [],
+  categories: [...HOME_CATEGORIES],
+  shopping: [],
+  subcategories: structuredClone(HOME_SUBCATEGORIES),
 });
 export function validDate(date: unknown): date is string {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))
@@ -151,7 +160,13 @@ export function reverseHomeEntry(
 
 /** Validate backup and references before replacing any saved data. */
 export function validateHomeData(input: unknown): HomeData {
-  const data = input as HomeData;
+  const source = input as HomeData;
+  const data = source && {
+    ...source,
+    categories: source.categories ?? [...HOME_CATEGORIES],
+    shopping: source.shopping ?? [],
+    subcategories: source.subcategories ?? structuredClone(HOME_SUBCATEGORIES),
+  };
   if (!data || data.version !== 1)
     throw new Error('Este ficheiro não é uma cópia Home compatível.');
   text(data.name);
@@ -162,6 +177,7 @@ export function validateHomeData(input: unknown): HomeData {
     data.bills,
     data.goals,
     data.tasks,
+    data.shopping!,
   ];
   if (
     arrays.some((a) => !Array.isArray(a) || a.length > 50000) ||
@@ -265,7 +281,78 @@ export function validateHomeData(input: unknown): HomeData {
     if (!validDate(t.date) || typeof t.done !== 'boolean')
       throw new Error('Tarefa inválida.');
   }
+  if (
+    !Array.isArray(data.categories) ||
+    data.categories.length > 500 ||
+    new Set(data.categories.map((c) => text(c).toLocaleLowerCase())).size !==
+      data.categories.length
+  )
+    throw new Error('Categorias inválidas ou repetidas.');
+  data.categories.forEach((c) => text(c));
+  validateCategoryTree(data.subcategories);
+  const linkedEntries = new Set<string>();
+  for (const item of data.shopping!) {
+    text(item.name);
+    text(item.category);
+    if (
+      item.subcategory &&
+      !categoryChildren(data.subcategories!, item.category).includes(
+        item.subcategory,
+      )
+    )
+      throw new Error('Subcategoria de compras inválida.');
+    money(item.unitPrice, false);
+    if (
+      !Number.isFinite(item.quantity) ||
+      item.quantity <= 0 ||
+      item.quantity > 1000000 ||
+      typeof item.archived !== 'boolean'
+    )
+      throw new Error('Item de compras inválido.');
+    money(Math.round(item.quantity * item.unitPrice * 100) / 100, false);
+    if (item.entryId) {
+      const original = data.entries.find((e) => e.id === item.entryId);
+      if (
+        !original ||
+        original.type !== 'expense' ||
+        linkedEntries.has(item.entryId) ||
+        original.category !== item.category ||
+        Math.round(original.amount * 100) !==
+          Math.round(item.quantity * item.unitPrice * 100)
+      )
+        throw new Error('Pagamento de compras inválido ou repetido.');
+      linkedEntries.add(item.entryId);
+    }
+  }
   if (Object.values(balances(data)).some((v) => v < 0))
     throw new Error('A cópia contém saldos negativos.');
   return data;
+}
+
+export function payHomeShopping(
+  data: HomeData,
+  itemId: string,
+  accountId: string,
+  date: string,
+): HomeData {
+  const item = data.shopping?.find((i) => i.id === itemId);
+  if (!item || item.archived) throw new Error('Item indisponível.');
+  if (item.entryId && effectiveEntries(data).some((e) => e.id === item.entryId))
+    throw new Error('Esta compra já foi paga.');
+  const next = addHomeEntry(data, {
+    type: 'expense',
+    title: `Compra: ${item.name}`,
+    category: item.category,
+    amount: money(Math.round(item.quantity * item.unitPrice * 100) / 100),
+    accountId,
+    date,
+  });
+  return {
+    ...next,
+    shopping: data.shopping!.map((i) =>
+      i.id === item.id
+        ? { ...i, entryId: next.entries[0].id }
+        : i,
+    ),
+  };
 }

@@ -1,3 +1,6 @@
+import { useToday } from '../../hooks/useToday';
+import { HomeCategories, HomeShopping } from './HomeShopping';
+import { AppearanceSettings } from '../settings/AppearanceSettings';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowDownLeft,
@@ -158,7 +161,17 @@ export function HomeView({
   onNavigate: (section: HomeSection) => void;
 }) {
   const { data, update, storageError, importData } = useHome();
-  const [month, setMonth] = useState(todayLocal().slice(0, 7));
+  const today = useToday();
+  const thisMonth = today.slice(0, 7);
+  const [month, setMonth] = useState(thisMonth);
+  const previousMonthRef = useRef(thisMonth);
+  useEffect(() => {
+    const previous = previousMonthRef.current;
+    if (previous !== thisMonth) {
+      setMonth(current => current === previous ? thisMonth : current);
+      previousMonthRef.current = thisMonth;
+    }
+  }, [thisMonth]);
   const [query, setQuery] = useState('');
   const [accountFilter, setAccountFilter] = useState('all');
   const [form, setForm] = useState<{
@@ -170,6 +183,7 @@ export function HomeView({
   const [pendingImport, setPendingImport] = useState<HomeData | null>(null);
   const [importConfirmation, setImportConfirmation] = useState('');
   const [name, setName] = useState(data.name);
+  useEffect(() => setName(data.name), [data.name]);
   const totals = balances(data);
   const active = effectiveEntries(data);
   const period = active.filter((e) => e.date.startsWith(month));
@@ -192,6 +206,7 @@ export function HomeView({
   const expenseCategories = Array.from(
     new Set([
       ...HOME_CATEGORIES,
+      ...(data.categories ?? []),
       ...data.budgets.map((b) => b.category),
       ...data.bills.map((b) => b.category),
     ]),
@@ -208,6 +223,25 @@ export function HomeView({
     .filter((t) => !t.done)
     .sort((a, b) => a.date.localeCompare(b.date));
   const budgets = data.budgets.filter((b) => b.month === month);
+  const dueTotal =
+    outstanding.reduce((sum, b) => sum + Math.round(b.amount * 100), 0) / 100;
+  const previousMonth = new Date(`${month}-01T12:00:00`);
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const previousMonthKey = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}`;
+  const previousSpent =
+    active
+      .filter(
+        (e) => e.type === 'expense' && e.date.startsWith(previousMonthKey),
+      )
+      .reduce((sum, e) => sum + Math.round(e.amount * 100), 0) / 100;
+  const budgetAlerts = budgets.filter(
+    (b) => spending(b.category) >= b.limit * 0.8,
+  );
+  const shoppingPending = (data.shopping ?? []).filter(
+    (i) =>
+      !i.archived && (!i.entryId || !active.some((e) => e.id === i.entryId)),
+  );
+
   const run = (operation: () => void) => {
     try {
       operation();
@@ -491,7 +525,9 @@ export function HomeView({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {!['Metas e sonhos', 'Agenda', 'Definições'].includes(section) && (
+          {!['Metas e sonhos', 'Agenda', 'Definições', 'Compras'].includes(
+            section,
+          ) && (
             <label className="text-xs">
               <span className="sr-only">Mês de referência</span>
               <input
@@ -581,6 +617,70 @@ export function HomeView({
               </div>
             ))}
           </div>
+          <section className={panel} id="home-dashboard-planning">
+            <h2 className="text-sm font-semibold">O mês em perspetiva</h2>
+            <div className="grid sm:grid-cols-3 gap-4 mt-4">
+              <div>
+                <p className={muted}>Contas ainda por pagar</p>
+                <p className="mt-1 font-mono font-semibold">
+                  {formatKwanza(dueTotal)}
+                </p>
+                <p className={`${muted} mt-1`}>
+                  {outstanding.length} contas no mês selecionado
+                </p>
+              </div>
+              <div>
+                <p className={muted}>Saldo atual após essas contas</p>
+                <p
+                  className={`mt-1 font-mono font-semibold ${available < dueTotal ? 'text-rose-600 dark:text-rose-300' : ''}`}
+                >
+                  {formatKwanza(available - dueTotal)}
+                </p>
+                <p className={`${muted} mt-1`}>
+                  Previsão com o saldo atual, sem futuras receitas
+                </p>
+              </div>
+              <div>
+                <p className={muted}>Despesas face ao mês anterior</p>
+                <p className="mt-1 font-mono font-semibold">
+                  {previousSpent
+                    ? `${spent > previousSpent ? '+' : ''}${Math.round(((spent - previousSpent) / previousSpent) * 100)}%`
+                    : 'Sem base de comparação'}
+                </p>
+                <p className={`${muted} mt-1`}>
+                  Mês anterior completo: {formatKwanza(previousSpent)}
+                </p>
+              </div>
+            </div>
+            {budgetAlerts.length > 0 && (
+              <div className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-300">
+                Atenção ao orçamento:{' '}
+                {budgetAlerts
+                  .map(
+                    (b) =>
+                      `${b.category} (${Math.round((spending(b.category) / b.limit) * 100)}%)`,
+                  )
+                  .join(' · ')}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button className={secondary} onClick={() => open('entry')}>
+                Registar receita ou despesa
+              </button>
+              <button
+                className={secondary}
+                onClick={() => onNavigate('Compras')}
+              >
+                Compras da casa ({shoppingPending.length})
+              </button>
+              <button
+                className={secondary}
+                onClick={() => onNavigate('Agenda')}
+              >
+                Organizar tarefas
+              </button>
+            </div>
+          </section>
           <div className="grid lg:grid-cols-2 gap-4">
             <section className={panel}>
               <div className="flex justify-between items-center gap-2">
@@ -1189,8 +1289,11 @@ export function HomeView({
         </>
       )}
 
+      {section === 'Compras' && <HomeShopping />}
       {section === 'Definições' && (
         <div className="space-y-4">
+          <AppearanceSettings />
+          <HomeCategories />
           <section className={panel}>
             <div className="flex items-center gap-2 mb-3">
               <House className="h-5 w-5" />

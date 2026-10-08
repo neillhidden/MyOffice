@@ -157,3 +157,7 @@ Esta proteção é de integridade do front-end. Sem backend/autenticação, não
 ## Home pessoal
 
 Regras Business acima preservadas. Home tem ledger próprio, não chama funções financeiras empresariais. Transferências/reservas conservam património e não são despesas. Um pagamento por conta recorrente/mês, desbloqueado apenas por estorno. Estornos mantêm original e motivo; saldos negativos/estornos repetidos são recusados. Importações são validadas antes da escrita. Ver HOME.md para a distinção entre saldo inicial, receita do mês e reserva.
+
+## Compras pessoais e classificação (2026-10-08)
+
+Itens de compras são planeamento; não alteram saldos ao serem criados ou arquivados. Pagamento cria despesa e vínculo numa gravação atómica, exige saldo suficiente e data até hoje e não aceita repetição. Estorno preserva o lançamento original e permite repagar; itens com histórico de pagamento não podem mudar quantidade/preço/classificação. Orçamento agrega a categoria principal. Categorias/subcategorias não apagam nem reclassificam automaticamente o histórico. Taxonomia inicial contém apenas nomes, nunca produtos ou transações fictícias.

@@ -13,7 +13,7 @@ export function ModeSwitcher({
 }) {
   if (compact)
     return (
-      <div className="px-1 py-3 border-b border-slate-200 dark:border-dm-border">
+      <div className="px-1 py-3 shrink-0 border-t border-slate-200 dark:border-dm-border">
         <label className="block text-center">
           <span className="sr-only">Alternar Home e Business</span>
           <select
@@ -30,7 +30,7 @@ export function ModeSwitcher({
       </div>
     );
   return (
-    <div className="px-3 py-3 border-b border-slate-200 dark:border-dm-border">
+    <div className="px-3 py-3 shrink-0 border-t border-slate-200 dark:border-dm-border">
       <div
         role="group"
         aria-label="Modo do MyOffice"

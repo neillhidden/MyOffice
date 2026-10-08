@@ -27,7 +27,7 @@ interface CalendarListViewProps {
 export const CalendarListView: React.FC<CalendarListViewProps> = ({
   events,
   agendas,
-  currentDate = new Date(2026, 8, 13),
+  currentDate = new Date(),
   viewMode = 'mes',
   onSelectEvent,
   onToggleEventStatus,

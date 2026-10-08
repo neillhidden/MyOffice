@@ -80,7 +80,7 @@ Consulte [`docs/BUSINESS_RULES.md`](./docs/BUSINESS_RULES.md) para o detalhe com
   - O recibo de venda (`SaleReceiptModal`) inclui links diretos que abrem e filtram cada um desses 3 destinos.
 - **Layout Global Sincronizado**:
   - O topo da `Sidebar` e o `<Header>` principal partilham a altura fixa `h-14` (`56px`) e a mesma linha divisória inferior (`border-b`).
-  - O controlo de alternância de tema (Claro/Escuro) reside apenas no `<Header>` superior (`#btn-toggle-theme`), nunca no rodapé da `Sidebar`.
+  - O controlo de alternância de tema (Claro/Escuro) mantém o atalho no `<Header>` superior (`#btn-toggle-theme`) e, por pedido do utilizador de 2026-10-08, opções Claro/Anoitecer/Sistema nas Definições. Nunca colocar tema no rodapé; esse local contém o seletor Home/Business.
 
 ---
 

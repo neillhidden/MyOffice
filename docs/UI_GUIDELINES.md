@@ -19,7 +19,7 @@ O layout global está construído sobre um contentor de ecrã inteiro (`#app-roo
 
 ### 1.3. Controlos do Cabeçalho e Rodapé da Barra Lateral
 - Todos os itens à direita no `<Header>` (indicador `AOA (Kz) • USD ref: 925 Kz`, pesquisa, alternância de tema e sino de notificações) possuem altura uniforme `h-8` (`32px`) e alinhamento central (`inline-flex items-center justify-center`).
-- **Regra Explícita**: O botão de alternância de tema (`Modo Claro / Escuro`) reside **apenas** no `<Header>` (`#btn-toggle-theme`). **Não colocar controlo de tema no rodapé da barra lateral** (o rodapé da barra lateral exibe apenas a informação discreta `AO` / `MyOffice v1.0`).
+- **Regra Explícita**: O botão de alternância de tema (`Modo Claro / Escuro`) reside no `<Header>` (`#btn-toggle-theme`), com opções adicionais em Definições por pedido do utilizador (2026-10-08). **Não colocar controlo de tema no rodapé da barra lateral** (o rodapé da barra lateral exibe o seletor Home/Business e a informação discreta `AO` / `MyOffice v1.0`).
 
 ### 1.4. Comportamento da Barra Lateral (`Sidebar.tsx`)
 - Largura fixa expandida: `w-60` (`240px`); largura recolhida: `w-16` (`64px`).
@@ -81,8 +81,8 @@ Vários fluxos e verificações automatizadas dependem de `id`s específicos nos
 
 ## Definições — categorias em linhas
 
-A entrada de Definições usa linhas de largura completa com ícone linear, título, descrição e seta. O estado/contagem aparece à direita no desktop e abaixo da descrição em telas pequenas. Linhas têm área de toque mínima de 76px, foco visível. Usar superfícies/bordas/textos dos tokens escuros existentes. Uma categoria abre uma tela própria dentro do módulo, substituindo a lista, com título específico e botão Voltar às Definições; não adicionar controlos sem configuração real associada. O controlo de tema continua exclusivamente no cabeçalho.
+A entrada de Definições usa linhas de largura completa com ícone linear, título, descrição e seta. O estado/contagem aparece à direita no desktop e abaixo da descrição em telas pequenas. Linhas têm área de toque mínima de 76px, foco visível. Usar superfícies/bordas/textos dos tokens escuros existentes. Uma categoria abre uma tela própria dentro do módulo, substituindo a lista, com título específico e botão Voltar às Definições; não adicionar controlos sem configuração real associada. O atalho de tema continua no cabeçalho; por pedido do utilizador, Definições também oferece Claro, Anoitecer e Sistema.
 
 ## Seletor Home | Business
 
-O seletor fica abaixo do logótipo, antes do menu, sem alterar a altura de 56px da marca/cabeçalho. Expandido: dois botões com aria-pressed e modo ativo destacado. Recolhido: select nativo compacto, acessível ao toque/teclado. Em ecrãs pequenos a sidebar começa recolhida. Home mantém tokens claro/escuro, formulários com foco visível e modais com foco contido/Escape. O tema continua apenas no cabeçalho; notificações empresariais não aparecem no Home.
+O seletor fica no rodapé da barra lateral, depois do menu, sem alterar a altura de 56px da marca/cabeçalho. Expandido: dois botões com aria-pressed e modo ativo destacado. Recolhido: select nativo compacto, acessível ao toque/teclado. Em ecrãs pequenos a sidebar começa recolhida. Home mantém tokens claro/escuro, formulários com foco visível e modais com foco contido/Escape. O tema também pode ser configurado nas Definições; notificações empresariais não aparecem no Home.

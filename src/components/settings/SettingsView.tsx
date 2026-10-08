@@ -1,3 +1,5 @@
+import { AppearanceSettings } from './AppearanceSettings';
+import { BusinessCategories } from './BusinessCategories';
 import React, { useState, useMemo } from 'react';
 import {
   Building2,
@@ -26,7 +28,7 @@ import { WarehouseModal } from './WarehouseModal';
 import { ResetSettingsModal } from './ResetSettingsModal';
 import { PositiveBadge } from '../common/PositiveBadge';
 
-export const SettingsView: React.FC = () => {
+export const SettingsView: React.FC<{onCreateProduct: (category: string, subcategory?: string) => void; onViewProduct: (id: string) => void}> = ({onCreateProduct, onViewProduct}) => {
   const {
     canResetData,
     companies,
@@ -40,7 +42,7 @@ export const SettingsView: React.FC = () => {
     deleteWarehouse,
   } = useStock();
 
-  const [activeTab, setActiveTab] = useState<'empresas' | 'armazens' | 'reset' | null>(null);
+  const [activeTab, setActiveTab] = useState<'empresas' | 'armazens' | 'reset' | 'aparencia' | 'categorias' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ativa' | 'desativada' | 'parada'>('all');
 
@@ -145,7 +147,7 @@ export const SettingsView: React.FC = () => {
     <div id="settings-view-container" className="space-y-6">
       <div>
         <h1 id="settings-view-title" className="text-xl font-bold text-slate-900 dark:text-dm-text tracking-tight">
-          {activeTab === 'empresas' ? 'Empresas' : activeTab === 'armazens' ? 'Armazéns e lojas' : activeTab === 'reset' ? 'Gestão de dados' : 'Definições do Sistema'}
+          {activeTab === 'empresas' ? 'Empresas' : activeTab === 'armazens' ? 'Armazéns e lojas' : activeTab === 'categorias' ? 'Categorias e produtos' : activeTab === 'aparencia' ? 'Aparência' : activeTab === 'reset' ? 'Gestão de dados' : 'Definições do Sistema'}
         </h1>
         <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
           {activeTab ? 'Definições do Sistema' : 'Gere as empresas, os locais de operação e os dados do MyOffice.'}
@@ -156,6 +158,8 @@ export const SettingsView: React.FC = () => {
         {([
           { key: 'empresas', id: 'tab-btn-companies', icon: Building2, title: 'Empresas', description: 'Gerir os dados, a moeda e o estado de cada empresa.', status: `${companies.length} registadas` },
           { key: 'armazens', id: 'tab-btn-warehouses', icon: WarehouseIcon, title: 'Armazéns e lojas', description: 'Organizar os locais de operação, os responsáveis e as empresas associadas.', status: `${warehouses.length} locais` },
+          { key: 'categorias', id: 'tab-btn-categories', icon: Layers, title: 'Categorias e produtos', description: 'Organizar categorias, subcategorias e produtos do catálogo.', status: 'Catálogo' },
+          { key: 'aparencia', id: 'tab-btn-appearance', icon: Layers, title: 'Aparência', description: 'Modo claro, anoitecer ou tema do dispositivo.', status: 'Home e Business' },
           { key: 'reset', id: 'tab-btn-reset', icon: RotateCcw, title: 'Gestão de dados', description: 'Consultar as opções de reposição e a proteção do histórico.', status: canResetData ? 'Reposição disponível' : 'Histórico protegido' },
         ] as const).map(({ key, id, icon: Icon, title, description, status }) => (
           <button
@@ -185,6 +189,8 @@ export const SettingsView: React.FC = () => {
       )}
 
       {/* TAB: EMPRESAS */}
+      {activeTab === 'aparencia' && <AppearanceSettings />}
+      {activeTab === 'categorias' && <BusinessCategories onCreateProduct={onCreateProduct} onViewProduct={onViewProduct} />}
       {activeTab === 'empresas' && (
         <div id="section-companies-management" className="space-y-4">
           {/* Top Bar with Description & Action Button */}

@@ -98,3 +98,5 @@ O workflow `.github/workflows/deploy-pages.yml` testa e publica os commits envia
 ## Mensagens de commit
 
 Preferência explícita do utilizador: escrever as mensagens dos novos commits em português, com uma descrição clara da alteração. Preservar os commits já publicados; não reescrever o histórico apenas para traduzir mensagens antigas.
+
+Regressão da etapa categorias/calendário/tema: `PLAYWRIGHT_MODULE=/caminho/playwright/index.mjs CHROMIUM_PATH=/caminho/chromium HOME_TEST_URL=http://127.0.0.1:4191/ node tests/calendar-shopping-browser.mjs`. Usa perfil isolado e relógio controlado; não altera dados de utilizadores.
