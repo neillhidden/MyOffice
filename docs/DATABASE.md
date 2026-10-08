@@ -114,3 +114,7 @@ erDiagram
 ## Categorias e compras (2026-10-08)
 
 Business: `myoffice_estoque_subcategories` contém mapa categoria → nomes das subcategorias. `Product.subcategory`/`ProductDraft.subcategory` guardam a classificação; produtos antigos permanecem compatíveis. Home: o JSON v1 inclui categorias, mapa de subcategorias e itens de compras (`id`, `name`, `category`, `subcategory?`, `quantity`, `unitPrice`, `entryId?`, `archived`). Cópias sem esses campos são normalizadas. O vínculo ao pagamento exige despesa real, categoria/montante correspondentes e referência única. Migração SQL offline 002 prepara quatro tabelas adicionais e vínculos de produtos, totalizando 40 tabelas; nenhuma conexão é ativada.
+
+## Extensão Home AOA/USD e metas (2026-10-08)
+
+HomeData v1 mantém compatibilidade: contas/moedas, limites, mensalidades e compras têm moeda opcional (legado AOA); metas guardam fundingMode, plannedAmount, acquiredDate/acquisitionEntryId e categoria. settings guarda reserveGoals (padrão false), goalsPreferenceSet e showBusinessIncome. incomeCategories/incomeSubcategories separadas das despesas. Entradas guardam goalId/businessMovementId. BankMovement guarda homeTransferId/personalAccountId/personalCurrency. Diário transitório: myoffice-home-business-transaction; não é ledger nem conexão externa. Migração offline 003 acrescenta colunas de financiamento/aquisição, mantendo 40 tabelas.

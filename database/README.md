@@ -90,3 +90,9 @@ O arredondamento dos itens SQL é a duas casas; validar e reconciliar os número
 Depois de `001_initial.sql`, aplicar `002_categories_and_home_shopping.sql` na futura migração: categorias/subcategorias Business com vínculo de produto, subcategorias pessoais e lista de compras com referência financeira. Total: 40 tabelas com RLS habilitada. Dois níveis explícitos impedem ciclos; FKs compostas impedem misturar espaços ou subcategorias de outra categoria. Nenhuma migração é executada pelo frontend.
 
 Mapear `Product.category/subcategory` e os nomes locais para IDs; preservar campos de `details` existentes. Mapear `HomeData.shopping` para `personal_shopping_items` e `entryId` para o lançamento. A futura API terá de validar tipo/valor do pagamento e aplicar autenticação/RLS antes da conexão. Teste adicional: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/categories-database-regression.mjs`.
+
+## Extensão offline 003
+
+Aplicar `003_home_goal_funding.sql` após 001/002 na futura base. Prepara `funding_mode`, progresso planeado, aquisição e referência de categoria; mantém 40 tabelas. Legado reserva preservado; novas metas deverão usar explicitamente a preferência do utilizador, planeamento por padrão. Aquisição/estorno exigem validação transacional no backend.
+
+Mapear `HomeEntry.businessMovementId` / `BankMovement.homeTransferId` para as duas pernas do ledger e um `transfer_group_id` comum; preservar personalAccountId/personalCurrency em `import_details`. Saldo não partilhado. Verificar moeda/valor/permissões e criar/estornar em conjunto. Teste offline: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-finance-database-regression.mjs`.

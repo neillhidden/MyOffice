@@ -41,3 +41,7 @@ Business mostra estoque abaixo do mínimo por produto/armazém, entregas de vend
 **Definições → Aparência** no Business, ou **Definições** no Home, oferece **Claro**, **Anoitecer** e **Seguir o dispositivo**. A preferência é partilhada entre modos, guardada localmente; o atalho do cabeçalho continua disponível.
 
 O calendário abre na data local do dispositivo, “Hoje” volta à data real e a navegação mensal não salta meses de menos dias. Ao regressar a uma aba suspensa ou passar a meia-noite, o destaque de hoje é atualizado. A vista acompanha a nova data se estava em hoje; períodos históricos escolhidos são preservados.
+
+## Tipos pessoais (2026-10-08)
+
+Home → Definições → Categorias e subcategorias tem Despesas/Rendimentos. Alimentação, Eletrodomésticos, Transporte, Saúde, Animais de estimação, Família, Roupa, Lixo, Internet e Tecnologia são categorias principais de despesas. Rendimentos inclui Salário, Rendimentos do Business, Bónus, Investimentos e Outras receitas; não há ATT. Subcategorias continuam opcionais dentro de cada categoria (ex.: Games → Jogos/Consoles). Compras usa despesas, receitas usa rendimentos.

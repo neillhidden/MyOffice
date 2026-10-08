@@ -19,7 +19,7 @@ export function HomeHeader({ section }: { section: HomeSection }) {
         </nav>
         <div className="flex items-center gap-3 shrink-0">
           <span className="hidden sm:block text-[11px] text-slate-500 dark:text-dm-muted">
-            Finanças pessoais · AOA
+            Finanças pessoais · Kz / USD
           </span>
           <button
             type="button"

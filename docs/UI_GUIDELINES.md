@@ -86,3 +86,7 @@ A entrada de Definições usa linhas de largura completa com ícone linear, tít
 ## Seletor Home | Business
 
 O seletor fica no rodapé da barra lateral, depois do menu, sem alterar a altura de 56px da marca/cabeçalho. Expandido: dois botões com aria-pressed e modo ativo destacado. Recolhido: select nativo compacto, acessível ao toque/teclado. Em ecrãs pequenos a sidebar começa recolhida. Home mantém tokens claro/escuro, formulários com foco visível e modais com foco contido/Escape. O tema também pode ser configurado nas Definições; notificações empresariais não aparecem no Home.
+
+## Definições, rolagem e barra recolhida (2026-10-08)
+
+Home e Business usam linhas com ícone, nome, descrição e seta nas Definições. Uma escolha abre uma página interna própria, com Voltar às Definições. `html/body/#root` não rolam; o shell ocupa `100dvh` e apenas `main`/menu têm rolagem interna limitada. Topo e sidebar permanecem fixos, sem continuação vazia abaixo do painel. Os ícones Home/Business recolhidos ficam centrados na largura da sidebar. `mode-switch-compact` é um botão: empresa no Home (Ir para Business), casa no Business (Ir para Home). IDs expandidos preservados.

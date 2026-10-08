@@ -77,3 +77,7 @@ Quando no futuro for implementado um backend ou base de dados (**A confirmar**),
 ## Estrutura offline para a fase de backend
 
 O esquema SQL em `database/migrations/001_initial.sql` está guardado e testado localmente. `database/README.md` descreve relações, importação e trabalho necessário antes da ligação. Não existem endpoints novos, autenticação ativa, SDK de base de dados ou credenciais no frontend. A versão atual continua a operar exclusivamente no navegador.
+
+## Contrato futuro Home/Business (2026-10-08)
+
+Nenhuma API conectada. A futura operação Business → Home exige autorização nos dois espaços, contas ativas, moeda igual, saldo suficiente e duas pernas com transfer_group_id na mesma transação SQL. Estorno também conjunto; referências pessoais atuais em import_details devem ser preservadas pelo importador. Metas planeadas não geram ledger; aquisição reservada gera saída da reserva com vínculo à meta. A migração 003 prepara esses campos, mas a API ainda deverá validar valor, moeda, conta e aquisição única sob concorrência.

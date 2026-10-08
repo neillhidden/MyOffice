@@ -14,8 +14,11 @@ try {
   assert.ok(footer.y > 800,'Mode selector must be at the bottom');
   await page.locator('#mode-btn-home').click();
   await page.locator('#home-nav-6').click();
+  await page.locator('#home-settings-appearance').click();
   await page.locator('#settings-theme-dark').click();
   await page.waitForFunction(()=>document.documentElement.classList.contains('dark'));
+  await page.locator('#home-settings-overview').click();
+  await page.locator('#home-settings-categories').click();
   await page.locator('#home-subcategory-parent').selectOption('Games');
   await page.locator('#home-subcategory-name').fill('Acessórios de teste');
   await page.locator('#home-subcategory-add').click();
@@ -49,6 +52,7 @@ try {
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   await page.waitForFunction(()=>document.querySelector('#calendar-day-2026-10-09 span')?.className.includes('bg-blue-600'));
   await page.locator('#calendar-add-event-btn').click();
+  await page.waitForFunction(()=>document.querySelector('#event-date-input')?.value === '2026-10-09');
   assert.equal(await page.locator('#event-date-input').inputValue(),'2026-10-09');
   await page.locator('#btn-close-event-modal').click();
   await page.clock.setSystemTime(new Date('2027-01-31T12:00:00+01:00'));
@@ -83,6 +87,21 @@ try {
   await page.locator('#home-nav-7').click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile must not overflow');
   assert.ok((await page.locator('#mode-switch-compact').boundingBox()).y>650);
+  const checkCenters = async selector => {
+    const sidebar = await page.locator('#app-sidebar').boundingBox();
+    for (const icon of await page.locator(selector).all()) {
+      const box = await icon.boundingBox();
+      if (box) assert.ok(Math.abs(box.x + box.width / 2 - (sidebar.x + sidebar.width / 2)) < 1, 'Collapsed icon must be centered');
+    }
+  };
+  await checkCenters('[id^="home-nav-"] svg');
+  assert.equal(await page.locator('#mode-switch-compact').getAttribute('aria-label'),'Ir para Business');
+  assert.equal(await page.locator('#mode-switch-compact svg.lucide-building2').count(),1);
+  await page.locator('#mode-switch-compact').click();
+  await checkCenters('[id^="nav-item-"] > div:first-child svg');
+  assert.equal(await page.locator('#mode-switch-compact').getAttribute('aria-label'),'Ir para Home');
+  assert.equal(await page.locator('#mode-switch-compact svg.lucide-house').count(),1);
+  await page.locator('#mode-switch-compact').click();
   await page.screenshot({path:'/tmp/myoffice-shopping-mobile.png',fullPage:true});
   assert.deepEqual(errors,[]);
   console.log('Calendar real dates and month-end navigation; bottom selector; category hierarchy; shopping payment and persistence; Business draft subcategory; shared appearance; dashboard and mobile passed.');

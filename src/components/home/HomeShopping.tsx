@@ -1,10 +1,14 @@
+import { HomeCurrency } from '../../types/home';
 import { categoryChildren, HOME_SUBCATEGORIES } from '../../utils/categories';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useHome } from '../../context/HomeContext';
 import { createId } from '../../utils/ids';
 import {
   effectiveEntries,
   HOME_CATEGORIES,
+  HOME_INCOME_CATEGORIES,
+  accountCurrency,
+  formatHomeMoney,
   money,
   payHomeShopping,
   text,
@@ -20,25 +24,55 @@ const button =
   'min-h-10 rounded-lg border border-slate-200 dark:border-dm-border px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-dm-elevated disabled:opacity-50';
 export function HomeCategories() {
   const { data, update } = useHome();
+  const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [name, setName] = useState('');
   const [parent, setParent] = useState('Games');
   const [child, setChild] = useState('');
   const [error, setError] = useState('');
-  const categories = data.categories ?? HOME_CATEGORIES;
+  const categories =
+    kind === 'expense'
+      ? (data.categories ?? HOME_CATEGORIES)
+      : (data.incomeCategories ?? HOME_INCOME_CATEGORIES);
+  const tree =
+    kind === 'expense'
+      ? (data.subcategories ?? HOME_SUBCATEGORIES)
+      : (data.incomeSubcategories ?? {});
+  useEffect(() => {
+    setParent(categories.includes('Games') ? 'Games' : (categories[0] ?? ''));
+  }, [kind]);
+  const run = (fn: () => void) => {
+    try {
+      fn();
+      setError('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não foi possível guardar.');
+    }
+  };
   return (
     <section className={panel}>
-      <div>
-        <h2 className="text-sm font-semibold">Categorias pessoais</h2>
-        <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
-          Organiza compras, despesas, orçamento e contas da casa. As categorias
-          usadas no histórico são preservadas.
-        </p>
-      </div>
+      <h2 className="text-sm font-semibold">Categorias pessoais</h2>
+      <p className="text-xs text-slate-500 dark:text-dm-muted">
+        Despesas e rendimentos têm listas próprias. Alimentação, Internet,
+        Transporte e Saúde são categorias; podes acrescentar subcategorias a
+        cada uma.
+      </p>
+      <label className="block text-xs">
+        Tipo de categoria
+        <select
+          id="home-category-kind"
+          className={`${input} mt-1`}
+          value={kind}
+          onChange={(e) => setKind(e.target.value as 'expense' | 'income')}
+        >
+          <option value="expense">Despesas</option>
+          <option value="income">Rendimentos</option>
+        </select>
+      </label>
       <form
-        className="flex flex-wrap gap-2"
+        className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          try {
+          run(() => {
             const value = text(name);
             if (
               categories.some(
@@ -48,15 +82,17 @@ export function HomeCategories() {
               throw new Error('Esta categoria já existe.');
             update((d) => ({
               ...d,
-              categories: [...(d.categories ?? HOME_CATEGORIES), value],
+              ...(kind === 'expense'
+                ? { categories: [...(d.categories ?? HOME_CATEGORIES), value] }
+                : {
+                    incomeCategories: [
+                      ...(d.incomeCategories ?? HOME_INCOME_CATEGORIES),
+                      value,
+                    ],
+                  }),
             }));
             setName('');
-            setError('');
-          } catch (e) {
-            setError(
-              e instanceof Error ? e.message : 'Não foi possível guardar.',
-            );
-          }
+          });
         }}
       >
         <label className="flex-1 min-w-40 text-xs">
@@ -70,54 +106,40 @@ export function HomeCategories() {
             onChange={(e) => setName(e.target.value)}
           />
         </label>
-        <button id="home-category-add" className={`${button} self-end`}>
+        <button id="home-category-add" className={button}>
           Adicionar categoria
         </button>
       </form>
-      {error && (
-        <p role="alert" className="text-sm text-rose-600">
-          {error}
-        </p>
-      )}
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          try {
+          run(() => {
             const value = text(child);
-            const existing = categoryChildren(
-              data.subcategories ?? HOME_SUBCATEGORIES,
-              parent,
-            );
             if (
-              existing.some(
+              categoryChildren(tree, parent).some(
                 (c) => c.toLocaleLowerCase() === value.toLocaleLowerCase(),
               )
             )
               throw new Error('Esta subcategoria já existe.');
-            update((d) => ({
-              ...d,
-              subcategories: {
-                ...(d.subcategories ?? HOME_SUBCATEGORIES),
-                [parent]: [
-                  ...categoryChildren(
-                    d.subcategories ?? HOME_SUBCATEGORIES,
-                    parent,
-                  ),
-                  value,
-                ],
-              },
-            }));
+            update((d) => {
+              const key =
+                kind === 'expense' ? 'subcategories' : 'incomeSubcategories';
+              const old =
+                d[key] ?? (kind === 'expense' ? HOME_SUBCATEGORIES : {});
+              return {
+                ...d,
+                [key]: {
+                  ...old,
+                  [parent]: [...categoryChildren(old, parent), value],
+                },
+              };
+            });
             setChild('');
-            setError('');
-          } catch (e) {
-            setError(
-              e instanceof Error ? e.message : 'Não foi possível guardar.',
-            );
-          }
+          });
         }}
       >
-        <label className="text-xs flex-1 min-w-40">
+        <label className="flex-1 min-w-40 text-xs">
           Categoria principal
           <select
             id="home-subcategory-parent"
@@ -130,7 +152,7 @@ export function HomeCategories() {
             ))}
           </select>
         </label>
-        <label className="text-xs flex-1 min-w-40">
+        <label className="flex-1 min-w-40 text-xs">
           Nova subcategoria
           <input
             id="home-subcategory-name"
@@ -145,35 +167,31 @@ export function HomeCategories() {
           Adicionar subcategoria
         </button>
       </form>
+      {error && (
+        <p role="alert" className="text-sm text-rose-600">
+          {error}
+        </p>
+      )}
       <div className="space-y-2">
         {categories.map((c) => (
           <div key={c} className="text-xs">
             <strong>{c}</strong>
             <span className="text-slate-500 dark:text-dm-muted">
               {' '}
-              ·{' '}
-              {categoryChildren(
-                data.subcategories ?? HOME_SUBCATEGORIES,
-                c,
-              ).join(' · ') || 'Sem subcategorias'}
+              · {categoryChildren(tree, c).join(' · ') || 'Sem subcategorias'}
             </span>
           </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {categories.map((c) => (
-          <span
-            key={c}
-            className="rounded-lg bg-slate-100 dark:bg-dm-elevated px-3 py-2 text-xs"
-          >
-            {c}
-          </span>
         ))}
       </div>
     </section>
   );
 }
-export function HomeShopping() {
+export function HomeShopping({
+  currency = 'AOA',
+}: {
+  currency?: HomeCurrency;
+}) {
+  const cash = (value: number) => formatHomeMoney(value, currency);
   const { data, update } = useHome();
   const [name, setName] = useState('');
   const [subcategory, setSubcategory] = useState('');
@@ -189,7 +207,19 @@ export function HomeShopping() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const active = new Set(effectiveEntries(data).map((e) => e.id));
-  const items = data.shopping ?? [];
+  useEffect(() => {
+    setAccount(
+      data.accounts.find(
+        (a) => a.kind === 'current' && accountCurrency(a) === currency,
+      )?.id ?? '',
+    );
+    setEditingId(null);
+    setName('');
+    setPrice('');
+  }, [currency]);
+  const items = (data.shopping ?? []).filter(
+    (i) => (i.currency ?? 'AOA') === currency,
+  );
   const categories = Array.from(
     new Set([
       ...(data.categories ?? HOME_CATEGORIES),
@@ -220,8 +250,7 @@ export function HomeShopping() {
           <div>
             <h2 className="text-sm font-semibold">Compras da casa</h2>
             <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
-              {pending.length} itens por comprar · Previsão:{' '}
-              {formatKwanza(expected)}
+              {pending.length} itens por comprar · Previsão: {cash(expected)}
             </p>
           </div>
         </div>
@@ -242,6 +271,7 @@ export function HomeShopping() {
                 subcategory: subcategory || undefined,
                 quantity: qty,
                 unitPrice: amount,
+                currency,
                 archived: false,
               };
               update((d) => {
@@ -325,7 +355,7 @@ export function HomeShopping() {
             />
           </label>
           <label className="text-xs">
-            Preço unitário previsto (Kz)
+            Preço unitário previsto ({currency === 'AOA' ? 'Kz' : 'USD'})
             <input
               id="home-shopping-price"
               required
@@ -383,7 +413,10 @@ export function HomeShopping() {
               onChange={(e) => setAccount(e.target.value)}
             >
               {data.accounts
-                .filter((a) => a.kind === 'current')
+                .filter(
+                  (a) =>
+                    a.kind === 'current' && accountCurrency(a) === currency,
+                )
                 .map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -470,8 +503,8 @@ export function HomeShopping() {
                     <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
                       {item.category}
                       {item.subcategory ? ` / ${item.subcategory}` : ''} ·{' '}
-                      {item.quantity} × {formatKwanza(item.unitPrice)} ·{' '}
-                      {formatKwanza(
+                      {item.quantity} × {cash(item.unitPrice)} ·{' '}
+                      {cash(
                         Math.round(item.quantity * item.unitPrice * 100) / 100,
                       )}
                     </p>

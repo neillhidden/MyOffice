@@ -161,3 +161,9 @@ Regras Business acima preservadas. Home tem ledger próprio, não chama funçõe
 ## Compras pessoais e classificação (2026-10-08)
 
 Itens de compras são planeamento; não alteram saldos ao serem criados ou arquivados. Pagamento cria despesa e vínculo numa gravação atómica, exige saldo suficiente e data até hoje e não aceita repetição. Estorno preserva o lançamento original e permite repagar; itens com histórico de pagamento não podem mudar quantidade/preço/classificação. Orçamento agrega a categoria principal. Categorias/subcategorias não apagam nem reclassificam automaticamente o histórico. Taxonomia inicial contém apenas nomes, nunca produtos ou transações fictícias.
+
+## Finanças Home e transferência empresarial (2026-10-08)
+
+Contas Home AOA/USD; moeda imutável nos lançamentos e totais separados. Transferências, pagamentos e reservas exigem mesma moeda. Metas novas são planeadas por padrão; a preferência de reserva é explícita. Aquisição reservada debita a reserva, nunca duas vezes a carteira de origem. Aquisição planeada não movimenta dinheiro. Estorno reabre aquisição e mantém histórico.
+
+Business → Home grava saída/receita vinculadas, com moeda/conta/valor/data compatíveis. Exige conta ativa, empresa associada ativa (conta geral permitida) e saldo suficiente. Estorno das duas pernas apenas no Home; estorno empresarial isolado bloqueado. Recuperação local protege gravação interrompida e importação Home não pode quebrar vínculos existentes. Consulte HOME.md para fluxos e limites.

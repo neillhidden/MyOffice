@@ -1,3 +1,8 @@
+import {
+  HOME_BRIDGE_JOURNAL,
+  BUSINESS_LEDGER_KEY,
+  assertBusinessTransfersCompatible,
+} from '../utils/homeBusinessStorage';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { HomeData } from '../types/home';
 import { HOME_STORAGE_KEY, emptyHome, validateHomeData } from '../utils/home';
@@ -7,14 +12,21 @@ interface HomeContextValue {
   storageError: string;
   update: (operation: (current: HomeData) => HomeData) => void;
   importData: (value: unknown) => void;
+  refreshFromStorage: () => void;
+  storedRaw: () => string | null;
 }
 const HomeContext = createContext<HomeContextValue | undefined>(undefined);
 export function HomeProvider({ children }: { children: React.ReactNode }) {
   const [initial] = useState(() => {
     try {
       const saved = localStorage.getItem(HOME_STORAGE_KEY);
+      const loaded = saved ? validateHomeData(JSON.parse(saved)) : emptyHome();
+      assertBusinessTransfersCompatible(
+        loaded,
+        JSON.parse(localStorage.getItem(BUSINESS_LEDGER_KEY) || '[]'),
+      );
       return {
-        data: saved ? validateHomeData(JSON.parse(saved)) : emptyHome(),
+        data: loaded,
         error: '',
         raw: saved,
       };
@@ -33,6 +45,14 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const savedRaw = useRef(initial.raw);
   const save = (next: HomeData) => {
     next = validateHomeData(next);
+    assertBusinessTransfersCompatible(
+      next,
+      JSON.parse(localStorage.getItem(BUSINESS_LEDGER_KEY) || '[]'),
+    );
+    if (localStorage.getItem(HOME_BRIDGE_JOURNAL))
+      throw new Error(
+        'Existe uma transferência pendente. Recarrega para recuperar.',
+      );
     try {
       const stored = localStorage.getItem(HOME_STORAGE_KEY);
       if (savedRaw.current !== undefined && stored !== savedRaw.current)
@@ -65,7 +85,27 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
         data,
         storageError,
         update,
-        importData: (value) => save(validateHomeData(value)),
+        storedRaw: () => {
+          if (savedRaw.current === undefined)
+            throw new Error('Recupera primeiro os dados Home.');
+          return savedRaw.current;
+        },
+        refreshFromStorage: () => {
+          const raw = localStorage.getItem(HOME_STORAGE_KEY);
+          const next = raw ? validateHomeData(JSON.parse(raw)) : emptyHome();
+          savedRaw.current = raw;
+          current.current = next;
+          setData(next);
+          setStorageError('');
+        },
+        importData: (value) => {
+          const next = validateHomeData(value);
+          assertBusinessTransfersCompatible(
+            next,
+            JSON.parse(localStorage.getItem(BUSINESS_LEDGER_KEY) || '[]'),
+          );
+          save(next);
+        },
       }}
     >
       {children}

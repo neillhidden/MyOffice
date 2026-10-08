@@ -3,7 +3,8 @@ import {
   validateCategoryTree,
   categoryChildren,
 } from './categories';
-import { HomeData, HomeEntry } from '../types/home';
+import { HomeData, HomeEntry, HomeAccount, HomeCurrency } from '../types/home';
+import { formatCurrencyValue } from './formatters';
 import { createId } from './ids';
 
 export const HOME_STORAGE_KEY = 'myoffice-home-v1';
@@ -17,16 +18,46 @@ export const HOME_CATEGORIES = [
   'Lazer',
   'Outros',
   'Games',
+  'Eletrodomésticos',
+  'Animais de estimação',
+  'Família',
+  'Roupa',
+  'Lixo',
+  'Internet',
+  'Tecnologia',
 ];
+export const HOME_INCOME_CATEGORIES = [
+  'Salário',
+  'Rendimentos do Business',
+  'Bónus',
+  'Investimentos',
+  'Outras receitas',
+];
+export const accountCurrency = (
+  account: HomeAccount | undefined,
+): HomeCurrency => account?.currency ?? 'AOA';
+export const formatHomeMoney = (value: number, currency: HomeCurrency) =>
+  formatCurrencyValue(value, currency === 'AOA' ? 'Kz' : currency);
+export const entryCurrency = (data: HomeData, entry: HomeEntry) =>
+  accountCurrency(data.accounts.find((a) => a.id === entry.accountId));
 export const todayLocal = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 export const emptyHome = (): HomeData => ({
   version: 1,
+  settings: { reserveGoals: false, showBusinessIncome: true },
+  incomeCategories: [...HOME_INCOME_CATEGORIES],
+  incomeSubcategories: {},
   name: 'Minha casa',
   accounts: [
-    { id: 'home-wallet', name: 'Carteira', openingBalance: 0, kind: 'current' },
+    {
+      id: 'home-wallet',
+      name: 'Carteira',
+      openingBalance: 0,
+      kind: 'current',
+      currency: 'AOA',
+    },
   ],
   entries: [],
   budgets: [],
@@ -114,6 +145,20 @@ export function addHomeEntry(
       !data.accounts.some((a) => a.id === entry.destinationId))
   )
     throw new Error('Escolhe uma conta de destino diferente.');
+  if (
+    entry.type === 'transfer' &&
+    accountCurrency(data.accounts.find((a) => a.id === entry.accountId)) !==
+      accountCurrency(data.accounts.find((a) => a.id === entry.destinationId))
+  )
+    throw new Error(
+      'Escolhe contas da mesma moeda. Não há conversão automática.',
+    );
+  if (
+    entry.billId &&
+    (data.bills.find((b) => b.id === entry.billId)?.currency ?? 'AOA') !==
+      accountCurrency(data.accounts.find((a) => a.id === entry.accountId))
+  )
+    throw new Error('A moeda da conta deve coincidir com a conta da casa.');
   if (entry.type !== 'income' && balances(data)[entry.accountId] < entry.amount)
     throw new Error(
       'O saldo desta conta é insuficiente. Regista primeiro a receita ou escolhe outra conta.',
@@ -133,10 +178,13 @@ export function reverseHomeEntry(
   data: HomeData,
   id: string,
   reason: string,
+  allowBusiness = false,
 ): HomeData {
   const original = effectiveEntries(data).find((e) => e.id === id);
   if (!original)
     throw new Error('Este lançamento já foi estornado ou não existe.');
+  if (original.businessMovementId && !allowBusiness)
+    throw new Error('Estorna esta transferência pelo fluxo Business/Home.');
   const next: HomeData = {
     ...data,
     entries: [
@@ -163,7 +211,27 @@ export function validateHomeData(input: unknown): HomeData {
   const source = input as HomeData;
   const data = source && {
     ...source,
-    categories: source.categories ?? [...HOME_CATEGORIES],
+    accounts: Array.isArray(source.accounts)
+      ? source.accounts.map((a) => ({ ...a, currency: a.currency ?? 'AOA' }))
+      : source.accounts,
+    settings: source.settings?.goalsPreferenceSet
+      ? source.settings
+      : { reserveGoals: false, showBusinessIncome: source.settings?.showBusinessIncome ?? true },
+    incomeCategories: source.incomeCategories ?? [...HOME_INCOME_CATEGORIES],
+    incomeSubcategories: source.incomeSubcategories ?? {},
+    categories: Array.isArray(source.categories)
+      ? [
+          ...source.categories,
+          ...HOME_CATEGORIES.filter(
+            (c) =>
+              !source.categories!.some(
+                (old) =>
+                  typeof old === 'string' &&
+                  old.toLocaleLowerCase() === c.toLocaleLowerCase(),
+              ),
+          ),
+        ]
+      : (source.categories ?? [...HOME_CATEGORIES]),
     shopping: source.shopping ?? [],
     subcategories: source.subcategories ?? structuredClone(HOME_SUBCATEGORIES),
   };
@@ -195,12 +263,16 @@ export function validateHomeData(input: unknown): HomeData {
   for (const a of data.accounts) {
     text(a.name);
     money(a.openingBalance, false);
+    if (!['AOA', 'USD'].includes(a.currency!))
+      throw new Error('Moeda de conta inválida.');
     if (!['current', 'savings'].includes(a.kind))
       throw new Error('Tipo de conta inválido.');
   }
   for (const b of data.bills) {
     text(b.title);
     text(b.category);
+    if (!['AOA', 'USD'].includes(b.currency ?? 'AOA'))
+      throw new Error('Moeda de conta recorrente inválida.');
     money(b.amount);
     if (
       !Number.isInteger(b.day) ||
@@ -227,7 +299,20 @@ export function validateHomeData(input: unknown): HomeData {
       (!accounts.has(e.destinationId!) || e.accountId === e.destinationId)
     )
       throw new Error('Transferência inválida.');
-    if (e.billId && (!bills.has(e.billId) || !validMonth(e.billMonth)))
+    if (
+      e.type === 'transfer' &&
+      accountCurrency(data.accounts.find((a) => a.id === e.accountId)) !==
+        accountCurrency(data.accounts.find((a) => a.id === e.destinationId))
+    )
+      throw new Error('Transferência entre moedas diferentes.');
+    if (
+      e.billId &&
+      (!bills.has(e.billId) ||
+        !validMonth(e.billMonth) ||
+        (e.type !== 'reversal' && e.type !== 'expense') ||
+        (data.bills.find((b) => b.id === e.billId)?.currency ?? 'AOA') !==
+          entryCurrency(data, e))
+    )
       throw new Error('Referência de conta recorrente inválida.');
     if (e.type === 'reversal') {
       const original = data.entries.find((o) => o.id === e.reversalOf);
@@ -239,7 +324,9 @@ export function validateHomeData(input: unknown): HomeData {
         e.accountId !== original.accountId ||
         e.destinationId !== original.destinationId ||
         e.billId !== original.billId ||
-        e.billMonth !== original.billMonth
+        e.billMonth !== original.billMonth ||
+        e.goalId !== original.goalId ||
+        e.businessMovementId !== original.businessMovementId
       )
         throw new Error('Estorno inválido.');
       reversals.add(original.id);
@@ -257,7 +344,9 @@ export function validateHomeData(input: unknown): HomeData {
   for (const b of data.budgets) {
     text(b.category);
     money(b.limit);
-    const key = `${b.month}:${b.category}`;
+    if (!['AOA', 'USD'].includes(b.currency ?? 'AOA'))
+      throw new Error('Moeda do orçamento inválida.');
+    const key = `${b.month}:${b.category}:${b.currency ?? 'AOA'}`;
     if (!validMonth(b.month) || budgetKeys.has(key))
       throw new Error('Orçamento inválido ou repetido.');
     budgetKeys.add(key);
@@ -274,6 +363,30 @@ export function validateHomeData(input: unknown): HomeData {
     )
       throw new Error('Meta inválida.');
     goalAccounts.add(g.accountId);
+    if (!['reserve', 'plan'].includes(g.fundingMode ?? 'reserve'))
+      throw new Error('Modo da meta inválido.');
+    money(g.plannedAmount ?? 0, false);
+    if (g.acquiredDate && !validDate(g.acquiredDate))
+      throw new Error('Data de aquisição inválida.');
+    if (g.acquisitionEntryId) {
+      const acquisition = data.entries.find(
+        (e) => e.id === g.acquisitionEntryId,
+      );
+      if (
+        !acquisition ||
+        acquisition.type !== 'expense' ||
+        acquisition.goalId !== g.id ||
+        acquisition.accountId !== g.accountId ||
+        (effectiveEntries(data).some((e) => e.id === acquisition.id) &&
+          acquisition.amount !== g.target) ||
+        g.fundingMode === 'plan'
+      )
+        throw new Error('Aquisição da meta inválida.');
+    }
+    if (g.fundingMode === 'plan' && balances(data)[g.accountId] !== 0)
+      throw new Error(
+        'Uma meta de planeamento não pode conter reservas reais.',
+      );
   }
   for (const t of data.tasks) {
     text(t.title);
@@ -289,6 +402,19 @@ export function validateHomeData(input: unknown): HomeData {
   )
     throw new Error('Categorias inválidas ou repetidas.');
   data.categories.forEach((c) => text(c));
+  if (typeof data.settings.reserveGoals !== 'boolean' || data.settings.showBusinessIncome !== undefined && typeof data.settings.showBusinessIncome !== 'boolean')
+    throw new Error('Configuração de metas inválida.');
+  if (
+    !Array.isArray(data.incomeCategories) ||
+    data.incomeCategories.length > 500 ||
+    new Set(data.incomeCategories.map((c) => text(c).toLocaleLowerCase()))
+      .size !== data.incomeCategories.length
+  )
+    throw new Error('Categorias de rendimentos inválidas.');
+  validateCategoryTree(data.incomeSubcategories);
+  for (const e of data.entries)
+    if (e.goalId && !data.goals.some((g) => g.id === e.goalId))
+      throw new Error('Referência de meta inválida.');
   validateCategoryTree(data.subcategories);
   const linkedEntries = new Set<string>();
   for (const item of data.shopping!) {
@@ -302,6 +428,8 @@ export function validateHomeData(input: unknown): HomeData {
     )
       throw new Error('Subcategoria de compras inválida.');
     money(item.unitPrice, false);
+    if (!['AOA', 'USD'].includes(item.currency ?? 'AOA'))
+      throw new Error('Moeda de compras inválida.');
     if (
       !Number.isFinite(item.quantity) ||
       item.quantity <= 0 ||
@@ -317,6 +445,7 @@ export function validateHomeData(input: unknown): HomeData {
         original.type !== 'expense' ||
         linkedEntries.has(item.entryId) ||
         original.category !== item.category ||
+        entryCurrency(data, original) !== (item.currency ?? 'AOA') ||
         Math.round(original.amount * 100) !==
           Math.round(item.quantity * item.unitPrice * 100)
       )
@@ -336,6 +465,12 @@ export function payHomeShopping(
   date: string,
 ): HomeData {
   const item = data.shopping?.find((i) => i.id === itemId);
+  if (
+    item &&
+    accountCurrency(data.accounts.find((a) => a.id === accountId)) !==
+      (item.currency ?? 'AOA')
+  )
+    throw new Error('Escolhe uma conta da mesma moeda da compra.');
   if (!item || item.archived) throw new Error('Item indisponível.');
   if (item.entryId && effectiveEntries(data).some((e) => e.id === item.entryId))
     throw new Error('Esta compra já foi paga.');
@@ -350,9 +485,87 @@ export function payHomeShopping(
   return {
     ...next,
     shopping: data.shopping!.map((i) =>
-      i.id === item.id
-        ? { ...i, entryId: next.entries[0].id }
-        : i,
+      i.id === item.id ? { ...i, entryId: next.entries[0].id } : i,
+    ),
+  };
+}
+
+export function contributeHomeGoal(
+  data: HomeData,
+  goalId: string,
+  accountId: string,
+  amount: number,
+  date: string,
+): HomeData {
+  const goal = data.goals.find((g) => g.id === goalId);
+  if (!goal || goalAcquired(data, goalId))
+    throw new Error('Meta indisponível ou já adquirida.');
+  if (goal.fundingMode === 'plan') {
+    money(amount, false);
+    return {
+      ...data,
+      goals: data.goals.map((g) =>
+        g.id === goalId ? { ...g, plannedAmount: amount } : g,
+      ),
+    };
+  }
+  return addHomeEntry(data, {
+    type: 'transfer',
+    title: `Reserva: ${goal.title}`,
+    amount,
+    date,
+    category: 'Reserva para metas',
+    accountId,
+    destinationId: goal.accountId,
+  });
+}
+export function goalAcquired(data: HomeData, id: string): boolean {
+  const goal = data.goals.find((g) => g.id === id);
+  return (
+    !!goal &&
+    (goal.fundingMode === 'plan'
+      ? !!goal.acquiredDate
+      : !!goal.acquisitionEntryId &&
+        effectiveEntries(data).some((e) => e.id === goal.acquisitionEntryId))
+  );
+}
+export function acquireHomeGoal(
+  data: HomeData,
+  id: string,
+  date: string,
+): HomeData {
+  const goal = data.goals.find((g) => g.id === id);
+  if (!goal || goalAcquired(data, id))
+    throw new Error('Meta indisponível ou já adquirida.');
+  if (!validDate(date) || date > todayLocal())
+    throw new Error('Escolhe uma data de aquisição até hoje.');
+  if (goal.fundingMode === 'plan') {
+    if ((goal.plannedAmount ?? 0) < goal.target)
+      throw new Error('A meta ainda não foi alcançada.');
+    return {
+      ...data,
+      goals: data.goals.map((g) =>
+        g.id === id ? { ...g, acquiredDate: date } : g,
+      ),
+    };
+  }
+  if (balances(data)[goal.accountId] < goal.target)
+    throw new Error('Completa primeiro a reserva desta meta.');
+  const next = addHomeEntry(data, {
+    type: 'expense',
+    title: `Adquirido: ${goal.title}`,
+    amount: goal.target,
+    date,
+    category: goal.category || 'Outros',
+    accountId: goal.accountId,
+    goalId: id,
+  });
+  return {
+    ...next,
+    goals: next.goals.map((g) =>
+      g.id === id
+        ? { ...g, acquiredDate: date, acquisitionEntryId: next.entries[0].id }
+        : g,
     ),
   };
 }

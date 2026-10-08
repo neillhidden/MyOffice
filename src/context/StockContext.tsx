@@ -231,6 +231,7 @@ interface StockContextType {
   banks: Bank[];
   bankMovements: BankMovement[];
   getBankBalance: (bankId: string) => number;
+  refreshBankMovements: () => void;
   getBankMovements: (bankId: string) => BankMovement[];
   addBank: (bank: Omit<Bank, 'id' | 'createdAt' | 'updatedAt'>) => Bank;
   updateBank: (id: string, updates: Partial<Omit<Bank, 'id' | 'createdAt'>>) => void;
@@ -1958,6 +1959,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   ): BankMovement => {
     const original = bankMovements.find((m) => m.id === movementId);
     if (!original) throw new Error('Lançamento não encontrado.');
+    if(original.homeTransferId)throw new Error('Estorna esta transferência em Home → Finanças, para devolver o dinheiro aos dois lados.');
     if (original.saleId) {
       const sale = sales.find((sale) => sale.id === original.saleId);
       if (sale && sale.status !== 'cancelada' && !cancelledSaleIds.current.has(sale.id)) {
@@ -3211,6 +3213,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       banks,
       bankMovements,
       getBankBalance,
+      refreshBankMovements: () => setBankMovements(JSON.parse(localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}bankMovements`) || '[]')),
       getBankMovements,
       addBank,
       updateBank,

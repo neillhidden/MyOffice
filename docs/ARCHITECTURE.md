@@ -153,3 +153,7 @@ Quando a aplicação arranca no navegador:
 ### Extensões de 2026-10-08
 
 Home v1 normaliza campos opcionais de categorias/subcategorias/compras na leitura; `HomeContext.save` guarda o resultado validado. Pagamento de item e lançamento são uma atualização única. `StockContext` guarda subcategorias Business em `myoffice_estoque_subcategories`; produtos/rascunhos mantêm `subcategory` já previsto nos tipos. `AppearanceSettings` reutiliza `ThemeContext`, sem estado de tema duplicado. `useToday` atualiza datas à meia-noite/foco/visibilidade e é partilhado pelo calendário e dashboards; seleções históricas são preservadas.
+
+## Ponte financeira local Home/Business (2026-10-08)
+
+`BusinessIncomeTransfer` coordena os dois contexts sem unir saldos. `homeBusinessStorage` grava um diário preparado, os dois documentos e confirmação; recupera antes da montagem React em `main.tsx`. Erros/abas desatualizadas preservam dados. `refreshFromStorage`/`refreshBankMovements` sincronizam estado após o commit local. Backups Home verificam compatibilidade com as transferências Business presentes. Não há servidor nem garantia de concorrência equivalente a uma transação SQL. Gráficos Home derivam apenas do ledger efetivo/mês/moeda; dados antigos sem moeda continuam AOA.

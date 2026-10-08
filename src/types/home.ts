@@ -1,3 +1,4 @@
+export type HomeCurrency = 'AOA' | 'USD';
 export type OfficeMode = 'home' | 'business';
 export type HomeSection =
   | 'Dashboard'
@@ -9,12 +10,15 @@ export type HomeSection =
   | 'Definições'
   | 'Compras';
 export interface HomeAccount {
+  currency?: HomeCurrency;
   id: string;
   name: string;
   openingBalance: number;
   kind: 'current' | 'savings';
 }
 export interface HomeEntry {
+  businessMovementId?: string;
+  goalId?: string;
   id: string;
   type: 'income' | 'expense' | 'transfer' | 'reversal';
   title: string;
@@ -28,12 +32,14 @@ export interface HomeEntry {
   reversalOf?: string;
 }
 export interface HomeBudget {
+  currency?: HomeCurrency;
   id: string;
   month: string;
   category: string;
   limit: number;
 }
 export interface HomeBill {
+  currency?: HomeCurrency;
   id: string;
   title: string;
   amount: number;
@@ -42,6 +48,11 @@ export interface HomeBill {
   active: boolean;
 }
 export interface HomeGoal {
+  fundingMode?: 'reserve' | 'plan';
+  plannedAmount?: number;
+  acquiredDate?: string;
+  acquisitionEntryId?: string;
+  category?: string;
   id: string;
   title: string;
   target: number;
@@ -56,6 +67,9 @@ export interface HomeTask {
   done: boolean;
 }
 export interface HomeData {
+  settings?: { reserveGoals: boolean; showBusinessIncome?: boolean; goalsPreferenceSet?: boolean };
+  incomeCategories?: string[];
+  incomeSubcategories?: Record<string, string[]>;
   categories?: string[];
   subcategories?: Record<string, string[]>;
   shopping?: HomeShoppingItem[];
@@ -70,6 +84,7 @@ export interface HomeData {
 }
 
 export interface HomeShoppingItem {
+  currency?: HomeCurrency;
   subcategory?: string;
   id: string;
   name: string;

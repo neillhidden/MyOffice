@@ -99,6 +99,7 @@ try {
   await field('title', 'Férias');
   await field('amount', '100000');
   await field('deadline', '2027-12-01');
+  await select('fundingMode','reserve');
   await save();
   await page.getByRole('button', { name: 'Reservar valor' }).click();
   await field('amount', '30000');
@@ -148,13 +149,18 @@ try {
   if (saved.goals.length !== 1 || !saved.tasks[0].done)
     throw Error('Persistence failed');
   await nav(6);
+  await page.locator('#home-settings-backup').click();
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#home-export').click();
   const download = await downloadPromise;
   const backup = JSON.parse(await readFile(await download.path(), 'utf8'));
   if (backup.goals[0].title !== 'Férias') throw Error('Backup failed');
+  await page.locator('#home-settings-overview').click();
+  await page.locator('#home-settings-house').click();
   await page.locator('#home-house-name').fill('Casa alterada');
   await page.getByRole('button', { name: 'Guardar nome' }).click();
+  await page.locator('#home-settings-overview').click();
+  await page.locator('#home-settings-backup').click();
   await page
     .locator('#home-import')
     .setInputFiles({
@@ -165,7 +171,7 @@ try {
   await page.getByRole('dialog').getByRole('textbox').fill('RESTAURAR');
   await page.getByRole('button', { name: 'Restaurar Home' }).click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
-  if ((await page.locator('#home-house-name').inputValue()) !== 'Minha casa')
+  if ((await page.evaluate(() => JSON.parse(localStorage.getItem('myoffice-home-v1')).name)) !== 'Minha casa')
     throw Error('Restore failed');
   await page
     .locator('#home-import')
@@ -182,8 +188,8 @@ try {
       document.getElementById('app-sidebar').getBoundingClientRect().width <=
       70,
   );
-  await page.locator('#mode-switch-compact').selectOption('business');
-  await page.locator('#mode-switch-compact').selectOption('home');
+  await page.locator('#mode-switch-compact').click();
+  await page.locator('#mode-switch-compact').click();
   await nav(0);
   await page.locator('#btn-toggle-theme').click();
   await page.waitForFunction(
@@ -229,10 +235,12 @@ try {
     throw Error('Failed write changed persisted ledger');
   await page.reload();
   await nav(6);
+  await page.locator('#home-settings-house').click();
   // A stale tab cannot overwrite newer changes made in another tab.
   const other = await context.newPage();
   await other.goto(base);
   await other.locator('#home-nav-6').click();
+  await other.locator('#home-settings-house').click();
   await other.locator('#home-house-name').fill('Outra aba');
   await other.getByRole('button', { name: 'Guardar nome' }).click();
   await page.locator('#home-house-name').fill('Aba antiga');

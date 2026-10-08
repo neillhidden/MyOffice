@@ -402,7 +402,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title={isCollapsed ? section : undefined} aria-label={section}
               aria-current={homeSection === section ? 'page' : undefined}
               onClick={() => onSelectHomeSection(section)}
-              className={`w-full min-h-11 flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-xs font-medium ${homeSection === section
+              className={`w-full min-h-11 flex items-center ${isCollapsed ? 'justify-center gap-0 px-0' : 'gap-3 px-3'} py-2.5 rounded-lg text-left text-xs font-medium ${homeSection === section
                 ? 'bg-slate-900 dark:bg-dm-elevated text-white dark:text-dm-text'
                 : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}
             >
@@ -438,7 +438,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     closeImmediately();
                   }
                 }}
-                className={`w-full h-10 flex items-center rounded-lg px-2 text-xs font-medium transition-colors cursor-pointer group ${
+                className={`w-full h-10 flex items-center rounded-lg ${isCollapsed ? 'justify-center px-0' : 'px-2'} text-xs font-medium transition-colors cursor-pointer group ${
                   isActiveModule
                     ? 'bg-slate-900 dark:bg-dm-border/70 text-white dark:text-dm-text shadow-xs dark:shadow-none font-semibold'
                     : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100/80 dark:hover:bg-dm-elevated'
@@ -457,8 +457,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {/* Texto e seta colapsam suavemente sem desmontar o DOM */}
                 <div
-                  className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-                    isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+                  className={`flex items-center justify-between flex-1 min-w-0 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                    isCollapsed ? 'ml-0 max-w-0 opacity-0 pointer-events-none' : 'ml-2 max-w-[160px] opacity-100'
                   }`}
                 >
                   <span className="truncate whitespace-nowrap">{item.label}</span>

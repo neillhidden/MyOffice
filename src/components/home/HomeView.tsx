@@ -1,3 +1,8 @@
+import {
+  BusinessIncomeTransfer,
+  useBusinessHomeTransfers,
+} from './BusinessIncomeTransfer';
+import { HomeCharts } from './HomeCharts';
 import { useToday } from '../../hooks/useToday';
 import { HomeCategories, HomeShopping } from './HomeShopping';
 import { AppearanceSettings } from '../settings/AppearanceSettings';
@@ -15,11 +20,28 @@ import {
   X,
   House,
   ShieldCheck,
+  ChevronRight,
+  ArrowLeft,
+  Palette,
+  Tags,
+  Building2,
 } from 'lucide-react';
 import { useHome } from '../../context/HomeContext';
-import { HomeData, HomeEntry, HomeSection } from '../../types/home';
+import {
+  HomeData,
+  HomeEntry,
+  HomeSection,
+  HomeCurrency,
+} from '../../types/home';
 import {
   HOME_CATEGORIES,
+  HOME_INCOME_CATEGORIES,
+  accountCurrency,
+  entryCurrency,
+  formatHomeMoney,
+  contributeHomeGoal,
+  acquireHomeGoal,
+  goalAcquired,
   addHomeEntry,
   balances,
   billPaid,
@@ -34,7 +56,6 @@ import {
   validMonth,
 } from '../../utils/home';
 import { createId } from '../../utils/ids';
-import { formatKwanza } from '../../utils/formatters';
 
 const panel =
   'rounded-xl border border-slate-200/80 dark:border-dm-border bg-white dark:bg-dm-surface p-4 sm:p-5';
@@ -160,7 +181,10 @@ export function HomeView({
   section: HomeSection;
   onNavigate: (section: HomeSection) => void;
 }) {
+  const bridge = useBusinessHomeTransfers();
   const { data, update, storageError, importData } = useHome();
+  const [currency, setCurrency] = useState<HomeCurrency>('AOA');
+  const cash = (value: number) => formatHomeMoney(value, currency);
   const today = useToday();
   const thisMonth = today.slice(0, 7);
   const [month, setMonth] = useState(thisMonth);
@@ -168,7 +192,7 @@ export function HomeView({
   useEffect(() => {
     const previous = previousMonthRef.current;
     if (previous !== thisMonth) {
-      setMonth(current => current === previous ? thisMonth : current);
+      setMonth((current) => (current === previous ? thisMonth : current));
       previousMonthRef.current = thisMonth;
     }
   }, [thisMonth]);
@@ -183,9 +207,19 @@ export function HomeView({
   const [pendingImport, setPendingImport] = useState<HomeData | null>(null);
   const [importConfirmation, setImportConfirmation] = useState('');
   const [name, setName] = useState(data.name);
+  const [settingsSection, setSettingsSection] = useState<string | null>(null);
+  useEffect(() => {
+    setSettingsSection(null);
+  }, [section]);
   useEffect(() => setName(data.name), [data.name]);
   const totals = balances(data);
-  const active = effectiveEntries(data);
+  const financialAccounts = data.accounts.filter(
+    (a) =>
+      !data.goals.some((g) => g.accountId === a.id && g.fundingMode === 'plan'),
+  );
+  const active = effectiveEntries(data).filter(
+    (e) => entryCurrency(data, e) === currency,
+  );
   const period = active.filter((e) => e.date.startsWith(month));
   const income =
     period
@@ -197,11 +231,11 @@ export function HomeView({
       .reduce((s, e) => s + Math.round(e.amount * 100), 0) / 100;
   const available =
     data.accounts
-      .filter((a) => a.kind === 'current')
+      .filter((a) => a.kind === 'current' && accountCurrency(a) === currency)
       .reduce((s, a) => s + Math.round(totals[a.id] * 100), 0) / 100;
   const reserved =
     data.accounts
-      .filter((a) => a.kind === 'savings')
+      .filter((a) => a.kind === 'savings' && accountCurrency(a) === currency)
       .reduce((s, a) => s + Math.round(totals[a.id] * 100), 0) / 100;
   const expenseCategories = Array.from(
     new Set([
@@ -211,18 +245,29 @@ export function HomeView({
       ...data.bills.map((b) => b.category),
     ]),
   );
-  const categories = [...expenseCategories, 'Salário', 'Outras receitas'];
+  const incomeCategories = data.incomeCategories ?? HOME_INCOME_CATEGORIES;
+  const categories =
+    form?.kind === 'entry' && form.values.type === 'income'
+      ? incomeCategories
+      : expenseCategories;
   const spending = (category: string) =>
     period
       .filter((e) => e.type === 'expense' && e.category === category)
       .reduce((s, e) => s + Math.round(e.amount * 100), 0) / 100;
   const outstanding = data.bills
-    .filter((b) => b.active && !billPaid(data, b.id, month))
+    .filter(
+      (b) =>
+        (b.currency ?? 'AOA') === currency &&
+        b.active &&
+        !billPaid(data, b.id, month),
+    )
     .sort((a, b) => a.day - b.day);
   const upcomingTasks = data.tasks
     .filter((t) => !t.done)
     .sort((a, b) => a.date.localeCompare(b.date));
-  const budgets = data.budgets.filter((b) => b.month === month);
+  const budgets = data.budgets.filter(
+    (b) => b.month === month && (b.currency ?? 'AOA') === currency,
+  );
   const dueTotal =
     outstanding.reduce((sum, b) => sum + Math.round(b.amount * 100), 0) / 100;
   const previousMonth = new Date(`${month}-01T12:00:00`);
@@ -257,11 +302,16 @@ export function HomeView({
     setForm({
       kind,
       values: {
+        currency,
+        fundingMode: data.settings?.reserveGoals ? 'reserve' : 'plan',
         title: '',
         amount: '',
         date: todayLocal(),
         category: kind === 'task' ? 'Casa' : 'Outros',
-        accountId: data.accounts.find((a) => a.kind === 'current')?.id || '',
+        accountId:
+          data.accounts.find(
+            (a) => a.kind === 'current' && accountCurrency(a) === currency,
+          )?.id || '',
         destinationId: '',
         type: 'expense',
         month,
@@ -291,34 +341,39 @@ export function HomeView({
     if (!form) return;
     run(() => {
       const { kind, values: v } = form;
+      if (
+        kind === 'reversal' &&
+        data.entries.find((e) => e.id === v.entryId)?.businessMovementId
+      ) {
+        bridge.reverse(v.entryId, v.title);
+        setForm(null);
+        return;
+      }
       update((current) => {
         const id = v.editId || createId(`home-${kind}`);
         const replace = <T extends { id: string }>(rows: T[], item: T) =>
           v.editId
             ? rows.map((row) => (row.id === id ? item : row))
             : [...rows, item];
-        if (kind === 'entry' || kind === 'payment' || kind === 'contribution') {
+        if (kind === 'contribution')
+          return contributeHomeGoal(
+            current,
+            v.goalId,
+            v.accountId,
+            Number(v.amount),
+            v.date,
+          );
+        if (kind === 'entry' || kind === 'payment') {
           const goal = current.goals.find((g) => g.id === v.goalId);
           return addHomeEntry(current, {
             type:
-              kind === 'contribution'
-                ? 'transfer'
-                : kind === 'payment'
-                  ? 'expense'
-                  : (v.type as HomeEntry['type']),
-            title:
-              kind === 'contribution' ? `Reserva: ${goal?.title}` : v.title,
+              kind === 'payment' ? 'expense' : (v.type as HomeEntry['type']),
+            title: v.title,
             amount: Number(v.amount),
             date: v.date,
-            category:
-              kind === 'contribution' ? 'Reserva para metas' : v.category,
+            category: v.category,
             accountId: v.accountId,
-            destinationId:
-              kind === 'contribution'
-                ? goal?.accountId
-                : v.type === 'transfer'
-                  ? v.destinationId
-                  : undefined,
+            destinationId: v.type === 'transfer' ? v.destinationId : undefined,
             billId: kind === 'payment' ? v.billId : undefined,
             billMonth: kind === 'payment' ? v.month : undefined,
           });
@@ -335,19 +390,24 @@ export function HomeView({
                 name: text(v.title),
                 openingBalance: money(Number(v.openingBalance), false),
                 kind: 'current',
+                currency: v.currency as HomeCurrency,
               },
             ],
           };
         if (kind === 'budget') {
           if (!validMonth(v.month)) throw new Error('Escolhe um mês válido.');
           const existing = current.budgets.find(
-            (b) => b.month === v.month && b.category === v.category,
+            (b) =>
+              b.month === v.month &&
+              b.category === v.category &&
+              (b.currency ?? 'AOA') === v.currency,
           );
           const item = {
             id: existing?.id || id,
             month: v.month,
             category: text(v.category),
             limit: money(Number(v.amount)),
+            currency: v.currency as HomeCurrency,
           };
           return {
             ...current,
@@ -368,6 +428,7 @@ export function HomeView({
               amount: money(Number(v.amount)),
               category: text(v.category),
               day,
+              currency: v.currency as HomeCurrency,
               active: current.bills.find((b) => b.id === id)?.active ?? true,
             }),
           };
@@ -376,6 +437,25 @@ export function HomeView({
           if (!validDate(v.deadline))
             throw new Error('Indica uma data válida para a meta.');
           const existing = current.goals.find((g) => g.id === id);
+          if (existing && goalAcquired(current, id))
+            throw new Error(
+              'Uma meta adquirida mantém os seus dados originais.',
+            );
+          if (
+            existing &&
+            accountCurrency(
+              current.accounts.find((a) => a.id === existing.accountId),
+            ) !== v.currency
+          )
+            throw new Error('A moeda de uma meta existente não pode mudar.');
+          if (
+            existing &&
+            (existing.fundingMode ?? 'reserve') !== v.fundingMode &&
+            balances(current)[existing.accountId] > 0
+          )
+            throw new Error(
+              'Retira a reserva antes de mudar para planeamento.',
+            );
           const accountId = existing?.accountId || createId('home-reserve');
           const title = text(v.title);
           return {
@@ -391,6 +471,7 @@ export function HomeView({
                     name: `Reserva: ${title}`,
                     openingBalance: 0,
                     kind: 'savings',
+                    currency: v.currency as HomeCurrency,
                   },
                 ],
             goals: replace(current.goals, {
@@ -399,6 +480,10 @@ export function HomeView({
               target: money(Number(v.amount)),
               deadline: v.deadline,
               accountId,
+              fundingMode: v.fundingMode as 'reserve' | 'plan',
+              plannedAmount: existing?.plannedAmount ?? 0,
+              acquisitionEntryId: existing?.acquisitionEntryId,
+              category: v.category,
             }),
           };
         }
@@ -415,6 +500,8 @@ export function HomeView({
           }),
         };
       });
+      if (['account', 'budget', 'bill', 'goal'].includes(kind))
+        setCurrency(v.currency as HomeCurrency);
       setForm(null);
     });
   };
@@ -437,7 +524,16 @@ export function HomeView({
             id={`home-field-${key}`}
             required
             value={v[key] || ''}
-            onChange={(e) => set(key, e.target.value)}
+            onChange={(e) => {
+              set(key, e.target.value);
+              if (key === 'type')
+                set(
+                  'category',
+                  e.target.value === 'income'
+                    ? (incomeCategories[0] ?? 'Salário')
+                    : expenseCategories[0],
+                );
+            }}
             className={input}
           >
             <option value="">Escolher…</option>
@@ -455,10 +551,21 @@ export function HomeView({
             maxLength={300}
             type={type}
             value={v[key] || ''}
-            onChange={(e) => set(key, e.target.value)}
+            onChange={(e) => {
+              set(key, e.target.value);
+              if (key === 'type')
+                set(
+                  'category',
+                  e.target.value === 'income'
+                    ? (incomeCategories[0] ?? 'Salário')
+                    : expenseCategories[0],
+                );
+            }}
             min={
               type === 'number'
-                ? key === 'openingBalance'
+                ? key === 'openingBalance' ||
+                  (form!.kind === 'contribution' &&
+                    form!.values.fundingMode === 'plan')
                   ? 0
                   : key === 'day'
                     ? 1
@@ -478,10 +585,12 @@ export function HomeView({
       </label>
     );
   };
-  const accountOptions = data.accounts.map((a) => ({
-    value: a.id,
-    label: `${a.name} · ${formatKwanza(totals[a.id])}`,
-  }));
+  const accountOptions = financialAccounts
+    .filter((a) => accountCurrency(a) === (form?.values.currency ?? currency))
+    .map((a) => ({
+      value: a.id,
+      label: `${a.name} · ${formatHomeMoney(totals[a.id], accountCurrency(a))}`,
+    }));
   const categoryOptions = categories.map((c) => ({ value: c, label: c }));
   const titleMap: Record<FormKind, string> = {
     entry: 'Novo lançamento',
@@ -525,6 +634,24 @@ export function HomeView({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {!['Agenda', 'Definições'].includes(section) && (
+            <label className="text-xs">
+              <span className="sr-only">Moeda de consulta</span>
+              <select
+                id="home-currency"
+                aria-label="Moeda de consulta"
+                className={input}
+                value={currency}
+                onChange={(e) => {
+                  setCurrency(e.target.value as HomeCurrency);
+                  setAccountFilter('all');
+                }}
+              >
+                <option value="AOA">Kwanza (Kz)</option>
+                <option value="USD">Dólar (USD)</option>
+              </select>
+            </label>
+          )}
           {!['Metas e sonhos', 'Agenda', 'Definições', 'Compras'].includes(
             section,
           ) && (
@@ -612,19 +739,18 @@ export function HomeView({
                   <Icon className="h-4 w-4 text-indigo-500" />
                 </div>
                 <p className="mt-3 text-lg sm:text-xl font-semibold font-mono break-words">
-                  {formatKwanza(value)}
+                  {cash(value)}
                 </p>
               </div>
             ))}
           </div>
+          <HomeCharts entries={period} month={month} currency={currency} />
           <section className={panel} id="home-dashboard-planning">
             <h2 className="text-sm font-semibold">O mês em perspetiva</h2>
             <div className="grid sm:grid-cols-3 gap-4 mt-4">
               <div>
                 <p className={muted}>Contas ainda por pagar</p>
-                <p className="mt-1 font-mono font-semibold">
-                  {formatKwanza(dueTotal)}
-                </p>
+                <p className="mt-1 font-mono font-semibold">{cash(dueTotal)}</p>
                 <p className={`${muted} mt-1`}>
                   {outstanding.length} contas no mês selecionado
                 </p>
@@ -634,7 +760,7 @@ export function HomeView({
                 <p
                   className={`mt-1 font-mono font-semibold ${available < dueTotal ? 'text-rose-600 dark:text-rose-300' : ''}`}
                 >
-                  {formatKwanza(available - dueTotal)}
+                  {cash(available - dueTotal)}
                 </p>
                 <p className={`${muted} mt-1`}>
                   Previsão com o saldo atual, sem futuras receitas
@@ -648,7 +774,7 @@ export function HomeView({
                     : 'Sem base de comparação'}
                 </p>
                 <p className={`${muted} mt-1`}>
-                  Mês anterior completo: {formatKwanza(previousSpent)}
+                  Mês anterior completo: {cash(previousSpent)}
                 </p>
               </div>
             </div>
@@ -695,7 +821,7 @@ export function HomeView({
                 </button>
               </div>
               <p className={`${muted} mt-1`}>
-                Resultado do mês: {formatKwanza(income - spent)}
+                Resultado do mês: {cash(income - spent)}
               </p>
               <div className="mt-4 space-y-4">
                 {Array.from(
@@ -710,9 +836,7 @@ export function HomeView({
                     <div key={c}>
                       <div className="flex justify-between gap-2 text-xs mb-2">
                         <span>{c}</span>
-                        <span className="font-mono">
-                          {formatKwanza(spending(c))}
-                        </span>
+                        <span className="font-mono">{cash(spending(c))}</span>
                       </div>
                       <Progress value={percent(spending(c), spent)} label={c} />
                     </div>
@@ -750,7 +874,7 @@ export function HomeView({
                       </p>
                     </div>
                     <span className="font-mono text-xs shrink-0">
-                      {formatKwanza(b.amount)}
+                      {cash(b.amount)}
                     </span>
                   </div>
                 ))}
@@ -774,18 +898,43 @@ export function HomeView({
                 </button>
               </div>
               <div className="mt-4 space-y-4">
-                {data.goals.slice(0, 3).map((g) => (
-                  <div key={g.id}>
-                    <div className="flex justify-between gap-3 text-xs mb-2">
-                      <span className="font-medium">{g.title}</span>
-                      <span>{percent(totals[g.accountId], g.target)}%</span>
+                {data.goals
+                  .filter(
+                    (g) =>
+                      accountCurrency(
+                        data.accounts.find((a) => a.id === g.accountId),
+                      ) === currency,
+                  )
+                  .slice(0, 3)
+                  .map((g) => (
+                    <div key={g.id}>
+                      <div className="flex justify-between gap-3 text-xs mb-2">
+                        <span className="font-medium">{g.title}</span>
+                        <span>
+                          {percent(
+                            goalAcquired(data, g.id)
+                              ? g.target
+                              : g.fundingMode === 'plan'
+                                ? (g.plannedAmount ?? 0)
+                                : totals[g.accountId],
+                            g.target,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <Progress
+                        value={percent(
+                          goalAcquired(data, g.id)
+                            ? g.target
+                            : g.fundingMode === 'plan'
+                              ? (g.plannedAmount ?? 0)
+                              : totals[g.accountId],
+                          g.target,
+                        )}
+                        label={g.title}
+                      />
                     </div>
-                    <Progress
-                      value={percent(totals[g.accountId], g.target)}
-                      label={g.title}
-                    />
-                  </div>
-                ))}
+                  ))}
                 {!data.goals.length && (
                   <Empty>
                     Planeia férias, uma reserva ou o teu próximo sonho.
@@ -841,6 +990,9 @@ export function HomeView({
 
       {section === 'Finanças' && (
         <>
+          {data.settings?.showBusinessIncome !== false && (
+            <BusinessIncomeTransfer currency={currency} />
+          )}
           <section className={panel}>
             <div className="flex flex-wrap justify-between gap-3 mb-4">
               <h2 className="text-sm font-semibold">As tuas contas</h2>
@@ -853,23 +1005,45 @@ export function HomeView({
                 Adicionar conta
               </button>
             </div>
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {data.accounts.map((a) => (
+            <div
+              className="grid sm:grid-cols-3 gap-3 mb-4"
+              id="home-account-totals"
+            >
+              {[
+                { label: 'Total nas contas', value: available + reserved },
+                { label: 'Disponível nas carteiras', value: available },
+                { label: 'Reservado para metas', value: reserved },
+              ].map((item) => (
                 <div
-                  key={a.id}
-                  className="rounded-lg border border-slate-200 dark:border-dm-border p-3"
+                  key={item.label}
+                  className="rounded-lg bg-slate-50 dark:bg-dm-elevated p-3"
                 >
-                  <p className="text-xs font-medium break-words">{a.name}</p>
-                  <p className="font-mono text-base font-semibold mt-2 break-words">
-                    {formatKwanza(totals[a.id])}
-                  </p>
-                  <p className={`${muted} mt-1`}>
-                    {a.kind === 'savings'
-                      ? 'Reserva de uma meta'
-                      : 'Dinheiro disponível'}
+                  <p className={muted}>{item.label}</p>
+                  <p className="font-mono text-sm font-semibold mt-1">
+                    {cash(item.value)}
                   </p>
                 </div>
               ))}
+            </div>
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {financialAccounts
+                .filter((a) => accountCurrency(a) === currency)
+                .map((a) => (
+                  <div
+                    key={a.id}
+                    className="rounded-lg border border-slate-200 dark:border-dm-border p-3"
+                  >
+                    <p className="text-xs font-medium break-words">{a.name}</p>
+                    <p className="font-mono text-base font-semibold mt-2 break-words">
+                      {cash(totals[a.id])}
+                    </p>
+                    <p className={`${muted} mt-1`}>
+                      {a.kind === 'savings'
+                        ? 'Reserva de uma meta'
+                        : 'Dinheiro disponível'}
+                    </p>
+                  </div>
+                ))}
             </div>
           </section>
           <section className={panel}>
@@ -892,11 +1066,13 @@ export function HomeView({
                   className={`${input} !w-40`}
                 >
                   <option value="all">Todas as contas</option>
-                  {data.accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
+                  {financialAccounts
+                    .filter((a) => accountCurrency(a) === currency)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -904,6 +1080,7 @@ export function HomeView({
               {data.entries
                 .filter(
                   (e) =>
+                    entryCurrency(data, e) === currency &&
                     e.date.startsWith(month) &&
                     (accountFilter === 'all' ||
                       e.accountId === accountFilter ||
@@ -918,6 +1095,7 @@ export function HomeView({
                   return (
                     <div
                       key={e.id}
+                      data-home-entry-id={e.id}
                       className="flex flex-wrap items-center justify-between gap-3 py-3"
                     >
                       <div className="min-w-0 flex-1">
@@ -950,7 +1128,7 @@ export function HomeView({
                         </p>
                       </div>
                       <span className="font-mono text-xs">
-                        {formatKwanza(e.amount)}
+                        {cash(e.amount)}
                       </span>
                       {e.type !== 'reversal' && !reversed && (
                         <button
@@ -975,6 +1153,29 @@ export function HomeView({
 
       {section === 'Orçamento' && (
         <>
+          <section className={panel}>
+            <h2 className="text-sm font-semibold">Gastos realizados no mês</h2>
+            <p className={`${muted} mt-1`}>
+              Total: {cash(spent)}. Inclui categorias sem limite definido.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+              {Array.from(
+                new Set(
+                  period
+                    .filter((e) => e.type === 'expense')
+                    .map((e) => e.category),
+                ),
+              ).map((category) => (
+                <div
+                  key={category}
+                  className="flex justify-between gap-2 text-xs rounded-lg bg-slate-50 dark:bg-dm-elevated p-3"
+                >
+                  <span>{category}</span>
+                  <span className="font-mono">{cash(spending(category))}</span>
+                </div>
+              ))}
+            </div>
+          </section>
           <p className={muted}>
             Define limites mensais por categoria. As despesas pagas atualizam o
             progresso; transferências e reservas não são despesas.
@@ -1001,7 +1202,7 @@ export function HomeView({
                     </button>
                   </div>
                   <p className="font-mono text-sm mt-3">
-                    {formatKwanza(used)} / {formatKwanza(b.limit)}
+                    {cash(used)} / {cash(b.limit)}
                   </p>
                   <div className="mt-3">
                     <Progress
@@ -1011,8 +1212,8 @@ export function HomeView({
                   </div>
                   <p className={`${muted} mt-2`}>
                     {used > b.limit
-                      ? `Limite ultrapassado em ${formatKwanza(used - b.limit)}`
-                      : `Ainda disponível: ${formatKwanza(b.limit - used)}`}
+                      ? `Limite ultrapassado em ${cash(used - b.limit)}`
+                      : `Ainda disponível: ${cash(b.limit - used)}`}
                   </p>
                 </section>
               );
@@ -1033,87 +1234,87 @@ export function HomeView({
             mês escolhido.
           </p>
           <div className="space-y-3">
-            {data.bills.map((b) => {
-              const paid = billPaid(data, b.id, month);
-              const due = dueDate(month, b.day);
-              return (
-                <section
-                  key={b.id}
-                  className={`${panel} flex flex-wrap items-center justify-between gap-4`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-sm font-semibold break-words">
-                      {b.title}
-                    </h2>
-                    <p className={`${muted} mt-1`}>
-                      {b.category} · Vence em {dateLabel(due)}
-                    </p>
-                    <p className="text-xs mt-2">
-                      {!b.active
-                        ? 'Pausada'
-                        : paid
-                          ? 'Paga neste mês'
-                          : due < todayLocal()
-                            ? 'Em atraso'
-                            : 'Por pagar'}
-                    </p>
-                  </div>
-                  <span className="font-mono text-sm">
-                    {formatKwanza(b.amount)}
-                  </span>
-                  <div className="flex gap-2 flex-wrap">
-                    {b.active && !paid && (
+            {data.bills
+              .filter((b) => (b.currency ?? 'AOA') === currency)
+              .map((b) => {
+                const paid = billPaid(data, b.id, month);
+                const due = dueDate(month, b.day);
+                return (
+                  <section
+                    key={b.id}
+                    className={`${panel} flex flex-wrap items-center justify-between gap-4`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-sm font-semibold break-words">
+                        {b.title}
+                      </h2>
+                      <p className={`${muted} mt-1`}>
+                        {b.category} · Vence em {dateLabel(due)}
+                      </p>
+                      <p className="text-xs mt-2">
+                        {!b.active
+                          ? 'Pausada'
+                          : paid
+                            ? 'Paga neste mês'
+                            : due < todayLocal()
+                              ? 'Em atraso'
+                              : 'Por pagar'}
+                      </p>
+                    </div>
+                    <span className="font-mono text-sm">{cash(b.amount)}</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {b.active && !paid && (
+                        <button
+                          className={primary}
+                          onClick={() =>
+                            open('payment', {
+                              billId: b.id,
+                              title: b.title,
+                              amount: String(b.amount),
+                              category: b.category,
+                              month,
+                            })
+                          }
+                        >
+                          Registar pagamento
+                        </button>
+                      )}
                       <button
-                        className={primary}
+                        className={secondary}
+                        aria-label={`Editar ${b.title}`}
                         onClick={() =>
-                          open('payment', {
-                            billId: b.id,
+                          open('bill', {
+                            editId: b.id,
                             title: b.title,
                             amount: String(b.amount),
+                            day: String(b.day),
                             category: b.category,
-                            month,
                           })
                         }
                       >
-                        Registar pagamento
+                        <Pencil className="h-4 w-4" />
                       </button>
-                    )}
-                    <button
-                      className={secondary}
-                      aria-label={`Editar ${b.title}`}
-                      onClick={() =>
-                        open('bill', {
-                          editId: b.id,
-                          title: b.title,
-                          amount: String(b.amount),
-                          day: String(b.day),
-                          category: b.category,
-                        })
-                      }
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      className={secondary}
-                      onClick={() =>
-                        run(() =>
-                          update((d) => ({
-                            ...d,
-                            bills: d.bills.map((item) =>
-                              item.id === b.id
-                                ? { ...item, active: !item.active }
-                                : item,
-                            ),
-                          })),
-                        )
-                      }
-                    >
-                      {b.active ? 'Pausar' : 'Retomar'}
-                    </button>
-                  </div>
-                </section>
-              );
-            })}
+                      <button
+                        className={secondary}
+                        onClick={() =>
+                          run(() =>
+                            update((d) => ({
+                              ...d,
+                              bills: d.bills.map((item) =>
+                                item.id === b.id
+                                  ? { ...item, active: !item.active }
+                                  : item,
+                              ),
+                            })),
+                          )
+                        }
+                      >
+                        {b.active ? 'Pausar' : 'Retomar'}
+                      </button>
+                    </div>
+                  </section>
+                );
+              })}
             {!data.bills.length && (
               <div className={panel}>
                 <Empty>
@@ -1128,82 +1329,139 @@ export function HomeView({
       {section === 'Metas e sonhos' && (
         <>
           <p className={muted}>
-            Reservar transfere dinheiro de uma conta pessoal para a meta. O
-            valor continua teu e não conta como despesa.
+            Planeamento acompanha um valor sem retirar dinheiro. Reserva
+            transfere de uma carteira para a meta; “Adquirido” usa a reserva e
+            regista a despesa uma única vez.
           </p>
           <div className="grid lg:grid-cols-2 gap-4">
-            {data.goals.map((g) => {
-              const saved = totals[g.accountId];
-              return (
-                <section key={g.id} className={panel}>
-                  <div className="flex justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="text-sm font-semibold break-words">
-                        {g.title}
-                      </h2>
-                      <p className={`${muted} mt-1`}>
-                        Até {dateLabel(g.deadline)}
-                        {g.deadline < todayLocal() && saved < g.target
-                          ? ' · Prazo ultrapassado'
-                          : ''}
-                      </p>
+            {data.goals
+              .filter(
+                (g) =>
+                  accountCurrency(
+                    data.accounts.find((a) => a.id === g.accountId),
+                  ) === currency,
+              )
+              .map((g) => {
+                const acquired = goalAcquired(data, g.id);
+                const saved =
+                  g.fundingMode === 'plan'
+                    ? (g.plannedAmount ?? 0)
+                    : acquired
+                      ? g.target + totals[g.accountId]
+                      : totals[g.accountId];
+                return (
+                  <section key={g.id} className={panel}>
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="text-sm font-semibold break-words">
+                          {g.title}
+                        </h2>
+                        <p className={`${muted} mt-1`}>
+                          Até {dateLabel(g.deadline)}
+                          {g.deadline < todayLocal() && saved < g.target
+                            ? ' · Prazo ultrapassado'
+                            : ''}
+                        </p>
+                      </div>
+                      <Target className="h-5 w-5 text-indigo-500 shrink-0" />
                     </div>
-                    <Target className="h-5 w-5 text-indigo-500 shrink-0" />
-                  </div>
-                  <p className="font-mono text-base font-semibold my-4 break-words">
-                    {formatKwanza(saved)}{' '}
-                    <span className="text-xs font-normal text-slate-500 dark:text-dm-muted">
-                      de {formatKwanza(g.target)}
-                    </span>
-                  </p>
-                  <Progress value={percent(saved, g.target)} label={g.title} />
-                  <p className={`${muted} mt-2`}>
-                    {saved >= g.target
-                      ? 'Meta alcançada!'
-                      : `Faltam ${formatKwanza(g.target - saved)}`}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <button
-                      className={primary}
-                      onClick={() =>
-                        open('contribution', { goalId: g.id, title: g.title })
-                      }
-                    >
-                      Reservar valor
-                    </button>
-                    {saved > 0 && (
+                    <p className="font-mono text-base font-semibold my-4 break-words">
+                      {cash(saved)}{' '}
+                      <span className="text-xs font-normal text-slate-500 dark:text-dm-muted">
+                        de {cash(g.target)}
+                      </span>
+                    </p>
+                    <Progress
+                      value={percent(saved, g.target)}
+                      label={g.title}
+                    />
+                    <p className={`${muted} mt-2`}>
+                      {saved >= g.target
+                        ? acquired
+                          ? 'Adquirido'
+                          : 'Meta alcançada!'
+                        : `Faltam ${cash(g.target - saved)}`}
+                    </p>
+                    <p className={`${muted} mt-2`}>
+                      {g.fundingMode === 'plan'
+                        ? 'Planeamento: sem desconto da carteira'
+                        : 'Reserva: dinheiro retirado do saldo disponível'}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {!acquired && saved >= g.target && (
+                        <button
+                          className={primary}
+                          onClick={() =>
+                            run(() =>
+                              update((d) =>
+                                acquireHomeGoal(d, g.id, todayLocal()),
+                              ),
+                            )
+                          }
+                        >
+                          Marcar como adquirido
+                        </button>
+                      )}
                       <button
-                        className={secondary}
+                        className={primary}
+                        disabled={acquired}
                         onClick={() =>
-                          open('entry', {
-                            type: 'transfer',
-                            accountId: g.accountId,
-                            title: `Retirar reserva: ${g.title}`,
-                            category: 'Reserva para metas',
+                          open('contribution', {
+                            goalId: g.id,
+                            title: g.title,
+                            currency: accountCurrency(
+                              data.accounts.find((a) => a.id === g.accountId),
+                            ),
+                            fundingMode: g.fundingMode ?? 'reserve',
+                            ...(g.fundingMode === 'plan'
+                              ? { amount: String(g.plannedAmount ?? 0) }
+                              : {}),
                           })
                         }
                       >
-                        Retirar reserva
+                        {g.fundingMode === 'plan'
+                          ? 'Atualizar progresso'
+                          : 'Reservar valor'}
                       </button>
-                    )}
-                    <button
-                      className={secondary}
-                      aria-label={`Editar meta ${g.title}`}
-                      onClick={() =>
-                        open('goal', {
-                          editId: g.id,
-                          title: g.title,
-                          amount: String(g.target),
-                          deadline: g.deadline,
-                        })
-                      }
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                  </div>
-                </section>
-              );
-            })}
+                      {g.fundingMode !== 'plan' && totals[g.accountId] > 0 && (
+                        <button
+                          className={secondary}
+                          onClick={() =>
+                            open('entry', {
+                              type: 'transfer',
+                              accountId: g.accountId,
+                              title: `Retirar reserva: ${g.title}`,
+                              category: 'Reserva para metas',
+                            })
+                          }
+                        >
+                          Retirar reserva
+                        </button>
+                      )}
+                      <button
+                        className={secondary}
+                        disabled={acquired}
+                        aria-label={`Editar meta ${g.title}`}
+                        onClick={() =>
+                          open('goal', {
+                            editId: g.id,
+                            title: g.title,
+                            amount: String(g.target),
+                            deadline: g.deadline,
+                            currency: accountCurrency(
+                              data.accounts.find((a) => a.id === g.accountId),
+                            ),
+                            fundingMode: g.fundingMode ?? 'reserve',
+                            category: g.category ?? 'Outros',
+                          })
+                        }
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </section>
+                );
+              })}
           </div>
           {!data.goals.length && (
             <div className={panel}>
@@ -1289,92 +1547,229 @@ export function HomeView({
         </>
       )}
 
-      {section === 'Compras' && <HomeShopping />}
+      {section === 'Compras' && <HomeShopping currency={currency} />}
       {section === 'Definições' && (
         <div className="space-y-4">
-          <AppearanceSettings />
-          <HomeCategories />
-          <section className={panel}>
-            <div className="flex items-center gap-2 mb-3">
-              <House className="h-5 w-5" />
-              <h2 className="text-sm font-semibold">O teu espaço Home</h2>
+          {settingsSection === null ? (
+            <div className="space-y-1">
+              {[
+                {
+                  key: 'appearance',
+                  title: 'Aparência',
+                  description: 'Escolher Claro, Anoitecer ou o tema do sistema',
+                  icon: Palette,
+                },
+                {
+                  key: 'categories',
+                  title: 'Categorias e subcategorias',
+                  description: 'Organizar despesas, rendimentos e compras',
+                  icon: Tags,
+                },
+                {
+                  key: 'goals',
+                  title: 'Metas e carteiras',
+                  description:
+                    'Definir como reservar dinheiro para os teus sonhos',
+                  icon: Target,
+                },
+                {
+                  key: 'business',
+                  title: 'Rendimentos do Business',
+                  description:
+                    'Mostrar a transferência para uma carteira pessoal',
+                  icon: Building2,
+                },
+                {
+                  key: 'house',
+                  title: 'O teu espaço Home',
+                  description: 'Personalizar o nome da casa',
+                  icon: House,
+                },
+                {
+                  key: 'backup',
+                  title: 'Cópia de segurança',
+                  description: 'Exportar ou restaurar os dados pessoais',
+                  icon: ShieldCheck,
+                },
+              ].map(({ key, title, description, icon: Icon }) => (
+                <button
+                  key={key}
+                  id={`home-settings-${key}`}
+                  type="button"
+                  onClick={() => setSettingsSection(key)}
+                  className="flex w-full items-center gap-4 rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-surface px-4 py-5 text-left hover:bg-slate-50 dark:hover:bg-dm-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                >
+                  <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium">{title}</span>
+                    <span className={`${muted} block mt-1`}>{description}</span>
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                </button>
+              ))}
             </div>
-            <form
-              className="flex flex-wrap items-end gap-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                run(() => update((d) => ({ ...d, name: text(name) })));
-              }}
+          ) : (
+            <button
+              id="home-settings-overview"
+              type="button"
+              onClick={() => setSettingsSection(null)}
+              className={secondary}
             >
-              <label className="text-xs flex-1 min-w-[150px]">
-                Nome da casa
+              <ArrowLeft className="h-4 w-4" />
+              Voltar às Definições
+            </button>
+          )}
+          {settingsSection === 'appearance' && <AppearanceSettings />}
+          {settingsSection === 'categories' && <HomeCategories />}
+          {settingsSection === 'goals' && (
+            <section className={panel}>
+              <h2 className="text-sm font-semibold">Metas e carteiras</h2>
+              <label className="flex items-start gap-3 mt-4 text-sm">
                 <input
-                  id="home-house-name"
-                  required
-                  maxLength={300}
-                  className={`${input} mt-2`}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  id="home-goals-auto-reserve"
+                  type="checkbox"
+                  checked={data.settings?.reserveGoals ?? false}
+                  onChange={(e) =>
+                    run(() =>
+                      update((d) => ({
+                        ...d,
+                        settings: {
+                          ...d.settings,
+                          reserveGoals: e.target.checked,
+                          goalsPreferenceSet: true,
+                        },
+                      })),
+                    )
+                  }
                 />
+                <span>
+                  Reservar dinheiro automaticamente nas novas metas
+                  <span className={`${muted} block mt-1`}>
+                    Desligado: progresso apenas planeado. Ligado: cada
+                    contribuição sai da carteira escolhida. As metas existentes
+                    conservam o seu modo; podes alterá-lo ao editar, depois de
+                    retirar eventuais reservas.
+                  </span>
+                </span>
               </label>
-              <button className={primary}>Guardar nome</button>
-            </form>
-            <p className={`${muted} mt-3`}>
-              Moeda: Kwanza (AOA). Contas e dados independentes do Business.
-            </p>
-          </section>
-          <section className={panel}>
-            <div className="flex items-center gap-2 mb-2">
-              <ShieldCheck className="h-5 w-5" />
-              <h2 className="text-sm font-semibold">Cópia de segurança</h2>
-            </div>
-            <p className={`${muted} mb-4`}>
-              Os dados ficam neste navegador. Exporta regularmente uma cópia
-              para recuperares noutro dispositivo. A cópia contém informação
-              pessoal: guarda-a num lugar seguro.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                id="home-export"
-                className={primary}
-                onClick={exportBackup}
+            </section>
+          )}
+          {settingsSection === 'business' && (
+            <section className={panel}>
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  id="home-show-business-income"
+                  type="checkbox"
+                  checked={data.settings?.showBusinessIncome !== false}
+                  onChange={(e) =>
+                    run(() =>
+                      update((d) => ({
+                        ...d,
+                        settings: {
+                          ...d.settings,
+                          reserveGoals: d.settings?.reserveGoals ?? false,
+                          goalsPreferenceSet: true,
+                          showBusinessIncome: e.target.checked,
+                        },
+                      })),
+                    )
+                  }
+                />
+                <span>
+                  Mostrar transferência de rendimentos do Business nas Finanças
+                </span>
+              </label>
+            </section>
+          )}
+          {settingsSection === 'house' && (
+            <section className={panel}>
+              <div className="flex items-center gap-2 mb-3">
+                <House className="h-5 w-5" />
+                <h2 className="text-sm font-semibold">O teu espaço Home</h2>
+              </div>
+              <form
+                className="flex flex-wrap items-end gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  run(() => update((d) => ({ ...d, name: text(name) })));
+                }}
               >
-                <Download className="h-4 w-4" />
-                Exportar Home
-              </button>
-              <label className={`${secondary} cursor-pointer`}>
-                <Upload className="h-4 w-4" />
-                Importar cópia
-                <input
-                  id="home-import"
-                  className="sr-only"
-                  aria-label="Importar cópia Home"
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = '';
-                    if (!file) return;
-                    try {
-                      if (file.size > 10 * 1024 * 1024)
-                        throw new Error('Escolhe um ficheiro até 10 MB.');
-                      setPendingImport(
-                        validateHomeData(JSON.parse(await file.text())),
-                      );
-                      setImportConfirmation('');
-                      setError('');
-                    } catch (err) {
-                      setError(
-                        err instanceof Error
-                          ? err.message
-                          : 'Ficheiro inválido.',
-                      );
-                    }
-                  }}
-                />
-              </label>
-            </div>
-          </section>
+                <label className="text-xs flex-1 min-w-[150px]">
+                  Nome da casa
+                  <input
+                    id="home-house-name"
+                    required
+                    maxLength={300}
+                    className={`${input} mt-2`}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </label>
+                <button className={primary}>Guardar nome</button>
+              </form>
+              <p className={`${muted} mt-3`}>
+                Contas em Kwanza (AOA) e Dólar (USD). Totais separados por
+                moeda; sem câmbio automático.
+              </p>
+            </section>
+          )}
+          {settingsSection === 'backup' && (
+            <section className={panel}>
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck className="h-5 w-5" />
+                <h2 className="text-sm font-semibold">Cópia de segurança</h2>
+              </div>
+              <p className={`${muted} mb-4`}>
+                Os dados ficam neste navegador. Exporta regularmente uma cópia
+                para recuperares noutro dispositivo. A cópia contém informação
+                pessoal: guarda-a num lugar seguro.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  id="home-export"
+                  className={primary}
+                  onClick={exportBackup}
+                >
+                  <Download className="h-4 w-4" />
+                  Exportar Home
+                </button>
+                <label className={`${secondary} cursor-pointer`}>
+                  <Upload className="h-4 w-4" />
+                  Importar cópia
+                  <input
+                    id="home-import"
+                    className="sr-only"
+                    aria-label="Importar cópia Home"
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      try {
+                        if (file.size > 10 * 1024 * 1024)
+                          throw new Error('Escolhe um ficheiro até 10 MB.');
+                        setPendingImport(
+                          validateHomeData(JSON.parse(await file.text())),
+                        );
+                        setImportConfirmation('');
+                        setError('');
+                      } catch (err) {
+                        setError(
+                          err instanceof Error
+                            ? err.message
+                            : 'Ficheiro inválido.',
+                        );
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </section>
+          )}
         </div>
       )}
 
@@ -1395,6 +1790,16 @@ export function HomeView({
                 {error}
               </p>
             )}
+            {['account', 'goal', 'budget', 'bill'].includes(form.kind) &&
+              field('Moeda', 'currency', 'text', [
+                { value: 'AOA', label: 'Kwanza (Kz)' },
+                { value: 'USD', label: 'Dólar (USD)' },
+              ])}
+            {form.kind === 'goal' &&
+              field('Funcionamento da meta', 'fundingMode', 'text', [
+                { value: 'plan', label: 'Planeamento, sem desconto' },
+                { value: 'reserve', label: 'Reserva, descontar da carteira' },
+              ])}
             {form.kind === 'entry' &&
               field('Operação', 'type', 'text', [
                 { value: 'income', label: 'Receita' },
@@ -1420,16 +1825,24 @@ export function HomeView({
             ].includes(form.kind) &&
               field(
                 form.kind === 'goal'
-                  ? 'Valor da meta (Kz)'
+                  ? `Valor da meta (${form.values.currency === 'USD' ? 'USD' : 'Kz'})`
                   : form.kind === 'budget'
-                    ? 'Limite mensal (Kz)'
-                    : 'Valor (Kz)',
+                    ? `Limite mensal (${form.values.currency === 'USD' ? 'USD' : 'Kz'})`
+                    : `Valor (${form.values.currency === 'USD' ? 'USD' : 'Kz'})`,
                 'amount',
                 'number',
               )}
             {form.kind === 'account' &&
-              field('Saldo atual inicial (Kz)', 'openingBalance', 'number')}
+              field(
+                `Saldo atual inicial (${form.values.currency === 'USD' ? 'USD' : 'Kz'})`,
+                'openingBalance',
+                'number',
+              )}
             {['entry', 'contribution', 'payment'].includes(form.kind) &&
+              !(
+                form.kind === 'contribution' &&
+                form.values.fundingMode === 'plan'
+              ) &&
               field(
                 form.kind === 'entry' && form.values.type === 'income'
                   ? 'Conta de destino'
@@ -1455,7 +1868,7 @@ export function HomeView({
               )}
             {['entry', 'contribution', 'payment', 'task'].includes(form.kind) &&
               field('Data', 'date', 'date')}
-            {['entry', 'bill', 'budget', 'task'].includes(form.kind) &&
+            {['entry', 'bill', 'budget', 'task', 'goal'].includes(form.kind) &&
               !(form.kind === 'entry' && form.values.type === 'transfer') &&
               field(
                 'Categoria',

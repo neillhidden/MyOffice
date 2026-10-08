@@ -30,3 +30,7 @@ A conexão da base de dados, autenticação e permissões continuam adiadas por 
 Nome confirmado: **Home | Business**. Seletor no rodapé da barra lateral; compacto com escolha de modo no telefone/barra recolhida. O Home deve organizar a vida pessoal, metas e dashboard. Implementação documentada em `HOME.md`; integração remota continua adiada.
 
 Pedido adicional de 2026-10-08: seletor na parte inferior, calendário baseado na data real, categorias e subcategorias nos dois modos (Games → Jogos/Consoles), produtos por classificação, modo Anoitecer nas Definições e melhorias dos dashboards. Implementação e uso em [CATEGORIES.md](CATEGORIES.md).
+
+## Preferências confirmadas em 2026-10-08
+
+Contas pessoais em AOA/USD e totais separados. Metas planeadas por padrão; reserva financeira configurável, aquisição sem desconto duplicado. Business transfere para carteira pessoal separada, sem saldo partilhado; opção de ocultar formulário. Categorias principais de despesa incluem Alimentação/Internet/etc.; rendimentos têm taxonomia própria. ATT significa atenção. Dashboard com gráficos de receitas/despesas e pizza de categorias, orçamento com gastos reais. Definições preservam estilo em linhas/páginas próprias; scroll interno com topo/sidebar fixos. Barra recolhida mostra ícone do destino na alternância Home/Business.

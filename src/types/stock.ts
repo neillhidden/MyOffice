@@ -299,6 +299,9 @@ export type FinancialCategory =
   | 'Outro';
 
 export interface BankMovement {
+  homeTransferId?: string;
+  personalAccountId?: string;
+  personalCurrency?: 'AOA' | 'USD';
   id: string;
   bankId: string;
   destinationBankId?: string;

@@ -14,19 +14,20 @@ export function ModeSwitcher({
   if (compact)
     return (
       <div className="px-1 py-3 shrink-0 border-t border-slate-200 dark:border-dm-border">
-        <label className="block text-center">
-          <span className="sr-only">Alternar Home e Business</span>
-          <select
-            id="mode-switch-compact"
-            aria-label="Modo do MyOffice"
-            value={mode}
-            onChange={(e) => onChange(e.target.value as OfficeMode)}
-            className="w-full min-h-10 rounded-lg border border-slate-200 dark:border-dm-border bg-slate-50 dark:bg-dm-elevated text-[10px] text-slate-900 dark:text-dm-text"
-          >
-            <option value="home">Home</option>
-            <option value="business">Business</option>
-          </select>
-        </label>
+        <button
+          id="mode-switch-compact"
+          type="button"
+          aria-label={mode === 'home' ? 'Ir para Business' : 'Ir para Home'}
+          title={mode === 'home' ? 'Ir para Business' : 'Ir para Home'}
+          onClick={() => onChange(mode === 'home' ? 'business' : 'home')}
+          className="flex mx-auto h-11 w-11 items-center justify-center rounded-lg text-slate-600 dark:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
+          {mode === 'home' ? (
+            <Building2 className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <House className="h-5 w-5" aria-hidden="true" />
+          )}
+        </button>
       </div>
     );
   return (
