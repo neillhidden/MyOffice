@@ -1,6 +1,12 @@
 {
-  "currentSha": "34c7ded2469200a1d5c7e037c405efd312182d96",
+  "currentSha": "a2bc23b08ad008ed6022a9c8f2df21eb74889bd1",
   "entries": [
+    {
+      "sha": "a2bc23b08ad008ed6022a9c8f2df21eb74889bd1",
+      "date": "2026-10-08T01:13:18Z",
+      "title": "Melhorar o calendário, os dashboards e as categorias de Home e Business",
+      "status": "ready"
+    },
     {
       "sha": "34c7ded2469200a1d5c7e037c405efd312182d96",
       "date": "2026-10-08T00:39:16Z",
