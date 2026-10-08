@@ -1,6 +1,12 @@
 {
-  "currentSha": "fe33b6dedd997057445c8ddb0e1f16e1a4d7f4ee",
+  "currentSha": "34c7ded2469200a1d5c7e037c405efd312182d96",
   "entries": [
+    {
+      "sha": "34c7ded2469200a1d5c7e037c405efd312182d96",
+      "date": "2026-10-08T00:39:16Z",
+      "title": "Adicionar os modos Home e Business e a gestão da vida pessoal",
+      "status": "ready"
+    },
     {
       "sha": "fe33b6dedd997057445c8ddb0e1f16e1a4d7f4ee",
       "date": "2026-10-07T22:58:57Z",
