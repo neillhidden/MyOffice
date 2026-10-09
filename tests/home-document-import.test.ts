@@ -1,4 +1,8 @@
-import {matchHomeStatement,importStatementEntry,statementEntryMatches} from '../src/utils/homeExtensions';
+import {
+  matchHomeStatement,
+  importStatementEntry,
+  statementEntryMatches,
+} from '../src/utils/homeExtensions';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -192,5 +196,56 @@ test('reader staging preserves bank references and a changed fingerprint cannot 
   ]);
   const staged = draftsToStatements(rows, 'home-wallet', 'AOA');
   assert.equal(staged[0].reference, 'bank-ref');
-  let d=addHomeEntry(fixture(),{type:'expense',amount:25,date,title:'Compra',category:'Alimentação',accountId:'home-wallet'});d.statementRows=staged;d=matchHomeStatement(d,staged[0].id,d.entries[0].id);const repeated=draftsToStatements([{...rows[0],title:'Outra descrição',reference:'other-ref'}],'home-wallet','AOA')[0];d.statementRows!.push(repeated);assert.equal(statementEntryMatches(d,repeated).length,0);const before=structuredClone(d);assert.throws(()=>importStatementEntry(d,repeated.id,'Alimentação'),/já conferidos/);assert.deepEqual(d,before);assert.equal(balances(d)['home-wallet'],75);
+  let d = addHomeEntry(fixture(), {
+    type: 'expense',
+    amount: 25,
+    date,
+    title: 'Compra',
+    category: 'Alimentação',
+    accountId: 'home-wallet',
+  });
+  d.statementRows = staged;
+  d = matchHomeStatement(d, staged[0].id, d.entries[0].id);
+  const repeated = draftsToStatements(
+    [{ ...rows[0], title: 'Outra descrição', reference: 'other-ref' }],
+    'home-wallet',
+    'AOA',
+  )[0];
+  d.statementRows!.push(repeated);
+  assert.equal(statementEntryMatches(d, repeated).length, 0);
+  const before = structuredClone(d);
+  assert.throws(
+    () => importStatementEntry(d, repeated.id, 'Alimentação'),
+    /já conferidos/,
+  );
+  assert.deepEqual(d, before);
+  assert.equal(balances(d)['home-wallet'], 75);
+});
+
+test('MULTICAIXA-like labelled receipts work in statements without mixing signature dates or bank balances', () => {
+  const content = `Digitally signed by example\nDate: 2026.10.08 19:17:32\nComprovativo Digital\nDetalhe da operação realizada através do canal bancário.\nData - Hora\n${date} 13:59:23\nOperação\nCompra\nComerciante\nLOJA DE TESTE\nMontante\n1.000,00 Kz\nTransacção\n123456\nSaldo disponível 9.000,00 Kz`;
+  for (const mode of ['statement', 'receipt'] as const) {
+    const rows = textDrafts(content, mode);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].date, date);
+    assert.equal(rows[0].amount, '1000.00');
+    assert.equal(rows[0].direction, 'expense');
+    assert.equal(rows[0].currency, 'AOA');
+    assert.equal(rows[0].title, 'LOJA DE TESTE');
+    assert.equal(rows[0].reference, '123456');
+  }
+  const inline = content
+    .replace('Montante\n', 'Montante ')
+    .replace('Comerciante\n', 'Comerciante ');
+  assert.equal(textDrafts(inline, 'statement')[0].amount, '1000.00');
+  // A transfer receipt alone does not identify whether the user sent or received money.
+  assert.equal(
+    textDrafts(content.replace('Compra', 'Transferência'), 'statement')[0]
+      .direction,
+    '',
+  );
+  assert.deepEqual(
+    textDrafts('Comprovativo Digital\nSaldo 1.000,00 Kz', 'statement'),
+    [],
+  );
 });

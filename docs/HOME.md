@@ -110,3 +110,5 @@ Em **Home → Documentos**, lê um comprovativo, escolhe a carteira e categoria/
 PDFs com texto são lidos diretamente; PDFs digitalizados e fotografias usam OCR português no navegador. Não há envio do documento a servidores ou API paga. A primeira leitura OCR descarrega recursos do próprio site e pode demorar. O reconhecimento depende da legibilidade e do formato: confirma sempre os valores, datas e sentido.
 
 Limites de leitura: 10 MB por ficheiro, 20 páginas PDF, 5.000 linhas/100 colunas Excel. Excel antigo `.xls` deve ser guardado como `.xlsx`. O arquivo de originais mantém os limites existentes: PDF/PNG/JPEG até 1 MB por documento e 2 MB no total. CSV, Excel, WebP e ficheiros maiores podem ser lidos sem arquivar o original. Dados continuam neste navegador; utiliza o backup JSON.
+
+Comprovativos bancários com campos Data - Hora, Operação, Comerciante, Montante e Transacção também são reconhecidos em Extratos. A data da operação tem prioridade sobre datas de assinatura digital; Compra prepara uma saída. Uma transferência sem sentido explícito continua a exigir escolha de Entrada/Saída.

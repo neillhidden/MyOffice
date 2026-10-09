@@ -115,15 +115,55 @@ try {
     process.env.HOME_TEST_URL || 'http://127.0.0.1:4199/MyOffice/',
   );
   await page.locator('#mode-btn-home').click();
+  // A labelled bank receipt is accepted in both views even when its amount/date
+  // are on different lines. No money is applied during recognition.
+  const labelled = pdfText([
+    ['Comprovativo Digital', 40, 790],
+    ['Data - Hora', 40, 750],
+    [`${today} 13:59:23`, 40, 730],
+    ['Operacao', 40, 700],
+    ['Compra', 40, 680],
+    ['Comerciante', 40, 650],
+    ['LOJA TESTE', 40, 630],
+    ['Montante', 40, 600],
+    ['1.000,00 Kz', 40, 580],
+    ['Transaccao', 40, 550],
+    ['123456', 40, 530],
+  ]);
+  for (const index of [12, 13]) {
+    await nav(index);
+    await page
+      .getByLabel(
+        index === 12
+          ? 'Ler ficheiro de extrato'
+          : 'Ler ficheiro de comprovativo',
+      )
+      .setInputFiles({
+        name: 'comprovativo-bancario.pdf',
+        mimeType: 'application/pdf',
+        buffer: labelled,
+      });
+    await page.getByLabel('Valor lido 1').waitFor();
+    assert.equal(await page.getByLabel('Valor lido 1').inputValue(), '1000.00');
+    assert.equal(await page.getByLabel('Data lida 1').inputValue(), today);
+    assert.equal(
+      await page.getByLabel('Sentido lido 1').inputValue(),
+      'expense',
+    );
+    assert.equal(
+      await page.getByLabel('Descrição lida 1').inputValue(),
+      'LOJA TESTE',
+    );
+    assert.equal((await data()).entries.length, 0);
+  }
+  await nav(12);
   await nav(13);
   await page.getByLabel('Carteira do comprovativo').selectOption('a');
-  await page
-    .getByLabel('Ler ficheiro de comprovativo')
-    .setInputFiles({
-      name: 'compra.pdf',
-      mimeType: 'application/pdf',
-      buffer: receipt,
-    });
+  await page.getByLabel('Ler ficheiro de comprovativo').setInputFiles({
+    name: 'compra.pdf',
+    mimeType: 'application/pdf',
+    buffer: receipt,
+  });
   await page.getByLabel('Valor lido 1').waitFor();
   assert.equal(await page.getByLabel('Valor lido 1').inputValue(), '25.00');
   assert.equal(await page.getByLabel('Data lida 1').inputValue(), today);
@@ -139,13 +179,11 @@ try {
     (await data()).entries[0].id,
   );
   // Re-reading the receipt associates it to the existing expense, never another debit.
-  await page
-    .getByLabel('Ler ficheiro de comprovativo')
-    .setInputFiles({
-      name: 'copia.pdf',
-      mimeType: 'application/pdf',
-      buffer: receipt,
-    });
+  await page.getByLabel('Ler ficheiro de comprovativo').setInputFiles({
+    name: 'copia.pdf',
+    mimeType: 'application/pdf',
+    buffer: receipt,
+  });
   await page.getByLabel('Lançamento compatível').waitFor();
   await page
     .getByLabel('Lançamento compatível')
@@ -158,13 +196,11 @@ try {
   await page
     .getByLabel('Carteira do extrato', { exact: true })
     .selectOption('a');
-  await page
-    .getByLabel('Ler ficheiro de extrato')
-    .setInputFiles({
-      name: 'banco.pdf',
-      mimeType: 'application/pdf',
-      buffer: bank,
-    });
+  await page.getByLabel('Ler ficheiro de extrato').setInputFiles({
+    name: 'banco.pdf',
+    mimeType: 'application/pdf',
+    buffer: bank,
+  });
   await page.getByLabel('Valor lido 2').waitFor();
   assert.equal(await page.getByLabel('Valor lido 1').inputValue(), '25.00');
   assert.equal(await page.getByLabel('Sentido lido 1').inputValue(), 'expense');
@@ -202,14 +238,12 @@ try {
   sheet.addRow([new Date(today + 'T12:00:00Z'), 'Excel saída', -20, 255]);
   sheet.addRow([new Date(today + 'T12:00:00Z'), 'Excel entrada', 80, 335]);
   const xlsx = Buffer.from(await workbook.xlsx.writeBuffer());
-  await page
-    .getByLabel('Ler ficheiro de extrato')
-    .setInputFiles({
-      name: 'banco.xlsx',
-      mimeType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      buffer: xlsx,
-    });
+  await page.getByLabel('Ler ficheiro de extrato').setInputFiles({
+    name: 'banco.xlsx',
+    mimeType:
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: xlsx,
+  });
   await page.getByLabel('Folha do Excel').waitFor();
   await page.getByLabel('Folha do Excel').selectOption('1');
   assert.equal(await page.getByLabel('Valor lido 1').inputValue(), '20.00');
@@ -217,13 +251,11 @@ try {
   assert.equal(await page.getByLabel('Valor lido 2').inputValue(), '80.00');
   assert.equal(await page.getByLabel('Data lida 1').inputValue(), today);
   const csv = `Data;Descrição;Débito;Crédito;Saldo\n${pt};CSV saída;5,00;;330,00\n${pt};CSV entrada;;10,00;340,00`;
-  await page
-    .getByLabel('Ler ficheiro de extrato')
-    .setInputFiles({
-      name: 'banco.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
-    });
+  await page.getByLabel('Ler ficheiro de extrato').setInputFiles({
+    name: 'banco.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv),
+  });
   await page.getByLabel('Descrição lida 1').waitFor();
   await page.waitForFunction(
     () =>
@@ -253,13 +285,11 @@ try {
     )
       outgoing.push(r.url());
   });
-  await page
-    .getByLabel('Ler ficheiro de comprovativo')
-    .setInputFiles({
-      name: 'fotografia.png',
-      mimeType: 'image/png',
-      buffer: photograph,
-    });
+  await page.getByLabel('Ler ficheiro de comprovativo').setInputFiles({
+    name: 'fotografia.png',
+    mimeType: 'image/png',
+    buffer: photograph,
+  });
   await page.getByLabel('Valor lido 1').waitFor({ timeout: 90000 });
   assert.equal(await page.getByLabel('Valor lido 1').inputValue(), '15.00');
   assert.equal(await page.getByLabel('Sentido lido 1').inputValue(), 'expense');
@@ -287,13 +317,11 @@ try {
   });
   const scanXref = scan.length;
   scan += `xref\n0 6\n0000000000 65535 f \n${scanOffsets.map((n) => String(n).padStart(10, '0') + ' 00000 n ').join('\n')}\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${scanXref}\n%%EOF`;
-  await page
-    .getByLabel('Ler ficheiro de comprovativo')
-    .setInputFiles({
-      name: 'digitalizado.pdf',
-      mimeType: 'application/pdf',
-      buffer: Buffer.from(scan, 'latin1'),
-    });
+  await page.getByLabel('Ler ficheiro de comprovativo').setInputFiles({
+    name: 'digitalizado.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(scan, 'latin1'),
+  });
   await page.getByLabel('Valor lido 1').waitFor({ timeout: 90000 });
   assert.equal(await page.getByLabel('Valor lido 1').inputValue(), '15.00');
   await page.getByLabel('Lançamento compatível').waitFor();

@@ -186,8 +186,32 @@ export function textDrafts(
       : '';
   const dates =
     content.match(/\b\d{2}[/-]\d{2}[/-]\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/g) ?? [];
+  // Bank receipts may put labels and values in separate PDF text items/lines.
+  const field = (pattern: RegExp) => {
+    const index = lines.findIndex((line) => pattern.test(normalized(line)));
+    if (index < 0) return '';
+    const label = normalized(lines[index]).match(pattern)![0];
+    return lines[index].slice(label.length).trim() || lines[index + 1] || '';
+  };
+  const operationDate = field(/^data(?:\s*[-–]\s*hora)?\s*[:：]?\s*/).match(
+    /\b\d{2}[/-]\d{2}[/-]\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/,
+  )?.[0];
+  if (
+    mode === 'statement' &&
+    /comprovativo|recibo/.test(normalized(content)) &&
+    /operacao|transaccao|transacao/.test(normalized(content)) &&
+    lines.some((line) => /^montante\b/.test(normalized(line)))
+  ) {
+    const receipts = textDrafts(content, 'receipt');
+    if (receipts[0]?.amount && receipts[0]?.date) return receipts;
+  }
   if (mode === 'receipt') {
     const candidates = lines
+      .map((line, index) =>
+        /^(?:montante|total|valor pago)\s*[:：]?\s*$/i.test(normalized(line))
+          ? `${line} ${lines[index + 1] ?? ''}`
+          : line,
+      )
       .filter(
         (l) =>
           !/(saldo|troco|subtotal|disponivel)/.test(normalized(l)) &&
@@ -215,23 +239,36 @@ export function textDrafts(
     return [
       {
         id: createId('read-draft'),
-        date: dates[0] ? importDate(dates[0]) : '',
+        date: operationDate
+          ? importDate(operationDate)
+          : dates[0]
+            ? importDate(dates[0])
+            : '',
         title:
-          lines
-            .find(
-              (l) =>
-                !amountTokens(l).length &&
-                !/^(data|nif|iban|recibo|comprovativo|fatura)/.test(
-                  normalized(l),
-                ),
-            )
-            ?.slice(0, 300) ?? '',
+          (field(/^comerciante\b\s*[:：]?\s*/) ||
+            lines
+              .find(
+                (l) =>
+                  !amountTokens(l).length &&
+                  !/^(data|nif|iban|recibo|comprovativo|fatura)/.test(
+                    normalized(l),
+                  ),
+              )
+              ?.slice(0, 300)) ??
+          '',
         amount: n === undefined ? '' : Math.abs(n).toFixed(2),
         direction: n !== undefined && n < 0 ? 'expense' : direction,
         currency,
         category: '',
         subcategory: '',
         selected: true,
+        ...(field(/^(?:transaccao|transacao|referencia)\b\s*[:：]?\s*/)
+          ? {
+              reference: field(
+                /^(?:transaccao|transacao|referencia)\b\s*[:：]?\s*/,
+              ),
+            }
+          : {}),
       },
     ];
   }

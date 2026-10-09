@@ -193,3 +193,5 @@ Ocorrências aceites/ignoradas nunca são regeneradas, incluindo após eliminaç
 ## Importação Home: sinais e comprovativos
 
 Saldo bancário não é receita/despesa. Débito é saída e crédito é entrada; sinal desconhecido exige confirmação. Valores revistos são absolutos e positivos, com sentido separado; moeda deve coincidir com a carteira, sem câmbio implícito. Ler/preparar/importar para conferência não movimenta dinheiro. Aplicar comprovativo valida carteira, categoria, saldo e documento antes de gravar tudo junto. Correspondência existente associa sem novo lançamento; lançamentos já conferidos também impedem débito duplicado. Referências bancárias são preservadas.
+
+Comprovativos bancários reconhecidos em Extratos passam pela mesma revisão/conferência. Preferir data da operação à assinatura digital, preservar referência de transacção e nunca inferir o sentido de uma transferência apenas pelo nome da operação.

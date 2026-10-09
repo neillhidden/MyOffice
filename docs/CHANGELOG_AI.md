@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Corrigir leitura de comprovativo bancário
+- **Problema**: comprovativo de compra com data e montante em linhas separadas não era identificado em Extratos, cujo leitor procurava movimentos tabulares na mesma linha.
+- **Correção**: homeDocumentImport reconhece comprovativos bancários também em Extratos, lê campos separados/inline, prefere data da operação, usa comerciante e preserva referência. Transferências ambíguas continuam sem sentido automático. Leitura não movimenta dinheiro.
+- **Verificação**: 63 testes unitários, lint/build e Chromium compilado com o PDF real enviado pelo utilizador em Extratos/Documentos; regressão integral dos formatos e fluxo de revisão passou. Testes permanentes usam dados sintéticos; ficheiro privado não incluído no repositório.
+
+
 ### [2026-10-09] — OpenAI Codex — Leitura de extratos e comprovativos
 - **Pedido**: PDF prioritário, CSV, Excel e fotografias, com texto/manual e distinção de entrada/saída/saldo.
 - **Implementação**: HomeFileImport em Extratos/Documentos; financialFileReader com PDF.js, ExcelJS e OCR Tesseract português local; financialTables partilha CSV; homeDocumentImport valida/revê/aplica e liga comprovativo atomicamente; homeExtensions protege duplicados já conferidos. Dependências fixadas no bun.lock; script de preparação gera recursos estáticos ignorados pelo Git. Sem nova API, armazenamento ou migração.
