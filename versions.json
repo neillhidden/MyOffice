@@ -1,6 +1,12 @@
 {
-  "currentSha": "54da466ae5357f234f3d2a3aa34846c5a3c4bd05",
+  "currentSha": "9e1e2d08423a45495e562805f18e2ab59fa57545",
   "entries": [
+    {
+      "sha": "9e1e2d08423a45495e562805f18e2ab59fa57545",
+      "date": "2026-10-09T15:12:37Z",
+      "title": "Completar a gestão pessoal do Home com calendário e ferramentas financeiras",
+      "status": "ready"
+    },
     {
       "sha": "54da466ae5357f234f3d2a3aa34846c5a3c4bd05",
       "date": "2026-10-09T13:37:49Z",
