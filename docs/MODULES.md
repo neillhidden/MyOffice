@@ -154,3 +154,7 @@ O seletor no rodapé da barra lateral troca o menu Business por Dashboard, Finan
 ### Categorias, compras e melhorias de 2026-10-08
 
 [Guia funcional](CATEGORIES.md): catálogo Business com produtos por categoria/subcategoria, compras pessoais com pagamento auditável, aparência nos dois modos, dashboard com alertas/previsão e calendário baseado na data local com atualização diária.
+
+## Extensão Home — ferramentas pessoais (09/10/2026)
+
+Além das oito áreas originais, o menu pessoal inclui Histórico, Dívidas pessoais, Planeamento, Relatórios, Extratos e Documentos. Agenda apresenta calendário mensal/semanal integrado com contas, metas, prestações e garantias; detalhes das tarefas permitem hora, prioridade, responsável e repetição. Dashboard conserva os gráficos e acrescenta atalhos/contadores. O guia corrente completo está em HOME.md.

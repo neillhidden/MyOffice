@@ -146,3 +146,11 @@ Este documento descreve a árvore completa de diretórios e ficheiros do reposit
 2. **Componentes Agrupados por Módulo (`src/components/<modulo>/`)**:
    - Cada pasta de módulo contém a sua `*View.tsx` principal e os seus `*Modal.tsx` específicos.
    - Modais que podem ser invocados a partir de múltiplos módulos ou do cabeçalho global (`ProductCreateModal`, `ProductDetailModal`, `MovementCreateModal`, `DraftsListModal`) são montados no final de `src/App.tsx`.
+
+## Ferramentas pessoais Home — 09/10/2026
+
+- `src/components/home/HomeTools.tsx`: calendário/detalhes de tarefas, histórico, dívidas, previsões, relatórios, extratos e documentos; usa componentes/persistência existentes.
+- `src/utils/homeExtensions.ts`: operações e validação das entidades adicionais.
+- `src/utils/homeAnalysis.ts`: calendário/previsões/relatórios e interpretação CSV.
+- `database/migrations/006_home_life_tools.sql`: preparação offline, sem conexão.
+- `tests/home-extensions.test.ts`, `tests/home-tools-browser.mjs`, `tests/home-tools-database-regression.mjs`: regras, interface e schema offline.

@@ -85,7 +85,7 @@ A entrada de Definições usa linhas de largura completa com ícone linear, tít
 
 ## Seletor Home | Business
 
-O seletor fica no rodapé da barra lateral, depois do menu, sem alterar a altura de 56px da marca/cabeçalho. Expandido: dois botões com aria-pressed e modo ativo destacado. Recolhido: select nativo compacto, acessível ao toque/teclado. Em ecrãs pequenos a sidebar começa recolhida. Home mantém tokens claro/escuro, formulários com foco visível e modais com foco contido/Escape. O tema também pode ser configurado nas Definições; notificações empresariais não aparecem no Home.
+O seletor fica no rodapé da barra lateral, depois do menu, sem alterar a altura de 56px da marca/cabeçalho. Expandido: dois botões com aria-pressed e modo ativo destacado. Recolhido: botão com ícone do destino, acessível ao toque/teclado. Em ecrãs pequenos a sidebar começa recolhida. Home mantém tokens claro/escuro, formulários com foco visível e modais com foco contido/Escape. O tema também pode ser configurado nas Definições; notificações empresariais não aparecem no Home.
 
 ## Definições, rolagem e barra recolhida (2026-10-08)
 
@@ -98,3 +98,7 @@ Barra de filtros em cápsula com divisórias, pesquisa e Adicionar só texto. Li
 ### Home — formulários e sino
 
 Criação vazia; edição preenchida. Ações de pagamento/contribuição reutilizam o registo selecionado. Botões de criação apenas texto, ações de edição/eliminação ícones. Erros por campo em vermelho sem popup nativo. USD usa formatação portuguesa. `home-notifications-button`, `home-notifications-badge`, `home-notifications-popover` identificam as confirmações Home junto ao tema. O popover é limitado ao viewport e rolável, com fecho externo/Escape.
+
+### Ferramentas Home — 09/10/2026
+
+Menu pessoal conserva home-nav-0..7 e acrescenta home-nav-8..13. Formulários auxiliares usam home-tool-*; inputs de extrato/documentos têm nomes acessíveis. Modais HomeModal conservam foco/Escape e confirmação sem popup nativo. Calendário tem grelha mensal/semanal com overflow horizontal apenas interno; formulários/tabelas mantêm tokens de tema e ações editar/eliminar por ícone.

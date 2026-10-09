@@ -21,6 +21,13 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Ferramentas completas da vida pessoal no Home
+- **Pedido**: implementar as oito melhorias propostas, mantendo frontend/armazenamento local e preparando a futura base; autorizado por “Ok... pode continuar.”.
+- **Interface**: calendário mensal/semanal integrado, tarefas com hora/prioridade/responsável/repetição e conclusão por ocorrência; Histórico com versões/recuperação; dívidas a pagar/receber/prestações; previsões; relatórios mês/ano/intervalo CSV/PDF; extratos com pré-visualização/conferência; documentos associados; atalhos/contadores no Dashboard. IDs antigos e estilo/tema preservados.
+- **Regras e dados**: amortizações alteram carteira sem duplicar consumo; snapshots/referências e saldo protegido; correções reabrem conferências; planos não movimentam dinheiro; cópia JSON contém documentos PDF/PNG/JPEG limitados. Metadados auditados não duplicam binários. Migração 006 offline prepara sete tabelas adicionais (48 no total), sem backend/conexão.
+- **Documentação**: HOME.md consolidado com comportamento corrente, fluxos e armazenamento; arquitetura/regras/modelos/API/direção/estrutura/guias atualizados, distinguindo decisões antigas substituídas.
+- **Verificação**: 55 testes unitários; 11 verificações SQL offline; sete suites Chromium em desenvolvimento e ferramentas/blocos 3–6 também na compilação Pages. lint/build passaram. PDF descarregado validado com pdftotext; persistência, duplicados, recuperação, telefone e tema escuro verificados. Aviso pré-existente de bundle grande permanece. Detalhes de continuação em CURRENT_STATE.md.
+
 ### [2026-10-09] — OpenAI Codex — Concluir blocos 3–6 do Home
 - **Pedido**: “Faz todos os Blocos.” substitui a confirmação entre blocos.
 - **Alterações**: programação de contas a pagar/receber, snapshots/idempotência/pausa e sino; USD original e conversão explícita; metas sem prazo, origem e preferência de desconto; formulários vazios/validação por campo/vocabulário; migração SQL 005 offline.

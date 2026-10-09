@@ -1,3 +1,4 @@
+import { validateHomeExtensions } from './homeExtensions';
 import { validateHomeSchedules } from './homeRecurrence';
 import { normalizeHomeCatalog } from './homeCategories';
 import {
@@ -128,6 +129,11 @@ export const emptyHome = (): HomeData => ({
       currency: 'AOA',
     },
   ],
+  debts: [],
+  debtPayments: [],
+  plans: [],
+  statementRows: [],
+  documents: [],
   entries: [],
   budgets: [],
   bills: [],
@@ -174,7 +180,9 @@ export function balances(data: HomeData): Record<string, number> {
   );
   for (const e of effectiveEntries(data)) {
     const amount = Math.round(e.amount * 100);
-    cents[e.accountId] += e.type === 'income' ? amount : -amount;
+    cents[e.accountId] += ['income', 'debt_in'].includes(e.type)
+      ? amount
+      : -amount;
     if (e.type === 'transfer') cents[e.destinationId!] += amount;
   }
   return Object.fromEntries(
@@ -215,7 +223,11 @@ export function addHomeEntry(
     entryCurrency(data, entry),
   );
   if (entry.type === 'reversal') throw new Error('Usa a operação de estorno.');
-  if (!['income', 'expense', 'transfer'].includes(entry.type))
+  if (
+    !['income', 'expense', 'transfer', 'debt_in', 'debt_out'].includes(
+      entry.type,
+    )
+  )
     throw new Error('Tipo de lançamento inválido.');
   if (
     entry.type === 'transfer' &&
@@ -241,7 +253,10 @@ export function addHomeEntry(
     !entry.occurrenceId
   )
     throw new Error('A moeda da conta deve coincidir com a conta da casa.');
-  if (entry.type !== 'income' && balances(data)[entry.accountId] < entry.amount)
+  if (
+    !['income', 'debt_in'].includes(entry.type) &&
+    balances(data)[entry.accountId] < entry.amount
+  )
     throw new Error(
       'O saldo desta conta é insuficiente. Regista primeiro o rendimento ou escolhe outra conta.',
     );
@@ -273,6 +288,11 @@ export function reverseHomeEntry(
     throw new Error('Estorna esta transferência pelo fluxo Business/Home.');
   const next: HomeData = {
     ...data,
+    statementRows: (data.statementRows ?? []).map((r) =>
+      r.entryId === id
+        ? { ...r, state: 'pending' as const, entryId: undefined }
+        : r,
+    ),
     entries: [
       {
         ...original,
@@ -300,6 +320,11 @@ export function validateHomeData(input: unknown): HomeData {
     accounts: Array.isArray(source.accounts)
       ? source.accounts.map((a) => ({ ...a, currency: a.currency ?? 'AOA' }))
       : source.accounts,
+    debts: source.debts ?? [],
+    debtPayments: source.debtPayments ?? [],
+    plans: source.plans ?? [],
+    statementRows: source.statementRows ?? [],
+    documents: source.documents ?? [],
     occurrences: source.occurrences ?? [],
     settings: {
       ...source.settings,
@@ -341,6 +366,9 @@ export function validateHomeData(input: unknown): HomeData {
     data.goals,
     data.tasks,
     data.shopping!,
+    data.debts!,
+    data.plans!,
+    data.documents!,
   ];
   if (
     arrays.some((a) => !Array.isArray(a) || a.length > 50000) ||
@@ -415,7 +443,14 @@ export function validateHomeData(input: unknown): HomeData {
     if (
       !validDate(e.date) ||
       !accounts.has(e.accountId) ||
-      !['income', 'expense', 'transfer', 'reversal'].includes(e.type)
+      ![
+        'income',
+        'expense',
+        'transfer',
+        'reversal',
+        'debt_in',
+        'debt_out',
+      ].includes(e.type)
     )
       throw new Error('Lançamento inválido.');
     if (
@@ -453,7 +488,9 @@ export function validateHomeData(input: unknown): HomeData {
         e.billId !== original.billId ||
         e.billMonth !== original.billMonth ||
         e.goalId !== original.goalId ||
-        e.businessMovementId !== original.businessMovementId
+        e.businessMovementId !== original.businessMovementId ||
+        e.debtId !== original.debtId ||
+        e.debtPaymentId !== original.debtPaymentId
       )
         throw new Error('Estorno inválido.');
       reversals.add(original.id);
@@ -613,6 +650,7 @@ export function validateHomeData(input: unknown): HomeData {
   if (Object.values(balances(data)).some((v) => v < 0))
     throw new Error('A cópia contém saldos negativos.');
   validateHomeSchedules(data);
+  validateHomeExtensions(data);
   return normalizeHomeCatalog(data);
 }
 

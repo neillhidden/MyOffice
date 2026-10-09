@@ -117,7 +117,7 @@ Business: `myoffice_estoque_subcategories` contém mapa categoria → nomes das 
 
 ## Extensão Home AOA/USD e metas (2026-10-08)
 
-HomeData v1 mantém compatibilidade: contas/moedas, limites, mensalidades e compras têm moeda opcional (legado AOA); metas guardam fundingMode, plannedAmount, acquiredDate/acquisitionEntryId e categoria. settings guarda reserveGoals (padrão false), goalsPreferenceSet e showBusinessIncome. incomeCategories/incomeSubcategories separadas das despesas. Entradas guardam goalId/businessMovementId. BankMovement guarda homeTransferId/personalAccountId/personalCurrency. Diário transitório: myoffice-home-business-transaction; não é ledger nem conexão externa. Migração offline 003 acrescenta colunas de financiamento/aquisição, mantendo 40 tabelas.
+HomeData v1 mantém compatibilidade: contas/moedas, limites, mensalidades e compras têm moeda opcional (legado AOA); metas guardam fundingMode, plannedAmount, acquiredDate/acquisitionEntryId e categoria. settings guarda reserveGoals (padrão inicial false; desde os blocos 3–6 true para instalações novas, preservando escolhas explícitas), goalsPreferenceSet e showBusinessIncome. incomeCategories/incomeSubcategories separadas das despesas. Entradas guardam goalId/businessMovementId. BankMovement guarda homeTransferId/personalAccountId/personalCurrency. Diário transitório: myoffice-home-business-transaction; não é ledger nem conexão externa. Migração offline 003 acrescenta colunas de financiamento/aquisição, mantendo 40 tabelas.
 
 ## Catálogo Home estável — bloco 1 (09/10/2026)
 
@@ -130,3 +130,11 @@ Entidades pessoais incluem editedAt, deletedAt e edits (changedAt/before). Nenhu
 ### Home — ocorrências e câmbio
 
 HomeData inclui occurrences (id conta:data, due, state, snapshot imutável, entryId/error/settledAt); bills incluem type/startDate/recurrence/accountingMode/accountId/exchangeRate/generateAfter; entries originalAmount/originalCurrency/exchangeRate/occurrenceId; goals sourceAccountId e originalAmount/originalCurrency/exchangeRate, deadline vazio permitido. settings.accountingMode guarda padrão; reserveGoals padrão true preserva preferências explícitas. Migração offline 005 acrescenta recurring_bill_occurrences (total 41 tabelas), atributos de programação e campos de original/conversão no ledger/goals. Nenhuma conexão. Correções pessoais SQL ainda exigem overlays versionados, sem UPDATE do ledger imutável.
+
+## Home — ferramentas pessoais completas (09/10/2026)
+
+O mesmo JSON `myoffice-home-v1` acrescenta arrays `debts`, `debtPayments`, `plans`, `statementRows` e `documents`; cópias anteriores são normalizadas com arrays vazios. `tasks` suporta hora, prioridade, responsável, programação e `completedDates`. Amortizações usam `debt_in/debt_out` e referências `debtId/debtPaymentId`; conferência guarda `entryId` e o lançamento importado guarda `reconciliationId`. Alterar/eliminar/estornar um lançamento reabre a sua conferência.
+
+Documentos são base64 no JSON local, com assinatura MIME validada, limite 1 MiB/ficheiro e 2 MiB no total incluindo eliminados. Snapshots de metadados não repetem binários; recuperação mantém o conteúdo original. A cópia JSON inclui comprovativos. Não usar Git para guardar dados pessoais.
+
+Migração **006_home_life_tools.sql**, offline: 7 tabelas novas, total 48 com RLS habilitada. Tarefas ampliam calendar_events e conclusões por ocorrência; dívidas/pagamentos, planos, extratos, documentos e revisões pessoais têm espaço explícito. Ficheiros futuros serão objetos privados separados, com object_key nos metadados PostgreSQL. Datas/referências e moeda dos pagamentos deverão ser validadas atomicamente pela futura API. Não existe importador, sincronização, autenticação ou conexão ativa; RLS habilitada não significa políticas de acesso configuradas.

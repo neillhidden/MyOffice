@@ -156,7 +156,7 @@ Esta proteção é de integridade do front-end. Sem backend/autenticação, não
 
 ## Home pessoal
 
-Regras Business acima preservadas. Home tem ledger próprio, não chama funções financeiras empresariais. Transferências/reservas conservam património e não são despesas. Um pagamento por conta recorrente/mês, desbloqueado apenas por estorno. Estornos mantêm original e motivo; saldos negativos/estornos repetidos são recusados. Importações são validadas antes da escrita. Ver HOME.md para a distinção entre saldo inicial, receita do mês e reserva.
+Regras Business acima preservadas. Home tem ledger próprio, não chama funções financeiras empresariais. Transferências/reservas conservam património e não são despesas. Legado mensal tem um pagamento por mês; programação nova tem ocorrência única por conta/data, sem regenerar ocorrências aceites/ignoradas após correção. Estornos mantêm original e motivo; saldos negativos/estornos repetidos são recusados. Importações são validadas antes da escrita. Ver HOME.md para a distinção entre saldo inicial, receita do mês e reserva.
 
 ## Compras pessoais e classificação (2026-10-08)
 
@@ -164,7 +164,7 @@ Itens de compras são planeamento; não alteram saldos ao serem criados ou arqui
 
 ## Finanças Home e transferência empresarial (2026-10-08)
 
-Contas Home AOA/USD; moeda imutável nos lançamentos e totais separados. Transferências, pagamentos e reservas exigem mesma moeda. Metas novas são planeadas por padrão; a preferência de reserva é explícita. Aquisição reservada debita a reserva, nunca duas vezes a carteira de origem. Aquisição planeada não movimenta dinheiro. Estorno reabre aquisição e mantém histórico.
+Contas Home AOA/USD; moeda imutável nos lançamentos e totais separados. Transferências, pagamentos e reservas exigem mesma moeda. Nas instalações novas, reserva está ativada desde os blocos 3–6; preferências antigas explícitas são preservadas e a reserva pode ser desligada nas Definições. Aquisição reservada debita a reserva, nunca duas vezes a carteira de origem. Aquisição planeada não movimenta dinheiro. Estorno reabre aquisição e mantém histórico.
 
 Business → Home grava saída/receita vinculadas, com moeda/conta/valor/data compatíveis. Exige conta ativa, empresa associada ativa (conta geral permitida) e saldo suficiente. Estorno das duas pernas apenas no Home; estorno empresarial isolado bloqueado. Recuperação local protege gravação interrompida e importação Home não pode quebrar vínculos existentes. Consulte HOME.md para fluxos e limites.
 
@@ -179,3 +179,12 @@ Por pedido explícito do utilizador, despesas/rendimentos Home admitem edição 
 ### Home — blocos 3–6
 
 Ocorrências aceites/ignoradas nunca são regeneradas, incluindo após eliminação/estorno. Contabilização automática sem saldo fica pendente; não admite saldo negativo. Edições futuras conservam snapshots. USD sem taxa usa carteira USD; com taxa explícita usa AOA e guarda valor original. Reservas são transferências, aquisição debita reserva uma vez. Interruptor global afeta contribuições futuras; progresso planeado não cria saldo. Regras Business permanecem imutáveis e sem FX implícito. Ver HOME_BLOCKS_3_6.md.
+
+### Home — calendário, recuperação e ferramentas pessoais
+
+- Recuperação aplica o mesmo ID e guarda nova revisão, validando saldo/referências/unicidade. Não desfaz estornos nem transfere valores Business isoladamente; contas recuperadas ficam inativas para evitar cobranças retroativas.
+- Criar uma dívida declara obrigação existente, sem movimento monetário. Amortizações parciais exigem carteira da mesma moeda/saldo suficiente e não excedem o restante. Prestações repartem centavos exatamente e mantêm âncora mensal; pagamentos cobrem por ordem. Estornos reabrem o restante. Dívida com histórico de pagamentos não é eliminada.
+- Previsão usa saldo disponível atual, contas ainda pendentes e planos. Reservas planeadas não movimentam dinheiro. Carteira explicitamente escolhida recebe as dívidas da mesma moeda só na simulação; sem carteira ficam indicadas fora do cálculo. Não duplicar planos manuais com contas/prestações existentes.
+- Relatórios separam AOA/USD e contas; consumo/rendimentos excluem transferências e amortizações. PDF/CSV listam movimentos efetivos. CSV protege fórmulas de folhas de cálculo.
+- Extrato CSV exige revisão antes de guardar linhas e confirmação antes de criar lançamentos. Correspondência exige mesma carteira/data/valor e é única por carteira/lançamento. Fingerprint/ordinal bloqueia reimportação exata sem apagar linhas legítimas iguais. Editar/eliminar/estornar devolve conferência a pendente. Saldo de banco opcional compara com saldo atual, não reconstrói saldo histórico.
+- Tarefa recorrente conclui por ocorrência; hora/prioridade/responsável não têm efeitos monetários. Documentos aceitam apenas PDF/PNG/JPEG com assinatura compatível. Cópia JSON inclui conteúdo; eliminação lógica preserva ficheiro e ocupa espaço.

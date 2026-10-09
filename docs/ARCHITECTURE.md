@@ -169,3 +169,9 @@ homeEditing.ts valida alterações, mantém IDs e snapshots e aplica eliminaçã
 ### Home — programação e câmbio (09/10/2026)
 
 `homeRecurrence.ts` calcula datas ancoradas e processa ocorrências no HomeProvider usando useToday. Snapshot pendente persiste em `HomeData.occurrences`; conta/data é a chave idempotente. A gravação existente protege quota, concorrência de abas e vínculos Business. `HomeNotifications` fica no HomeHeader; não mistura notificações StockContext. Lançamentos guardam valor original e taxa, e amount é a única quantia que afeta saldo/gráficos. `homeForms.ts` centraliza validação por campo sem bolhas nativas. Não há scheduler fora do navegador.
+
+## Ferramentas Home — 09/10/2026
+
+`HomeTools.tsx` reúne interfaces de histórico, dívidas, planeamento, relatórios, extratos e documentos; `HomeCalendar` expande a Agenda existente e `HomeOverview` acrescenta atalhos/contadores ao Dashboard. Usa HomeContext/HomeModal e tokens existentes. `homeExtensions.ts` concentra operações/validação das entidades e `homeAnalysis.ts` gera calendário, previsões, relatórios e interpreta CSV. Nenhum serviço foi acrescentado.
+
+Armazenamento nesta fase: mesmo documento local, inclusive comprovativos base64 limitados. Exportação/importação JSON conserva entidades e vínculos. Preparação futura: PostgreSQL isolado por workspace, revisões auditadas e armazenamento privado de ficheiros; infraestrutura/fornecedor/autenticação ainda por escolher e implementar. Consultar HOME.md e migração SQL 006.

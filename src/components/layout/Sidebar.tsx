@@ -24,6 +24,11 @@ import {
   Target,
   House,
   ListChecks,
+  History,
+  FileText,
+  TrendingUp,
+  FileCheck,
+  Paperclip,
 } from 'lucide-react';
 
 import { HomeSection, OfficeMode } from '../../types/home';
@@ -397,6 +402,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { section: 'Agenda', icon: ListChecks },
             { section: 'Definições', icon: Settings },
             { section: 'Compras', icon: ShoppingCart },
+            { section: 'Histórico', icon: History },
+            { section: 'Dívidas pessoais', icon: HandCoins },
+            { section: 'Planeamento', icon: TrendingUp },
+            { section: 'Relatórios', icon: FileText },
+            { section: 'Extratos', icon: FileCheck },
+            { section: 'Documentos', icon: Paperclip },
           ] as const).map(({ section, icon: Icon }, index) => (
             <button type="button" key={section} id={`home-nav-${index}`}
               title={isCollapsed ? section : undefined} aria-label={section}

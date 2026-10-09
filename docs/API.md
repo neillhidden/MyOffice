@@ -85,3 +85,7 @@ Nenhuma API conectada. A futura operação Business → Home exige autorização
 ### Futuro scheduler Home
 
 A versão atual processa contas no navegador. Um scheduler futuro deve bloquear a ocorrência conta/data e gravar movimento + estado aceito numa transação, validar moeda/taxa/permissão e assegurar idempotência no servidor. Notificações com aplicação fechada e sincronização entre dispositivos dependem dessa fase; não existem endpoints novos nesta entrega.
+
+### Futuras ferramentas Home — migração 006
+
+Sem endpoints atuais. A futura API deverá transacionar dívida/pagamento/ledger e validar limite de amortização/saldo/moeda; conservar revisions/overlays para correções pessoais e não alterar ledger Business. Extratos precisam de idempotência por fingerprint SHA-256, correspondência de data/valor/carteira e invalidação após correção. Upload privado deve validar assinatura/tamanho/entidade/workspace, guardar objeto e metadados e fornecer downloads autorizados. Tarefas concluem por data; previsões/relatórios são projeções, sem efeitos no ledger. Tudo continua local nesta fase, com JSON exportável.

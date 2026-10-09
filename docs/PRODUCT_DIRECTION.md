@@ -23,7 +23,7 @@ O seletor Home/Business e as oito áreas pessoais foram implementados em 2026-10
 
 Correção dos três problemas de integridade identificados: IDs dependentes do relógio, validação central insuficiente de vendas e remoções/resets que comprometiam auditoria financeira. Esquema PostgreSQL offline guardado com testes.
 
-A conexão da base de dados, autenticação e permissões continuam adiadas por pedido do utilizador. O front-end Home já inclui finanças, orçamento, recorrências mensais, metas e agenda, com cópia local exportável. Novas funcionalidades pessoais deverão preservar essa separação.
+A conexão da base de dados, autenticação e permissões continuam adiadas por pedido do utilizador. O front-end Home já inclui finanças, orçamento, recorrências programáveis, metas e agenda, com cópia local exportável. Novas funcionalidades pessoais deverão preservar essa separação.
 
 ## Decisões de 2026-10-08
 
@@ -33,4 +33,8 @@ Pedido adicional de 2026-10-08: seletor na parte inferior, calendário baseado n
 
 ## Preferências confirmadas em 2026-10-08
 
-Contas pessoais em AOA/USD e totais separados. Metas planeadas por padrão; reserva financeira configurável, aquisição sem desconto duplicado. Business transfere para carteira pessoal separada, sem saldo partilhado; opção de ocultar formulário. Categorias principais de despesa incluem Alimentação/Internet/etc.; rendimentos têm taxonomia própria. ATT significa atenção. Dashboard com gráficos de receitas/despesas e pizza de categorias, orçamento com gastos reais. Definições preservam estilo em linhas/páginas próprias; scroll interno com topo/sidebar fixos. Barra recolhida mostra ícone do destino na alternância Home/Business.
+Contas pessoais em AOA/USD e totais separados. Decisão inicial: metas planeadas por padrão; substituída em 09/10/2026 por reserva ativada nas instalações novas, preservando escolhas explícitas. Reserva financeira configurável, aquisição sem desconto duplicado. Business transfere para carteira pessoal separada, sem saldo partilhado; opção de ocultar formulário. Categorias principais de despesa incluem Alimentação/Internet/etc.; rendimentos têm taxonomia própria. ATT significa atenção. Dashboard com gráficos de receitas/despesas e pizza de categorias, orçamento com gastos reais. Definições preservam estilo em linhas/páginas próprias; scroll interno com topo/sidebar fixos. Barra recolhida mostra ícone do destino na alternância Home/Business.
+
+## Home completo — 09/10/2026
+
+Autorizado pelo utilizador implementar as oito melhorias propostas: calendário, histórico/recuperação, dívidas/prestações, previsões, relatórios CSV/PDF, tarefas detalhadas/recorrentes, extratos e documentos. Implementado com persistência local, backup JSON inclusive comprovativos e SQL offline 006 (48 tabelas). PostgreSQL e armazenamento privado de ficheiros constituem a preparação futura; nenhuma ligação/backend/login foi ativada. Guia corrente consolidado em HOME.md.

@@ -13,7 +13,13 @@ export type HomeSection =
   | 'Metas e sonhos'
   | 'Agenda'
   | 'Definições'
-  | 'Compras';
+  | 'Compras'
+  | 'Histórico'
+  | 'Dívidas pessoais'
+  | 'Planeamento'
+  | 'Relatórios'
+  | 'Extratos'
+  | 'Documentos';
 export interface HomeAccount extends HomeAudit {
   currency?: HomeCurrency;
   id: string;
@@ -26,11 +32,14 @@ export interface HomeEntry extends HomeAudit {
   originalAmount?: number;
   exchangeRate?: number;
   occurrenceId?: string;
+  debtId?: string;
+  debtPaymentId?: string;
+  reconciliationId?: string;
   subcategory?: string;
   businessMovementId?: string;
   goalId?: string;
   id: string;
-  type: 'income' | 'expense' | 'transfer' | 'reversal';
+  type: 'income' | 'expense' | 'transfer' | 'reversal' | 'debt_in' | 'debt_out';
   title: string;
   amount: number;
   date: string;
@@ -134,6 +143,11 @@ export interface HomeGoal extends HomeAudit {
   accountId: string;
 }
 export interface HomeTask extends HomeAudit {
+  time?: string;
+  priority?: 'low' | 'normal' | 'high';
+  assignee?: string;
+  recurrence?: HomeRecurrence;
+  completedDates?: string[];
   id: string;
   title: string;
   date: string;
@@ -155,6 +169,11 @@ export interface HomeCategory {
   editedAt?: string;
 }
 export interface HomeData {
+  debts?: HomeDebt[];
+  debtPayments?: HomeDebtPayment[];
+  plans?: HomePlan[];
+  statementRows?: HomeStatementRow[];
+  documents?: HomeDocument[];
   occurrences?: HomeOccurrence[];
   categoryCatalog?: HomeCategory[];
   settings?: {
@@ -195,4 +214,60 @@ export interface HomeShoppingItem extends HomeAudit {
   unitPrice: number;
   entryId?: string;
   archived: boolean;
+}
+
+export interface HomeDebt extends HomeAudit {
+  id: string;
+  title: string;
+  person: string;
+  type: 'payable' | 'receivable';
+  principal: number;
+  currency: HomeCurrency;
+  issueDate: string;
+  dueDate: string;
+  installmentCount: number;
+  firstInstallment: string;
+}
+export interface HomeDebtPayment {
+  id: string;
+  debtId: string;
+  entryId: string;
+  amount: number;
+  date: string;
+}
+export interface HomePlan extends HomeAudit {
+  id: string;
+  title: string;
+  type: 'income' | 'expense' | 'reserve';
+  amount: number;
+  currency: HomeCurrency;
+  date: string;
+  accountId: string;
+  category: string;
+  goalId?: string;
+}
+export interface HomeStatementRow {
+  id: string;
+  accountId: string;
+  date: string;
+  title: string;
+  amount: number;
+  reference?: string;
+  fingerprint: string;
+  batchId: string;
+  state: 'pending' | 'matched' | 'ignored';
+  entryId?: string;
+}
+export interface HomeDocument extends HomeAudit {
+  id: string;
+  title: string;
+  fileName: string;
+  mime: 'application/pdf' | 'image/png' | 'image/jpeg';
+  size: number;
+  content: string;
+  uploadedAt: string;
+  kind: 'receipt' | 'invoice' | 'warranty' | 'other';
+  expiresOn?: string;
+  entityType?: 'entry' | 'shopping' | 'debt' | 'goal';
+  entityId?: string;
 }

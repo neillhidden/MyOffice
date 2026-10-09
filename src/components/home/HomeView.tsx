@@ -1,3 +1,5 @@
+import { HomeCalendar, HomeTools, HomeOverview } from './HomeTools';
+import { completeHomeTask } from '../../utils/homeExtensions';
 import { homeFormErrors } from '../../utils/homeForms';
 import {
   occurrenceSnapshot,
@@ -637,7 +639,12 @@ export function HomeView({
             title: text(v.title),
             date: v.date,
             category: text(v.category),
-            done: current.tasks.find((t) => t.id === id)?.done ?? false,
+            done:
+              current.tasks
+                .find((t) => t.id === id)
+                ?.completedDates?.includes(v.date) ??
+              current.tasks.find((t) => t.id === id)?.done ??
+              false,
           }),
         };
       });
@@ -972,7 +979,16 @@ export function HomeView({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {!['Agenda', 'Definições'].includes(section) && (
+          {![
+            'Agenda',
+            'Definições',
+            'Histórico',
+            'Dívidas pessoais',
+            'Planeamento',
+            'Relatórios',
+            'Extratos',
+            'Documentos',
+          ].includes(section) && (
             <label className="text-xs">
               <span className="sr-only">Moeda de consulta</span>
               <select
@@ -990,9 +1006,18 @@ export function HomeView({
               </select>
             </label>
           )}
-          {!['Metas e sonhos', 'Agenda', 'Definições', 'Compras'].includes(
-            section,
-          ) && (
+          {![
+            'Metas e sonhos',
+            'Agenda',
+            'Definições',
+            'Compras',
+            'Histórico',
+            'Dívidas pessoais',
+            'Planeamento',
+            'Relatórios',
+            'Extratos',
+            'Documentos',
+          ].includes(section) && (
             <label className="text-xs">
               <span className="sr-only">Mês de referência</span>
               <input
@@ -1300,10 +1325,7 @@ export function HomeView({
                       onClick={() =>
                         run(() =>
                           update((d) => ({
-                            ...d,
-                            tasks: d.tasks.map((item) =>
-                              item.id === t.id ? { ...item, done: true } : item,
-                            ),
+                            ...completeHomeTask(d, t.id, t.date, true),
                           })),
                         )
                       }
@@ -1476,7 +1498,11 @@ export function HomeView({
                               ? 'Despesa'
                               : e.type === 'transfer'
                                 ? 'Transferência'
-                                : 'Estorno'}{' '}
+                                : e.type === 'debt_in'
+                                  ? 'Amortização recebida'
+                                  : e.type === 'debt_out'
+                                    ? 'Amortização paga'
+                                    : 'Estorno'}{' '}
                           ·{' '}
                           {
                             data.accounts.find((a) => a.id === e.accountId)
@@ -2061,6 +2087,7 @@ export function HomeView({
 
       {section === 'Agenda' && (
         <>
+          <HomeCalendar onNavigate={onNavigate} />
           <p className={muted}>
             Tarefas da casa e compromissos pessoais, organizados por data.
           </p>
@@ -2084,12 +2111,7 @@ export function HomeView({
                     onChange={() =>
                       run(() =>
                         update((d) => ({
-                          ...d,
-                          tasks: d.tasks.map((item) =>
-                            item.id === t.id
-                              ? { ...item, done: !item.done }
-                              : item,
-                          ),
+                          ...completeHomeTask(d, t.id, t.date, !t.done),
                         })),
                       )
                     }
@@ -2134,6 +2156,8 @@ export function HomeView({
         </>
       )}
 
+      {section === 'Dashboard' && <HomeOverview onNavigate={onNavigate} />}
+      <HomeTools section={section} />
       {section === 'Compras' && <HomeShopping currency={currency} />}
       {section === 'Definições' && (
         <div className="space-y-4">

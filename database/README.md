@@ -106,3 +106,20 @@ Aplicar `004_home_category_metadata.sql` após 001–003 quando houver backend: 
 Aplicar depois de 001–004 quando existir backend. Acrescenta ocorrências únicas conta/data e programação, tipo rendimento/despesa, moeda original/taxa e carteira de origem da meta; total de 41 tabelas. RLS ativada na nova tabela; autenticação/políticas continuam para a fase backend. A moeda do lançamento é a da carteira contabilizada; o original USD não é substituído. Preferências default de Home: reserveGoals=true e accountingMode=ask, guardar em workspace_preferences. Preservar escolhas antigas explicitamente guardadas.
 
 Teste offline: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-recurring-database-regression.mjs`. A aplicação frontend não executa SQL. O importador/overlays versionados para edição pessoal e scheduler servidor ainda não existem.
+
+## Migração 006 — ferramentas pessoais
+
+Aplicar depois de 001–005 apenas na futura base. Sete tabelas adicionais (**48 no total**): personal_debts, personal_debt_payments, personal_plans, personal_statement_rows, personal_documents, personal_entity_revisions e personal_task_completions. calendar_events recebe hora/prioridade/responsável/repetição/auditoria. As novas tabelas têm RLS habilitada, sem políticas de acesso configuradas nesta etapa.
+
+| Campo local | Destino futuro |
+|---|---|
+| debts/debtPayments | personal_debts/personal_debt_payments; movimentos vinculados classificados como amortização |
+| plans | personal_plans, mapear categorias para IDs e validar moeda da meta |
+| statementRows | personal_statement_rows; fingerprint_sha256 = SHA-256 UTF-8 do fingerprint local completo, incluindo ordinal |
+| documents | personal_documents; decodificar base64, validar e enviar ficheiro para armazenamento privado; guardar object_key, não binário/public URL |
+| edits/deletedAt | personal_entity_revisions e metadados; snapshots sem content; overlays/compensação auditados no ledger |
+| tasks/completedDates | calendar_events/personal_task_completions, uma conclusão por data |
+
+Pagamento deve verificar saldo/restante, direção/valor/data/moeda do movimento e dívida dentro da mesma transação; valores de dívida/contas não são inferidos apenas por FKs. Conferência exige data/valor/carteira reais e representação das duas pernas de transferências. Associação polimórfica de documentos exige validação da entidade e do workspace pela API. Regras de repetição, saldo e recuperação precisam de transações/locks e autorização no backend. Não alterar bank_movements Business imutáveis. O frontend não executa SQL e não tem importador remoto.
+
+Teste: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-tools-database-regression.mjs`. O teste aplica as seis migrações e verifica separação, vínculos/moedas, metadados de ficheiros, revisões imutáveis e RLS habilitada.

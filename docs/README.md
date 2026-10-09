@@ -47,6 +47,6 @@ Sempre que um agente de IA ou programador:
 
 ### Home — gestão pessoal
 
-[HOME.md](HOME.md) explica como começar, usar finanças, contas da casa, orçamentos, metas, agenda e cópias de segurança, além da separação Home/Business.
+[HOME.md](HOME.md) explica como começar, usar finanças, contas, metas, calendário/tarefas, histórico, dívidas, previsões, relatórios, extratos, documentos e cópias de segurança, além da separação Home/Business.
 
 - [Categorias, subcategorias, compras e aparência](CATEGORIES.md) — utilização nos dois modos.

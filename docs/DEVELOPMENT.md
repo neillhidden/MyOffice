@@ -100,3 +100,16 @@ O workflow `.github/workflows/deploy-pages.yml` testa e publica os commits envia
 Preferência explícita do utilizador: escrever as mensagens dos novos commits em português, com uma descrição clara da alteração. Preservar os commits já publicados; não reescrever o histórico apenas para traduzir mensagens antigas.
 
 Regressão da etapa categorias/calendário/tema: `PLAYWRIGHT_MODULE=/caminho/playwright/index.mjs CHROMIUM_PATH=/caminho/chromium HOME_TEST_URL=http://127.0.0.1:4191/ node tests/calendar-shopping-browser.mjs`. Usa perfil isolado e relógio controlado; não altera dados de utilizadores.
+
+## Testar as ferramentas Home
+
+`npm test` inclui home-extensions.test.ts (dívidas/prestações, recuperação, tarefas, previsões, CSV/conferência, documentos e PDF).
+
+Com o servidor local ou preview de produção ativo, executar:
+
+```bash
+PLAYWRIGHT_MODULE=/caminho/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium HOME_TEST_URL=http://127.0.0.1:4191/ node tests/home-tools-browser.mjs
+MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-tools-database-regression.mjs
+```
+
+O teste funcional precisa de `pdftotext` (Poppler) para verificar o PDF descarregado; não é dependência do produto. Produção GitHub Pages: construir e iniciar preview com MYOFFICE_BASE_PATH=/MyOffice/ (ex.: `MYOFFICE_BASE_PATH=/MyOffice/ npm run preview -- --port 4199`) e testar a URL local correspondente `/MyOffice/`. Nenhum teste SQL liga a uma base externa.
