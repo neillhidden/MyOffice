@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Bloco 2: edição e eliminação no Home
+- **Diagnóstico antes da correção**: Orçamento não tinha despesas individuais/editáveis; o lápis do limite não passava editId e duplicava ao mudar categoria. Reproduzido com dados isolados; nenhuma mensagem de campo em falta reproduzida.
+- **Alterações**: CRUD pessoal com IDs preservados, snapshots, datas de edição, eliminação lógica/confirmada e recálculo. Ações em Orçamento/Finanças/carteiras/contas/metas/tarefas; categorias existentes mantidas. Pagamentos/compra reclassificados juntos, valor efetivo separado do preço planeado; aquisição mantém a reserva e ajusta a meta. Eliminação de rendimento Business compensa os dois ledgers; valores empresariais não editados.
+- **Auditoria/limites**: Carteiras com saldo/movimentos ativos e metas reservadas bloqueiam eliminação. Pagamentos/referências e backups preservados. Auditoria por entidade em HOME.md. Blocos 3–6 não iniciados.
+- **Verificação**: Resultados finais em CURRENT_STATE.md; testes de edição, cancelamento, IDs, recálculo, conflitos, pagamentos/Business e persistência.
+
 ### [2026-10-09] — OpenAI Codex — Bloco 1: categorias pessoais em linhas
 - **Pedido**: Executar/confirmar seis blocos individualmente; esta entrega implementa apenas 1.1–1.7.
 - **Implementação**: Filtros/cápsula, linhas e breadcrumb, vista de subcategorias, modais criar/editar, biblioteca com 12 temas, herança de ícones, duplicados confirmáveis e eliminação/movimentação protegidas. Catálogo estável migra legado sem alterar dinheiro; reclassificação preserva vínculos/IDs/classificação anterior. Conflito de limites bloqueia movimento completo. Compras partilha despesas existente. HomeModal extraído/reutilizado.

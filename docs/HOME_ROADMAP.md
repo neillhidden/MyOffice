@@ -1,10 +1,10 @@
 # Pedido Home em seis blocos — 09/10/2026
 
-Pedido do utilizador: implementar e confirmar cada bloco antes de passar ao seguinte. **Bloco 1 implementado; aguarda confirmação do utilizador. Blocos 2–6 pendentes.** A confirmação de um bloco não declara os seguintes concluídos.
+Pedido do utilizador: implementar e confirmar cada bloco antes de passar ao seguinte. **Bloco 1 confirmado. Bloco 2 implementado e validado; aguarda confirmação antes do bloco 3. Blocos 3–6 pendentes.** A confirmação de um bloco não declara os seguintes concluídos.
 
 O bloco 1 mantém Compras/Despesas na taxonomia partilhada existente e Rendimentos separados. Categorias em uso são protegidas; mover reclassifica com histórico, preserva valores/saldos/IDs. Se houver dois limites no mesmo destino/mês/moeda, bloquear a operação inteira e explicar o conflito. Não combinar limites nem remover IDs automaticamente.
 
-Os novos pedidos de editar/eliminar lançamentos pessoais, câmbio e metas com desconto padrão ligado prevalecem sobre preferências antigas **quando os blocos correspondentes forem implementados**. Regras Business não mudam. Antes de corrigir o problema da primeira despesa, reproduzir/relatar a causa (2.1); ainda não diagnosticado nesta etapa.
+Os novos pedidos de editar/eliminar lançamentos pessoais, câmbio e metas com desconto padrão ligado prevalecem sobre preferências antigas **quando os blocos correspondentes forem implementados**. Regras Business não mudam. Antes de corrigir o problema da primeira despesa, reproduzir/relatar a causa (2.1); diagnóstico reproduzido no bloco 2: não existia edição individual em Orçamento e o lápis do limite não passava editId, duplicando o limite ao mudar categoria.
 
 ## Pedido integral
 

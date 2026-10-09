@@ -96,7 +96,9 @@ export const effectiveEntries = (data: HomeData) => {
   const undone = new Set(
     data.entries.filter((e) => e.type === 'reversal').map((e) => e.reversalOf),
   );
-  return data.entries.filter((e) => e.type !== 'reversal' && !undone.has(e.id));
+  return data.entries.filter(
+    (e) => e.type !== 'reversal' && !e.deletedAt && !undone.has(e.id),
+  );
 };
 export function balances(data: HomeData): Record<string, number> {
   const cents = Object.fromEntries(
@@ -135,7 +137,7 @@ export function addHomeEntry(
     throw new Error(
       'Escolhe uma data válida, até hoje. Planeia despesas futuras nas contas da casa.',
     );
-  if (!data.accounts.some((a) => a.id === entry.accountId))
+  if (!data.accounts.some((a) => a.id === entry.accountId && !a.deletedAt))
     throw new Error('Escolhe uma conta válida.');
   if (entry.type === 'reversal') throw new Error('Usa a operação de estorno.');
   if (!['income', 'expense', 'transfer'].includes(entry.type))
@@ -143,7 +145,7 @@ export function addHomeEntry(
   if (
     entry.type === 'transfer' &&
     (entry.accountId === entry.destinationId ||
-      !data.accounts.some((a) => a.id === entry.destinationId))
+      !data.accounts.some((a) => a.id === entry.destinationId && !a.deletedAt))
   )
     throw new Error('Escolhe uma conta de destino diferente.');
   if (
@@ -217,22 +219,27 @@ export function validateHomeData(input: unknown): HomeData {
       : source.accounts,
     settings: source.settings?.goalsPreferenceSet
       ? source.settings
-      : { reserveGoals: false, showBusinessIncome: source.settings?.showBusinessIncome ?? true },
+      : {
+          reserveGoals: false,
+          showBusinessIncome: source.settings?.showBusinessIncome ?? true,
+        },
     incomeCategories: source.incomeCategories ?? [...HOME_INCOME_CATEGORIES],
     incomeSubcategories: source.incomeSubcategories ?? {},
-    categories: source.categoryCatalog ? source.categories ?? [] : Array.isArray(source.categories)
-      ? [
-          ...source.categories,
-          ...HOME_CATEGORIES.filter(
-            (c) =>
-              !source.categories!.some(
-                (old) =>
-                  typeof old === 'string' &&
-                  old.toLocaleLowerCase() === c.toLocaleLowerCase(),
-              ),
-          ),
-        ]
-      : (source.categories ?? [...HOME_CATEGORIES]),
+    categories: source.categoryCatalog
+      ? (source.categories ?? [])
+      : Array.isArray(source.categories)
+        ? [
+            ...source.categories,
+            ...HOME_CATEGORIES.filter(
+              (c) =>
+                !source.categories!.some(
+                  (old) =>
+                    typeof old === 'string' &&
+                    old.toLocaleLowerCase() === c.toLocaleLowerCase(),
+                ),
+            ),
+          ]
+        : (source.categories ?? [...HOME_CATEGORIES]),
     shopping: source.shopping ?? [],
     subcategories: source.subcategories ?? structuredClone(HOME_SUBCATEGORIES),
   };
@@ -258,6 +265,28 @@ export function validateHomeData(input: unknown): HomeData {
     for (const row of rows) {
       if (!row || typeof row.id !== 'string' || !row.id || ids.has(row.id))
         throw new Error('Identificadores inválidos ou repetidos.');
+      for (const value of [row.editedAt, row.deletedAt])
+        if (
+          value !== undefined &&
+          (typeof value !== 'string' ||
+            !/^\d{4}-\d{2}-\d{2}T/.test(value) ||
+            !Number.isFinite(Date.parse(value)))
+        )
+          throw new Error('Data de edição/eliminação inválida.');
+      if (
+        row.edits !== undefined &&
+        (!Array.isArray(row.edits) ||
+          row.edits.some(
+            (edit) =>
+              !edit ||
+              typeof edit.changedAt !== 'string' ||
+              !Number.isFinite(Date.parse(edit.changedAt)) ||
+              !edit.before ||
+              typeof edit.before !== 'object' ||
+              Array.isArray(edit.before),
+          ))
+      )
+        throw new Error('Histórico de edição inválido.');
       ids.add(row.id);
     }
   const accounts = new Set(data.accounts.map((a) => a.id));
@@ -348,9 +377,9 @@ export function validateHomeData(input: unknown): HomeData {
     if (!['AOA', 'USD'].includes(b.currency ?? 'AOA'))
       throw new Error('Moeda do orçamento inválida.');
     const key = `${b.month}:${b.category}:${b.currency ?? 'AOA'}`;
-    if (!validMonth(b.month) || budgetKeys.has(key))
+    if (!validMonth(b.month) || (!b.deletedAt && budgetKeys.has(key)))
       throw new Error('Orçamento inválido ou repetido.');
-    budgetKeys.add(key);
+    if (!b.deletedAt) budgetKeys.add(key);
   }
   const goalAccounts = new Set<string>();
   for (const g of data.goals) {
@@ -403,7 +432,11 @@ export function validateHomeData(input: unknown): HomeData {
   )
     throw new Error('Categorias inválidas ou repetidas.');
   data.categories.forEach((c) => text(c));
-  if (typeof data.settings.reserveGoals !== 'boolean' || data.settings.showBusinessIncome !== undefined && typeof data.settings.showBusinessIncome !== 'boolean')
+  if (
+    typeof data.settings.reserveGoals !== 'boolean' ||
+    (data.settings.showBusinessIncome !== undefined &&
+      typeof data.settings.showBusinessIncome !== 'boolean')
+  )
     throw new Error('Configuração de metas inválida.');
   if (
     !Array.isArray(data.incomeCategories) ||
@@ -421,6 +454,15 @@ export function validateHomeData(input: unknown): HomeData {
   for (const item of data.shopping!) {
     text(item.name);
     text(item.category);
+    if (item.paymentAmount !== undefined) money(item.paymentAmount);
+    if (
+      item.paymentSnapshot &&
+      (item.paymentSnapshot.quantity !== item.quantity ||
+        item.paymentSnapshot.unitPrice !== item.unitPrice)
+    )
+      throw new Error(
+        'Pagamento de compras: quantidade e preço originais devem ser preservados.',
+      );
     if (
       item.subcategory &&
       !categoryChildren(data.subcategories!, item.category).includes(
@@ -448,7 +490,9 @@ export function validateHomeData(input: unknown): HomeData {
         original.category !== item.category ||
         entryCurrency(data, original) !== (item.currency ?? 'AOA') ||
         Math.round(original.amount * 100) !==
-          Math.round(item.quantity * item.unitPrice * 100)
+          Math.round(
+            (item.paymentAmount ?? item.quantity * item.unitPrice) * 100,
+          )
       )
         throw new Error('Pagamento de compras inválido ou repetido.');
       linkedEntries.add(item.entryId);
@@ -487,7 +531,14 @@ export function payHomeShopping(
   return {
     ...next,
     shopping: data.shopping!.map((i) =>
-      i.id === item.id ? { ...i, entryId: next.entries[0].id } : i,
+      i.id === item.id
+        ? {
+            ...i,
+            entryId: next.entries[0].id,
+            paymentAmount: next.entries[0].amount,
+            paymentSnapshot: { quantity: i.quantity, unitPrice: i.unitPrice },
+          }
+        : i,
     ),
   };
 }

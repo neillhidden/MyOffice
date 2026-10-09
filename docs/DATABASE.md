@@ -122,3 +122,7 @@ HomeData v1 mantém compatibilidade: contas/moedas, limites, mensalidades e comp
 ## Catálogo Home estável — bloco 1 (09/10/2026)
 
 HomeData v1 inclui categoryCatalog com id/key/name/kind/parentId/icon/editedAt. `key` preserva referências atuais; `name` pode mudar. Repetições confirmadas recebem IDs/chaves independentes. categories/subcategories e incomeCategories/incomeSubcategories são projeções compatíveis. categoryHistory preserva classificação anterior e data em entidades reclassificadas; HomeEntry.subcategory suporta o vínculo de compras. Migração local idempotente, sem mudar dinheiro. Migração SQL offline 004 guarda metadados e permite subcategorias pessoais homónimas; Business mantém unicidade. Nenhuma conexão ativa.
+
+## HomeAudit — bloco 2 (09/10/2026)
+
+Entidades pessoais incluem editedAt, deletedAt e edits (changedAt/before). Nenhuma remoção física de entidades financeiras; backups conservam dados/referências/versões. effectiveEntries ignora deletedAt; listas ignoram entidades pessoais eliminadas. Limites únicos só entre ativos. Compras incluem paymentAmount e paymentSnapshot, separando pago efetivo de quantidade/preço planeados. A futura base deverá mapear metadados de entidades para details e fornecer revisões/classificação auditadas para o ledger pessoal; não alterar diretamente o bank_movements SQL append-only. Nenhuma conexão/migração nova executada nesta entrega.

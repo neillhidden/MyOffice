@@ -70,7 +70,7 @@ Consulte [`docs/BUSINESS_RULES.md`](./docs/BUSINESS_RULES.md) para o detalhe com
 - **Estoque nunca é editado diretamente**: O saldo de um produto num armazém é sempre calculado a partir das movimentações (`getCurrentStock`), ignorando movimentos com `removido: true` / `isRemoved: true`.
 - **Proibição de `DELETE` físico em Movimentações e Lançamentos**:
   - Em **Estoque → Movimentação**, a remoção marca `removido: true` (com motivo obrigatório, autor e data), move o registo para a aba **Removidos**, gera notificação para o Administrador e permite **Restaurar**.
-  - Em **Financeiro → Lançamentos**, lançamentos são imutáveis; correções fazem-se por lançamento inverso/estorno.
+  - Em **Business → Financeiro → Lançamentos**, lançamentos são imutáveis; correções fazem-se por lançamento inverso/estorno.
 - **Três estados de Empresa (`ativa` | `parada` | `desativada`)**:
   - `desativada` (ex.: *Kianda*): invisível/excluída de todas as vistas operacionais, seletores e gráficos.
   - `parada`: visível com etiqueta `Parada` e banner de aviso, mas com todas as ações operacionais (criar/editar produto, movimentar estoque, vender, alterar limites) bloqueadas (`disabled`).
@@ -100,3 +100,7 @@ Consulte [`docs/BUSINESS_RULES.md`](./docs/BUSINESS_RULES.md) para o detalhe com
 | [`docs/DECISIONS.md`](./docs/DECISIONS.md) | Registo de decisões arquiteturais (ADRs) tomadas no projeto |
 | [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) | Estado real de implementação por módulo, lacunas conhecidas e pontos `A confirmar` |
 | [`docs/CHANGELOG_AI.md`](./docs/CHANGELOG_AI.md) | Histórico cronológico de intervenções de agentes de IA e modelo para novos registos |
+
+## Exceção Home autorizada pelo utilizador — 09/10/2026
+
+No Home pessoal, despesas/rendimentos admitem editar com o mesmo ID e eliminar logicamente, conservando snapshots/deletedAt/referências e recalculando saldos sem negativos. A regra de imutabilidade Business permanece. Valores de transferências Business não são editados isoladamente no Home; corrigir por compensação conjunta. Consultar HOME.md e HOME_ROADMAP.md; executar e confirmar cada bloco antes do seguinte.

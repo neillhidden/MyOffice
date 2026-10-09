@@ -161,3 +161,7 @@ Home v1 normaliza campos opcionais de categorias/subcategorias/compras na leitur
 ## Gestão Home de categorias (09/10/2026)
 
 HomeCategories, CategoryIcons e HomeModal partilhado servem o bloco 1. homeCategories.ts migra/valida o catálogo estável e executa edição/eliminação/reclassificação; HomeContext continua a validar e persistir antes de atualizar a UI. HomeView/HomeShopping/HomeCharts resolvem nomes apresentados sem mudar chaves nem totais. Não foram trocadas bibliotecas, contexts ou arquitetura Business.
+
+## Bloco 2 — edição Home (09/10/2026)
+
+homeEditing.ts valida alterações, mantém IDs e snapshots e aplica eliminação lógica. HomeContext continua a validar/gravar antes de atualizar estado. HomeView distingue documento completo savedData (backup/validação) de listas de planeamento ativas; saldos/gráficos/limites são derivados do ledger efetivo. BusinessIncomeTransfer.reverse suporta eliminação pessoal com compensação e marcações na mesma gravação coordenada. StockContext não foi alterado.

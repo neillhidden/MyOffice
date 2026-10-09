@@ -129,7 +129,7 @@ export function useBusinessHomeTransfers() {
       assertBusinessTransfersCompatible(nextHome, nextBusiness);
       finish(nextHome, nextBusiness);
     },
-    reverse: (entryId: string, reason: string) => {
+    reverse: (entryId: string, reason: string, deleting = false) => {
       const entry = effectiveEntries(home.data).find((e) => e.id === entryId);
       const movement = stock.bankMovements.find(
         (m) => m.id === entry?.businessMovementId,
@@ -142,7 +142,16 @@ export function useBusinessHomeTransfers() {
       )
         throw new Error('Transferência não encontrada ou já estornada.');
       checkBank(movement.bankId);
-      const nextHome = reverseHomeEntry(home.data, entryId, reason, true);
+      let nextHome = reverseHomeEntry(home.data, entryId, reason, true);
+      if (deleting)
+        nextHome = {
+          ...nextHome,
+          entries: nextHome.entries.map((e) =>
+            e.id === entryId || e.reversalOf === entryId
+              ? { ...e, deletedAt: new Date().toISOString() }
+              : e,
+          ),
+        };
       const reversal = createReversal(movement, text(reason));
       const nextBusiness = [
         reversal,
@@ -192,7 +201,8 @@ export function BusinessIncomeTransfer({
         companies.some((c) => c.id === b.companyId && c.status === 'ativa')),
   );
   const wallets = data.accounts.filter(
-    (a) => a.kind === 'current' && accountCurrency(a) === currency,
+    (a) =>
+      !a.deletedAt && a.kind === 'current' && accountCurrency(a) === currency,
   );
   const input =
     'w-full min-h-10 rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-elevated px-3 py-2 text-sm';

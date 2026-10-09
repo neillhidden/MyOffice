@@ -88,3 +88,31 @@ Testes adicionais: `tests/home-finance.test.ts`, `tests/home-finance-browser.mjs
 ## Gestão de categorias — bloco 1 (09/10/2026)
 
 A página de categorias foi substituída por filtros e linhas navegáveis, pesquisa, vistas Categorias/Todas as subcategorias e modais com biblioteca de ícones. Editar/eliminar/mover têm proteções de uso e histórico. Consulte CATEGORIES.md. Os restantes pedidos em seis blocos estão registados em HOME_ROADMAP.md; ainda não foram aplicados nesta etapa.
+
+## Bloco 2 — edição e eliminação pessoal (09/10/2026)
+
+Despesas em Orçamento agora aparecem individualmente, com lápis/lixo; também nas Finanças, junto aos rendimentos. Editar abre o formulário preenchido; Guardar alterações mantém o ID e recalcula todos os derivados. Cancelar não grava. Os campos em falta recebem erro vermelho junto ao campo, sem popup nativo. Carteiras, limites, contas da casa, metas e tarefas têm edição/eliminação onde aplicável. Categorias/subcategorias mantêm as ações do bloco 1. Carteiras preservam moeda e saldo de abertura; o saldo atual é calculado. Metas adquiridas permitem editar descrição/prazo/categoria, mantendo campos financeiros de aquisição; o valor pago pode ser corrigido no lançamento da aquisição se existir saldo na reserva.
+
+Editar conserva o valor anterior em edits e mostra editado em DD/MM/AAAA. Eliminar pede confirmação e grava deletedAt, retirando a entidade das listas/cálculos aplicáveis sem apagar o histórico/backups. Não há botão de restauro nesta etapa; uma cópia validada preserva estes metadados. Limites eliminados podem ser recriados sem colisão com o ID antigo; mudar categoria na edição atualiza o limite original e recusa conflito com outro limite.
+
+Eliminar despesa/rendimento recalcula saldos; saldo negativo é recusado. Carteira com saldo ou movimentos ativos não pode ser eliminada; meta com reserva exige retirar primeiro. Eliminar conta recorrente mantém pagamentos passados e suspende os pendentes. Eliminar aquisição de meta devolve dinheiro à reserva e reabre o progresso. Compras mantêm quantidade/preço planeados em paymentSnapshot; correção do lançamento guarda paymentAmount efetivamente pago, preservando o ID e mostrando divergência face ao planeado. A classificação da compra acompanha o pagamento editado.
+
+Business continua imutável: em rendimento transferido, descrição/categoria pessoais podem mudar com o mesmo ID; valor/data/conta só por estorno conjunto e nova transferência. Eliminar esse rendimento compensa ambos os históricos na operação coordenada existente. Transferências/reservas e estornos continuam corrigidos por estorno, não pelo CRUD de despesas/rendimentos.
+
+### Diagnóstico 2.1
+
+Com Carteira 1000 Kz, primeira despesa de Alimentação 10 Kz e limite de 100 Kz: Orçamento não mostrava despesa individual nem ação para editar; o lápis editava o limite. Mudar o limite para Saúde criava um segundo registo porque a ação não passava editId. Foram corrigidos ambos. Não foi reproduzida uma mensagem de campo em falta. Diagnóstico anterior à correção em dados isolados, sem modificar dados do utilizador.
+
+### Auditoria 2.2
+
+| Entidade | O que faltava | Estado |
+| --- | --- | --- |
+| Despesas/rendimentos | Editar e eliminar; despesas individuais em Orçamento | Acrescentados |
+| Limites | Eliminar e editId/currency na edição | Corrigidos |
+| Contas da casa | Eliminar; moeda explícita ao abrir edição | Acrescentados |
+| Metas | Eliminar; preservar metadados ao editar; editar descrição após aquisição | Corrigidos |
+| Carteiras | Editar e eliminar | Acrescentados com proteções de saldo/referências |
+| Categorias/subcategorias | Já tinham editar/eliminar no bloco 1 | Mantidos |
+| Tarefas | Eliminar e indicação de edição | Acrescentados |
+
+Blocos 3–6 ainda não implementados. Os formulários de criação e alterações de repetição/câmbio/default de metas continuam a ser tratados nas etapas seguintes; esta entrega não declara essas etapas concluídas.

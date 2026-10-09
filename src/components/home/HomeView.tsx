@@ -1,3 +1,9 @@
+import {
+  homeAuditEdit,
+  editHomeEntry,
+  deleteHomeEntity,
+  HomeEntity,
+} from '../../utils/homeEditing';
 import { homeCategoryName } from '../../utils/homeCategories';
 import { HomeModal } from './HomeModal';
 import {
@@ -17,6 +23,7 @@ import {
   Target,
   Check,
   Pencil,
+  Trash2,
   Download,
   Upload,
   X,
@@ -34,6 +41,7 @@ import {
   HomeEntry,
   HomeSection,
   HomeCurrency,
+  HomeAudit,
 } from '../../types/home';
 import {
   HOME_CATEGORIES,
@@ -112,7 +120,14 @@ export function HomeView({
   onNavigate: (section: HomeSection) => void;
 }) {
   const bridge = useBusinessHomeTransfers();
-  const { data, update, storageError, importData } = useHome();
+  const { data: savedData, update, storageError, importData } = useHome();
+  const data = {
+    ...savedData,
+    budgets: savedData.budgets.filter((r) => !r.deletedAt),
+    bills: savedData.bills.filter((r) => !r.deletedAt),
+    goals: savedData.goals.filter((r) => !r.deletedAt),
+    tasks: savedData.tasks.filter((r) => !r.deletedAt),
+  };
   const [currency, setCurrency] = useState<HomeCurrency>('AOA');
   const cash = (value: number) => formatHomeMoney(value, currency);
   const today = useToday();
@@ -132,6 +147,12 @@ export function HomeView({
     kind: FormKind;
     values: Record<string, string>;
   } | null>(null);
+  const [removing, setRemoving] = useState<{
+    kind: HomeEntity;
+    id: string;
+    name: string;
+  } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [pendingImport, setPendingImport] = useState<HomeData | null>(null);
@@ -145,7 +166,10 @@ export function HomeView({
   const totals = balances(data);
   const financialAccounts = data.accounts.filter(
     (a) =>
-      !data.goals.some((g) => g.accountId === a.id && g.fundingMode === 'plan'),
+      !a.deletedAt &&
+      !savedData.goals.some(
+        (g) => g.accountId === a.id && g.fundingMode === 'plan',
+      ),
   );
   const active = effectiveEntries(data).filter(
     (e) => entryCurrency(data, e) === currency,
@@ -161,7 +185,12 @@ export function HomeView({
       .reduce((s, e) => s + Math.round(e.amount * 100), 0) / 100;
   const available =
     data.accounts
-      .filter((a) => a.kind === 'current' && accountCurrency(a) === currency)
+      .filter(
+        (a) =>
+          !a.deletedAt &&
+          a.kind === 'current' &&
+          accountCurrency(a) === currency,
+      )
       .reduce((s, a) => s + Math.round(totals[a.id] * 100), 0) / 100;
   const reserved =
     data.accounts
@@ -226,6 +255,7 @@ export function HomeView({
     }
   };
   const open = (kind: FormKind, values: Record<string, string> = {}) => {
+    setFieldErrors({});
     setError('');
     setNotice('');
     setForm({
@@ -244,7 +274,10 @@ export function HomeView({
               : '',
         accountId:
           data.accounts.find(
-            (a) => a.kind === 'current' && accountCurrency(a) === currency,
+            (a) =>
+              !a.deletedAt &&
+              a.kind === 'current' &&
+              accountCurrency(a) === currency,
           )?.id || '',
         destinationId: '',
         type: 'expense',
@@ -262,7 +295,9 @@ export function HomeView({
     );
   const exportBackup = () => {
     const url = URL.createObjectURL(
-      new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+      new Blob([JSON.stringify(savedData, null, 2)], {
+        type: 'application/json',
+      }),
     );
     const a = document.createElement('a');
     a.href = url;
@@ -273,6 +308,18 @@ export function HomeView({
   const save = (event: React.FormEvent) => {
     event.preventDefault();
     if (!form) return;
+    const errors: Record<string, string> = {};
+    for (const el of Array.from<HTMLInputElement | HTMLSelectElement>(
+      (event.currentTarget as HTMLFormElement).querySelectorAll('[required]'),
+    )) {
+      if (el.disabled) continue;
+      const key = el.id.replace('home-field-', '');
+      if (!el.value.trim()) errors[key] = 'Preenche este campo.';
+      else if (!el.validity.valid)
+        errors[key] = 'Indica um valor válido para este campo.';
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) return;
     run(() => {
       const { kind, values: v } = form;
       if (
@@ -285,9 +332,14 @@ export function HomeView({
       }
       update((current) => {
         const id = v.editId || createId(`home-${kind}`);
-        const replace = <T extends { id: string }>(rows: T[], item: T) =>
+        const replace = <T extends { id: string } & HomeAudit>(
+          rows: T[],
+          item: T,
+        ) =>
           v.editId
-            ? rows.map((row) => (row.id === id ? item : row))
+            ? rows.map((row) =>
+                row.id === id ? homeAuditEdit(row, { ...row, ...item }) : row,
+              )
             : [...rows, item];
         if (kind === 'contribution')
           return contributeHomeGoal(
@@ -299,7 +351,7 @@ export function HomeView({
           );
         if (kind === 'entry' || kind === 'payment') {
           const goal = current.goals.find((g) => g.id === v.goalId);
-          return addHomeEntry(current, {
+          const values = {
             type:
               kind === 'payment' ? 'expense' : (v.type as HomeEntry['type']),
             title: v.title,
@@ -310,34 +362,46 @@ export function HomeView({
             destinationId: v.type === 'transfer' ? v.destinationId : undefined,
             billId: kind === 'payment' ? v.billId : undefined,
             billMonth: kind === 'payment' ? v.month : undefined,
-          });
+          };
+          return v.editId
+            ? editHomeEntry(current, v.editId, values)
+            : addHomeEntry(current, values);
         }
         if (kind === 'reversal')
           return reverseHomeEntry(current, v.entryId, v.title);
-        if (kind === 'account')
+        if (kind === 'account') {
+          const existing = current.accounts.find((a) => a.id === v.editId);
           return {
             ...current,
-            accounts: [
-              ...current.accounts,
-              {
-                id,
-                name: text(v.title),
-                openingBalance: money(Number(v.openingBalance), false),
-                kind: 'current',
-                currency: v.currency as HomeCurrency,
-              },
-            ],
+            accounts: replace(current.accounts, {
+              id,
+              name: text(v.title),
+              openingBalance:
+                existing?.openingBalance ??
+                money(Number(v.openingBalance), false),
+              kind: existing?.kind ?? 'current',
+              currency: existing?.currency ?? (v.currency as HomeCurrency),
+            }),
           };
+        }
         if (kind === 'budget') {
           if (!validMonth(v.month)) throw new Error('Escolhe um mês válido.');
-          const existing = current.budgets.find(
+          const duplicate = current.budgets.find(
             (b) =>
+              !b.deletedAt &&
+              b.id !== v.editId &&
               b.month === v.month &&
               b.category === v.category &&
               (b.currency ?? 'AOA') === v.currency,
           );
+          if (v.editId && duplicate)
+            throw new Error(
+              'Já existe um limite para esta categoria, mês e moeda.',
+            );
+          const existing =
+            current.budgets.find((b) => b.id === v.editId) ?? duplicate;
           const item = {
-            id: existing?.id || id,
+            id: existing?.id ?? id,
             month: v.month,
             category: text(v.category),
             limit: money(Number(v.amount)),
@@ -346,7 +410,11 @@ export function HomeView({
           return {
             ...current,
             budgets: existing
-              ? current.budgets.map((b) => (b.id === existing.id ? item : b))
+              ? current.budgets.map((b) =>
+                  b.id === existing.id
+                    ? homeAuditEdit(b, { ...b, ...item })
+                    : b,
+                )
               : [...current.budgets, item],
           };
         }
@@ -371,7 +439,12 @@ export function HomeView({
           if (!validDate(v.deadline))
             throw new Error('Indica uma data válida para a meta.');
           const existing = current.goals.find((g) => g.id === id);
-          if (existing && goalAcquired(current, id))
+          if (
+            existing &&
+            goalAcquired(current, id) &&
+            (existing.target !== Number(v.amount) ||
+              (existing.fundingMode ?? 'reserve') !== v.fundingMode)
+          )
             throw new Error(
               'Uma meta adquirida mantém os seus dados originais.',
             );
@@ -409,6 +482,7 @@ export function HomeView({
                   },
                 ],
             goals: replace(current.goals, {
+              ...existing,
               id,
               title,
               target: money(Number(v.amount)),
@@ -439,6 +513,54 @@ export function HomeView({
       setForm(null);
     });
   };
+  const editEntry = (e: HomeEntry) =>
+    open('entry', {
+      editId: e.id,
+      type: e.type,
+      title: e.title,
+      amount: String(e.amount),
+      date: e.date,
+      category: e.category,
+      accountId: e.accountId,
+      currency: entryCurrency(data, e),
+      subcategory: e.subcategory ?? '',
+    });
+  const removeButton = (kind: HomeEntity, id: string, name: string) => (
+    <button
+      type="button"
+      className={secondary}
+      aria-label={`Eliminar ${name}`}
+      title={`Eliminar ${name}`}
+      onClick={() => {
+        setRemoving({ kind, id, name });
+        setError('');
+      }}
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  );
+  const editStamp = (row: { editedAt?: string }) =>
+    row.editedAt ? (
+      <p className={`${muted} mt-1`}>
+        editado em {new Date(row.editedAt).toLocaleDateString('pt-PT')}
+      </p>
+    ) : null;
+  const entryActions = (e: HomeEntry) =>
+    effectiveEntries(savedData).some((r) => r.id === e.id) &&
+    ['expense', 'income'].includes(e.type) ? (
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className={secondary}
+          aria-label={`Editar ${e.title}`}
+          title={`Editar ${e.title}`}
+          onClick={() => editEntry(e)}
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        {removeButton('entry', e.id, e.title)}
+      </div>
+    ) : null;
   const field = (
     label: string,
     key: string,
@@ -457,6 +579,34 @@ export function HomeView({
           <select
             id={`home-field-${key}`}
             required
+            aria-invalid={Boolean(fieldErrors[key])}
+            aria-describedby={
+              fieldErrors[key] ? `home-error-${key}` : undefined
+            }
+            disabled={Boolean(
+              form?.values.editId &&
+              ((form.kind === 'account' &&
+                ['currency', 'openingBalance'].includes(key)) ||
+                (form.kind === 'bill' &&
+                  key === 'currency' &&
+                  data.entries.some((e) => e.billId === form.values.editId)) ||
+                (form.kind === 'goal' &&
+                  ['amount', 'fundingMode', 'currency'].includes(key) &&
+                  goalAcquired(savedData, form.values.editId)) ||
+                (form.kind === 'entry' &&
+                  ((data.entries.find((e) => e.id === form.values.editId)
+                    ?.businessMovementId &&
+                    ['type', 'amount', 'date', 'accountId'].includes(key)) ||
+                    (data.entries.find((e) => e.id === form.values.editId)
+                      ?.goalId &&
+                      ['type', 'accountId'].includes(key)) ||
+                    ((data.entries.find((e) => e.id === form.values.editId)
+                      ?.billId ||
+                      data.shopping?.some(
+                        (i) => i.entryId === form.values.editId,
+                      )) &&
+                      key === 'type')))),
+            )}
             value={v[key] || ''}
             onChange={(e) => {
               set(key, e.target.value);
@@ -484,6 +634,34 @@ export function HomeView({
             required
             maxLength={300}
             type={type}
+            aria-invalid={Boolean(fieldErrors[key])}
+            aria-describedby={
+              fieldErrors[key] ? `home-error-${key}` : undefined
+            }
+            disabled={Boolean(
+              form?.values.editId &&
+              ((form.kind === 'account' &&
+                ['currency', 'openingBalance'].includes(key)) ||
+                (form.kind === 'bill' &&
+                  key === 'currency' &&
+                  data.entries.some((e) => e.billId === form.values.editId)) ||
+                (form.kind === 'goal' &&
+                  ['amount', 'fundingMode', 'currency'].includes(key) &&
+                  goalAcquired(savedData, form.values.editId)) ||
+                (form.kind === 'entry' &&
+                  ((data.entries.find((e) => e.id === form.values.editId)
+                    ?.businessMovementId &&
+                    ['type', 'amount', 'date', 'accountId'].includes(key)) ||
+                    (data.entries.find((e) => e.id === form.values.editId)
+                      ?.goalId &&
+                      ['type', 'accountId'].includes(key)) ||
+                    ((data.entries.find((e) => e.id === form.values.editId)
+                      ?.billId ||
+                      data.shopping?.some(
+                        (i) => i.entryId === form.values.editId,
+                      )) &&
+                      key === 'type')))),
+            )}
             value={v[key] || ''}
             onChange={(e) => {
               set(key, e.target.value);
@@ -515,6 +693,15 @@ export function HomeView({
             }
             step={key === 'day' ? 1 : type === 'number' ? 0.01 : undefined}
           />
+        )}
+        {fieldErrors[key] && (
+          <span
+            id={`home-error-${key}`}
+            role="alert"
+            className="block text-xs text-rose-600 dark:text-rose-400"
+          >
+            {fieldErrors[key]}
+          </span>
         )}
       </label>
     );
@@ -978,7 +1165,32 @@ export function HomeView({
                     key={a.id}
                     className="rounded-lg border border-slate-200 dark:border-dm-border p-3"
                   >
-                    <p className="text-xs font-medium break-words">{a.name}</p>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <p className="text-xs font-medium break-words">
+                        {a.name}
+                      </p>
+                      {a.kind === 'current' && (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className={secondary}
+                            aria-label={`Editar carteira ${a.name}`}
+                            onClick={() =>
+                              open('account', {
+                                editId: a.id,
+                                title: a.name,
+                                currency: accountCurrency(a),
+                                openingBalance: String(a.openingBalance),
+                              })
+                            }
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          {removeButton('account', a.id, a.name)}
+                        </div>
+                      )}
+                    </div>
+                    {editStamp(a)}
                     <p className="font-mono text-base font-semibold mt-2 break-words">
                       {cash(totals[a.id])}
                     </p>
@@ -1025,6 +1237,7 @@ export function HomeView({
               {data.entries
                 .filter(
                   (e) =>
+                    !e.deletedAt &&
                     entryCurrency(data, e) === currency &&
                     e.date.startsWith(month) &&
                     (accountFilter === 'all' ||
@@ -1047,10 +1260,11 @@ export function HomeView({
                         <p className="text-sm font-medium break-words">
                           {e.title}
                         </p>
+                        {editStamp(e)}
                         <p className={`${muted} mt-1`}>
                           {dateLabel(e.date)} ·{' '}
                           {e.type === 'income'
-                            ? 'Receita'
+                            ? 'Rendimento'
                             : e.type === 'expense'
                               ? 'Despesa'
                               : e.type === 'transfer'
@@ -1075,6 +1289,7 @@ export function HomeView({
                       <span className="font-mono text-xs">
                         {cash(e.amount)}
                       </span>
+                      {entryActions(e)}
                       {e.type !== 'reversal' && !reversed && (
                         <button
                           className={secondary}
@@ -1121,6 +1336,31 @@ export function HomeView({
               ))}
             </div>
           </section>
+          <section className={panel}>
+            <h2 className="text-sm font-semibold">Despesas registadas</h2>
+            <div className="divide-y divide-slate-200 dark:divide-dm-border">
+              {period
+                .filter((e) => e.type === 'expense')
+                .map((e) => (
+                  <div
+                    key={e.id}
+                    data-home-budget-entry-id={e.id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{e.title}</p>
+                      <p className={muted}>
+                        {dateLabel(e.date)} ·{' '}
+                        {homeCategoryName(data, e.category)}
+                      </p>
+                      {editStamp(e)}
+                    </div>
+                    <span className="font-mono text-xs">{cash(e.amount)}</span>
+                    {entryActions(e)}
+                  </div>
+                ))}
+            </div>
+          </section>
           <p className={muted}>
             Define limites mensais por categoria. As despesas pagas atualizam o
             progresso; transferências e reservas não são despesas.
@@ -1139,6 +1379,8 @@ export function HomeView({
                       aria-label={`Editar orçamento ${homeCategoryName(data, b.category)}`}
                       onClick={() =>
                         open('budget', {
+                          editId: b.id,
+                          currency: b.currency ?? 'AOA',
                           category: b.category,
                           amount: String(b.limit),
                           month: b.month,
@@ -1147,7 +1389,13 @@ export function HomeView({
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
+                    {removeButton(
+                      'budget',
+                      b.id,
+                      `orçamento ${homeCategoryName(data, b.category)}`,
+                    )}
                   </div>
+                  {editStamp(b)}
                   <p className="font-mono text-sm mt-3">
                     {cash(used)} / {cash(b.limit)}
                   </p>
@@ -1209,6 +1457,7 @@ export function HomeView({
                               : 'Por pagar'}
                       </p>
                     </div>
+                    {editStamp(b)}
                     <span className="font-mono text-sm">{cash(b.amount)}</span>
                     <div className="flex gap-2 flex-wrap">
                       {b.active && !paid && (
@@ -1233,6 +1482,7 @@ export function HomeView({
                         onClick={() =>
                           open('bill', {
                             editId: b.id,
+                            currency: b.currency ?? 'AOA',
                             title: b.title,
                             amount: String(b.amount),
                             day: String(b.day),
@@ -1259,6 +1509,7 @@ export function HomeView({
                       >
                         {b.active ? 'Pausar' : 'Retomar'}
                       </button>
+                      {removeButton('bill', b.id, b.title)}
                     </div>
                   </section>
                 );
@@ -1388,7 +1639,6 @@ export function HomeView({
                       )}
                       <button
                         className={secondary}
-                        disabled={acquired}
                         aria-label={`Editar meta ${g.title}`}
                         onClick={() =>
                           open('goal', {
@@ -1406,6 +1656,8 @@ export function HomeView({
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
+                      {removeButton('goal', g.id, `meta ${g.title}`)}
+                      {editStamp(g)}
                     </div>
                   </section>
                 );
@@ -1482,6 +1734,8 @@ export function HomeView({
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
+                  {removeButton('task', t.id, `tarefa ${t.title}`)}
+                  {editStamp(t)}
                 </section>
               ))}
             {!data.tasks.length && (
@@ -1729,7 +1983,7 @@ export function HomeView({
             setError('');
           }}
         >
-          <form onSubmit={save} className="space-y-4">
+          <form noValidate onSubmit={save} className="space-y-4">
             {error && (
               <p
                 role="alert"
@@ -1750,7 +2004,7 @@ export function HomeView({
               ])}
             {form.kind === 'entry' &&
               field('Operação', 'type', 'text', [
-                { value: 'income', label: 'Receita' },
+                { value: 'income', label: 'Rendimento' },
                 { value: 'expense', label: 'Despesa' },
                 { value: 'transfer', label: 'Transferência' },
               ])}
@@ -1842,6 +2096,23 @@ export function HomeView({
               field('Dia de vencimento mensal (1–31)', 'day', 'number')}
             {form.kind === 'goal' &&
               field('Data para alcançar a meta', 'deadline', 'date')}
+            {form.kind === 'account' && form.values.editId && (
+              <p className={muted}>
+                O saldo é calculado pelos lançamentos. O saldo de abertura e a
+                moeda ficam preservados nesta edição.
+              </p>
+            )}
+            {form.kind === 'entry' &&
+              form.values.editId &&
+              data.entries.find((e) => e.id === form.values.editId)
+                ?.businessMovementId && (
+                <p className={muted}>
+                  Valor, data e carteira pertencem à transferência Business.
+                  Para corrigir esses campos, estorna em conjunto e regista uma
+                  transferência correta. Descrição e categoria podem ser
+                  editadas aqui.
+                </p>
+              )}
             {form.kind === 'reversal' && (
               <p className={muted}>
                 O lançamento original permanece no histórico. O estorno desfaz o
@@ -1860,10 +2131,61 @@ export function HomeView({
                 Cancelar
               </button>
               <button id="home-save" type="submit" className={primary}>
-                Guardar
+                {form.values.editId ? 'Guardar alterações' : 'Guardar'}
               </button>
             </div>
           </form>
+        </HomeModal>
+      )}
+      {removing && (
+        <HomeModal
+          title={`Eliminar ${removing.name}`}
+          onClose={() => setRemoving(null)}
+        >
+          <p className="text-sm">
+            Confirmas eliminar este registo? A operação recalcula os saldos e
+            totais. O histórico fica guardado na cópia de segurança.
+          </p>
+          {error && (
+            <p role="alert" className="text-xs text-rose-600 mt-3">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              className={secondary}
+              onClick={() => setRemoving(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              id="home-delete-confirm"
+              type="button"
+              className={primary}
+              onClick={() =>
+                run(() => {
+                  const linked =
+                    removing.kind === 'entry' &&
+                    savedData.entries.find((e) => e.id === removing.id)
+                      ?.businessMovementId;
+                  if (linked)
+                    bridge.reverse(
+                      removing.id,
+                      'Eliminação pessoal confirmada',
+                      true,
+                    );
+                  else
+                    update((d) =>
+                      deleteHomeEntity(d, removing.kind, removing.id),
+                    );
+                  setRemoving(null);
+                })
+              }
+            >
+              Eliminar
+            </button>
+          </div>
         </HomeModal>
       )}
       {pendingImport && (

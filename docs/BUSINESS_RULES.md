@@ -171,3 +171,7 @@ Business → Home grava saída/receita vinculadas, com moeda/conta/valor/data co
 ## Categorias pessoais — bloco 1 (09/10/2026)
 
 Renomear não altera IDs/chaves financeiras. Categorias/subcategorias em uso (incluindo lançamentos estornados) não podem desaparecer sem reclassificação explícita, mantendo dados e classificação anterior. Destino do mesmo tipo; pagamento/item reclassificados em conjunto. Conflito de limites bloqueia toda a operação, sem somar/apagar orçamentos. Duplicados confirmados têm identidade própria. Os pedidos posteriores de editar/eliminar lançamentos pessoais ainda aguardam bloco 2; regras do Business mantêm-se.
+
+## Home — autorização de CRUD pessoal (09/10/2026)
+
+Por pedido explícito do utilizador, despesas/rendimentos Home admitem edição com mesmo ID e eliminação lógica. Edições preservam snapshot/data; eliminação mantém registo com deletedAt. Saldos derivam apenas de originais ativos, sem deletedAt/estorno. Preservar referências e recusar saldo negativo. Pagamento pessoal editado reclassifica compra e guarda valor efetivo sem reescrever quantidade/preço planeados. Aquisição editada ajusta valor da meta vinculada sem duplicar débito. Regras de histórico Business não mudam; transferência empresarial só altera descrição/categoria no Home e é eliminada por compensação conjunta. Ver HOME.md.

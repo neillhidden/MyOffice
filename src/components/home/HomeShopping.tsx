@@ -48,7 +48,10 @@ export function HomeShopping({
   useEffect(() => {
     setAccount(
       data.accounts.find(
-        (a) => a.kind === 'current' && accountCurrency(a) === currency,
+        (a) =>
+          !a.deletedAt &&
+          a.kind === 'current' &&
+          accountCurrency(a) === currency,
       )?.id ?? '',
     );
     setEditingId(null);
@@ -263,7 +266,9 @@ export function HomeShopping({
               {data.accounts
                 .filter(
                   (a) =>
-                    a.kind === 'current' && accountCurrency(a) === currency,
+                    !a.deletedAt &&
+                    a.kind === 'current' &&
+                    accountCurrency(a) === currency,
                 )
                 .map((a) => (
                   <option key={a.id} value={a.id}>
@@ -362,6 +367,15 @@ export function HomeShopping({
                         Math.round(item.quantity * item.unitPrice * 100) / 100,
                       )}
                     </p>
+                    {paid &&
+                      item.paymentAmount !== undefined &&
+                      item.paymentAmount !==
+                        Math.round(item.quantity * item.unitPrice * 100) /
+                          100 && (
+                        <p className="text-xs mt-1">
+                          Pagamento efetivo: {cash(item.paymentAmount)}
+                        </p>
+                      )}
                     <p className="text-xs mt-1">
                       {item.archived
                         ? 'Arquivado'
