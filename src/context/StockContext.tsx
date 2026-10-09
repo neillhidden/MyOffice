@@ -1,3 +1,5 @@
+import { BusinessDocuments, emptyBusinessDocuments, validateBusinessDocuments } from '../utils/businessDocumentImport';
+import { BUSINESS_DOCUMENTS_KEY, commitBusinessDocuments } from '../utils/businessDocumentStorage';
 import { BUSINESS_SUBCATEGORIES, categoryChildren, validateCategoryTree } from '../utils/categories';
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import {
@@ -230,6 +232,9 @@ interface StockContextType {
   // Financeiro (Contas, Movimentações e Auditoria)
   banks: Bank[];
   bankMovements: BankMovement[];
+  businessDocuments: BusinessDocuments;
+  businessDocumentsError: string;
+  updateBusinessDocuments: (operation: (movements: BankMovement[], tools: BusinessDocuments) => {movements: BankMovement[]; tools: BusinessDocuments}) => void;
   getBankBalance: (bankId: string) => number;
   refreshBankMovements: () => void;
   getBankMovements: (bankId: string) => BankMovement[];
@@ -564,6 +569,26 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
     return migrateFinancialAudit(INITIAL_BANK_MOVEMENTS);
   });
+
+  const [businessDocumentsInitial] = useState(() => {
+    const raw = localStorage.getItem(BUSINESS_DOCUMENTS_KEY);
+    try { return {raw, data: raw ? validateBusinessDocuments(JSON.parse(raw), bankMovements) : emptyBusinessDocuments(), error: ''}; }
+    catch { return {raw, data: emptyBusinessDocuments(), error: 'Não foi possível ler os comprovativos Business. O conteúdo original foi preservado.'}; }
+  });
+  const [businessDocuments, setBusinessDocuments] = useState(businessDocumentsInitial.data);
+  const businessDocumentsRaw = useRef(businessDocumentsInitial.raw);
+  const businessDocumentsCurrent = useRef(businessDocuments);
+  businessDocumentsCurrent.current = businessDocuments;
+  const updateBusinessDocuments = (operation: (movements: BankMovement[], tools: BusinessDocuments) => {movements: BankMovement[]; tools: BusinessDocuments}) => {
+    if (businessDocumentsInitial.error) throw new Error(businessDocumentsInitial.error);
+    const beforeLedger = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}bankMovements`);
+    if (beforeLedger !== JSON.stringify(bankMovements)) throw new Error('O histórico financeiro mudou. Recarrega antes de aplicar.');
+    const result = operation(bankMovements, businessDocumentsCurrent.current);
+    commitBusinessDocuments(localStorage, beforeLedger, businessDocumentsRaw.current, result.movements, result.tools);
+    businessDocumentsRaw.current = JSON.stringify(result.tools);
+    businessDocumentsCurrent.current = result.tools;
+    setBusinessDocuments(result.tools); setBankMovements(result.movements);
+  };
 
   const [debts, setDebts] = useState<Debt[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}debts`);
@@ -3213,6 +3238,9 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       banks,
       bankMovements,
       getBankBalance,
+      businessDocuments,
+      businessDocumentsError: businessDocumentsInitial.error,
+      updateBusinessDocuments,
       refreshBankMovements: () => setBankMovements(JSON.parse(localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}bankMovements`) || '[]')),
       getBankMovements,
       addBank,

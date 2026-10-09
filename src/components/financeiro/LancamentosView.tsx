@@ -19,7 +19,7 @@ import { formatCurrencyValue, formatDate } from '../../utils/formatters';
 import { LancamentoModal } from './LancamentoModal';
 import { PositiveBadge } from '../common/PositiveBadge';
 
-const FINANCIAL_CATEGORIES: FinancialCategory[] = [
+export const FINANCIAL_CATEGORIES: FinancialCategory[] = [
   'Venda',
   'Compra de estoque',
   'Dívida',

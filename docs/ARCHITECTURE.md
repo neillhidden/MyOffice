@@ -180,3 +180,10 @@ Armazenamento nesta fase: mesmo documento local, inclusive comprovativos base64 
 ## Leitura local de documentos financeiros
 
 `HomeFileImport` prepara rascunhos editáveis em memória; `homeDocumentImport` valida sinais, moedas, duplicados e aplicação atómica. `financialTables` centraliza o CSV. `financialFileReader` carrega PDF.js, ExcelJS e Tesseract apenas quando necessários. PDF.js usa worker do bundle; OCR português usa worker, WASM e modelo servidos pela própria aplicação, preparados por `scripts/prepare-document-reader.mjs`. Nenhum documento é enviado a terceiros. Context/persistência existentes permanecem.
+
+
+## Comprovativos e orçamento nos dois modos
+
+`financialDocuments` partilha preparação do original e `financialFileReader` os leitores. Home guarda `receiptReference`/`receiptFileHash` no lançamento; orçamento permanece calculado por categoria/mês/moeda. Business usa `BusinessDocumentsView`, regras puras `businessDocumentImport` e estado separado no StockContext: budgets, documents e links de identidade. Associar um comprovativo não reescreve lançamentos Business.
+
+`businessDocumentStorage` grava ledger e metadados com diário preparado/confirmado e rollback/recuperação, executada no arranque antes dos providers. Conflitos com outra aba e quotas impedem gravação parcial. Dados corruptos são preservados e bloqueiam a aplicação. Recursos OCR continuam locais ao site.

@@ -43,3 +43,8 @@ Autorizado pelo utilizador implementar as oito melhorias propostas: calendário,
 ## Pedido aceite: extratos e recibos
 
 Utilizador pediu PDF (prioritário), CSV, Excel e fotografias, permitindo também texto/manual. A interface distingue entrada positiva, saída negativa e saldo do banco. Leitura prepara propostas; só confirmação aplica dinheiro. Solução gratuita no navegador, integrada nas carteiras e conferência Home.
+
+
+## Orientações do utilizador — melhorias relacionadas
+
+Aplicar melhorias no Home e no Business quando houver tarefa/funcionalidade correspondente, conservando separação de dados e regras. Proteger comprovativos repetidos e permitir orçamento existente/novo durante revisão. Antes de acrescentar novas preferências globais de ativar/desativar nas Definições, explicar e perguntar ao utilizador; não tratar ações de revisão de um documento como novas preferências globais.

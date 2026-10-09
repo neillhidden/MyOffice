@@ -1440,8 +1440,10 @@ export function HomeDocuments() {
       const [entityType, ...id] = selectedEntity.split(':');
       if (
         a.run(() =>
-          a.update((data) =>
-            validateHomeData({
+          a.update((data) => {
+            if (data.documents?.some((d) => d.content === btoa(raw)))
+              throw new Error('Este ficheiro já foi adicionado. Usa o documento existente, mesmo que o nome do ficheiro seja diferente.');
+            return validateHomeData({
               ...data,
               documents: [
                 ...(data.documents ?? []),
@@ -1460,8 +1462,8 @@ export function HomeDocuments() {
                   entityId: id.join(':') || undefined,
                 },
               ],
-            }),
-          ),
+            });
+          }),
         )
       ) {
         setTitle('');

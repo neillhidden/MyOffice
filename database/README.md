@@ -123,3 +123,11 @@ Aplicar depois de 001–005 apenas na futura base. Sete tabelas adicionais (**48
 Pagamento deve verificar saldo/restante, direção/valor/data/moeda do movimento e dívida dentro da mesma transação; valores de dívida/contas não são inferidos apenas por FKs. Conferência exige data/valor/carteira reais e representação das duas pernas de transferências. Associação polimórfica de documentos exige validação da entidade e do workspace pela API. Regras de repetição, saldo e recuperação precisam de transações/locks e autorização no backend. Não alterar bank_movements Business imutáveis. O frontend não executa SQL e não tem importador remoto.
 
 Teste: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-tools-database-regression.mjs`. O teste aplica as seis migrações e verifica separação, vínculos/moedas, metadados de ficheiros, revisões imutáveis e RLS habilitada.
+
+## Migração 007 — documentos e orçamento Business
+
+Depois de 001–006, prepara três tabelas empresariais, totalizando 51: business_budgets (empresa/categoria/mês/moeda), business_documents (objeto privado/hash/vínculo ao ledger) e business_receipt_links (identidade/ref/conta/data, append-only). A API futura valida estado/empresa proprietária, moeda, valor/data/sentido do movimento e saldo numa transação. RLS está habilitada, sem políticas de acesso definidas; frontend não executa SQL.
+
+Mapear `myoffice-business-documents-v1` para essas tabelas. Gerar IDs dos links ao migrar; calcular SHA-256 de originais existentes. No Home, receiptReference/receiptFileHash podem ir em bank_movements.import_details na criação ou overlay de metadados auditado para movimentos antigos, preservando imutabilidade. Nunca enviar o base64 para campos de metadados remotos.
+
+Teste: `MYOFFICE_PGLITE_MODULE=... node --test tests/business-document-database-regression.mjs tests/home-tools-database-regression.mjs` verifica duplicados, FKs/isolamento, imutabilidade e 51 tabelas com RLS.

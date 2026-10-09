@@ -164,3 +164,12 @@ Este documento descreve a árvore completa de diretórios e ficheiros do reposit
 - `src/utils/homeDocumentImport.ts`: propostas, sinais, validação e aplicação.
 - `scripts/prepare-document-reader.mjs`: recursos estáticos OCR.
 - `tests/home-document-import.test.ts` e `tests/home-file-import-browser.mjs`: regras e integração real.
+
+
+## Documentos financeiros empresariais
+
+- `src/components/financeiro/BusinessDocumentsView.tsx`: leitura/revisão, orçamento, arquivo e cópia financeira Business.
+- `src/utils/businessDocumentImport.ts`: regras puras e tipos do arquivo empresarial.
+- `src/utils/businessDocumentStorage.ts`: gravação atómica e recuperação do ledger/metadados.
+- `src/utils/financialDocuments.ts`: preparação partilhada de ficheiros para arquivo.
+- `database/migrations/007_business_document_import.sql`: estrutura futura, sem ligação ativa.

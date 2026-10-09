@@ -19,6 +19,7 @@ import { entrySignedAmount } from './homeExtensions';
 import { parseStatementCsv } from './homeAnalysis';
 import { homeAuditEdit } from './homeEditing';
 export interface ImportDraft {
+  fileHash?: string;
   id: string;
   date: string;
   title: string;
@@ -169,6 +170,10 @@ export function tableDrafts(table: string[][]): ImportDraft[] {
 }
 const amountTokens = (line: string) =>
   line.match(/[+\-−]?\s*\(?\d+(?:[ .]\d{3})*(?:[,.]\d{2})\)?/g) ?? [];
+export const isBankReceipt = (content: string) =>
+  /comprovativo|recibo/.test(normalized(content)) &&
+  /operacao|transaccao|transacao/.test(normalized(content)) &&
+  content.split(/\r?\n/).some((line) => /^montante\b/.test(normalized(line)));
 export function textDrafts(
   content: string,
   mode: 'statement' | 'receipt',
@@ -196,12 +201,7 @@ export function textDrafts(
   const operationDate = field(/^data(?:\s*[-–]\s*hora)?\s*[:：]?\s*/).match(
     /\b\d{2}[/-]\d{2}[/-]\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/,
   )?.[0];
-  if (
-    mode === 'statement' &&
-    /comprovativo|recibo/.test(normalized(content)) &&
-    /operacao|transaccao|transacao/.test(normalized(content)) &&
-    lines.some((line) => /^montante\b/.test(normalized(line)))
-  ) {
+  if (mode === 'statement' && isBankReceipt(content)) {
     const receipts = textDrafts(content, 'receipt');
     if (receipts[0]?.amount && receipts[0]?.date) return receipts;
   }
@@ -357,6 +357,7 @@ export function applyReceipt(
   accountId: string,
   document?: HomeDocument,
   matchId?: string,
+  budget?: { id: string } | { limit: number },
 ) {
   const wallet = data.accounts.find(
     (a) => a.id === accountId && !a.deletedAt && a.kind === 'current',
@@ -364,6 +365,18 @@ export function applyReceipt(
   if (!wallet) throw new Error('Escolhe uma carteira disponível.');
   const amount = validateDraft(row, accountCurrency(wallet));
   const matches = receiptMatches(data, row, accountId);
+  const repeated = data.entries.find(
+    (e) =>
+      (row.fileHash && e.receiptFileHash === row.fileHash) ||
+      (row.reference &&
+        e.receiptReference === row.reference &&
+        e.accountId === accountId &&
+        e.date === row.date),
+  );
+  if (repeated && repeated.id !== matchId)
+    throw new Error(
+      'Este comprovativo ou referência de transação já foi adicionado. Associa ao lançamento existente; se foi eliminado, consulta o Histórico.',
+    );
   let next = data,
     entryId = matchId;
   if (matchId) {
@@ -399,10 +412,71 @@ export function applyReceipt(
     });
     entryId = next.entries[0].id;
   }
+  const entry = next.entries.find((e) => e.id === entryId)!;
+  if (row.reference || row.fileHash) {
+    next = {
+      ...next,
+      entries: next.entries.map((e) =>
+        e.id === entryId
+          ? homeAuditEdit(e, {
+              ...e,
+              ...(row.reference && !e.receiptReference
+                ? { receiptReference: row.reference }
+                : {}),
+              ...(row.fileHash && !e.receiptFileHash
+                ? { receiptFileHash: row.fileHash }
+                : {}),
+            })
+          : e,
+      ),
+    };
+  }
+  if (budget) {
+    if (entry.type !== 'expense')
+      throw new Error(
+        'Orçamentos de despesas só podem ser associados a saídas.',
+      );
+    const month = entry.date.slice(0, 7),
+      currency = accountCurrency(wallet);
+    const compatible = next.budgets.filter(
+      (b) =>
+        !b.deletedAt && b.month === month && (b.currency ?? 'AOA') === currency,
+    );
+    if ('id' in budget) {
+      if (
+        !compatible.some(
+          (b) => b.id === budget.id && b.category === entry.category,
+        )
+      )
+        throw new Error(
+          'O orçamento deve corresponder à categoria, mês e moeda da despesa.',
+        );
+    } else {
+      if (compatible.some((b) => b.category === entry.category))
+        throw new Error(
+          'Já existe um orçamento para esta categoria, mês e moeda. Seleciona o existente.',
+        );
+      next = {
+        ...next,
+        budgets: [
+          ...next.budgets,
+          {
+            id: createId('receipt-budget'),
+            month,
+            category: entry.category,
+            currency,
+            limit: money(budget.limit),
+          },
+        ],
+      };
+    }
+  }
   if (document) {
-    const existing = next.documents?.find((d) => d.id === document.id);
+    const existing = next.documents?.find(
+      (d) => d.id === document.id || d.content === document.content,
+    );
     const linked = {
-      ...document,
+      ...(existing ?? document),
       entityType: 'entry' as const,
       entityId: entryId,
     };
@@ -412,7 +486,7 @@ export function applyReceipt(
       ...next,
       documents: existing
         ? next.documents!.map((d) =>
-            d.id === document.id ? homeAuditEdit(d, linked) : d,
+            d.id === existing.id ? homeAuditEdit(d, linked) : d,
           )
         : [...(next.documents ?? []), linked],
     };

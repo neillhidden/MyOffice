@@ -67,10 +67,10 @@ test('offline Home tools schema preserves workspace isolation, financial links, 
         "SELECT tablename,rowsecurity FROM pg_tables WHERE schemaname='myoffice'",
       )
     ).rows;
-    assert.equal(tables.length, 48);
+    assert.equal(tables.length, 51);
     assert.ok(tables.every((t) => t.rowsecurity));
     console.log(
-      '48 tables created with RLS enabled; frontend remains disconnected.',
+      '51 tables created with RLS enabled; frontend remains disconnected.',
     );
   } finally {
     await db.close();

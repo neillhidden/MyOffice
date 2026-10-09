@@ -163,3 +163,10 @@ Além das oito áreas originais, o menu pessoal inclui Histórico, Dívidas pess
 ## Home: leitura financeira
 
 Extratos integra leitor PDF/CSV/XLSX/imagens com seleção de folha, texto/manual e revisão antes da conferência existente. Documentos integra leitura e criação/associação de rendimento ou despesa com comprovativo. `HomeFileImport.tsx` reutiliza o mesmo fluxo de revisão nos dois destinos.
+
+
+## Business: Extratos e documentos
+
+Em **Business → Financeiro → Extratos e documentos**, escolher conta empresarial, ler PDF/CSV/XLSX/foto ou texto/manual, rever data, descrição, sinal, moeda, categoria e referência. Para lançamentos existentes escolher a correspondência; para despesas escolher orçamento existente ou criar limite por empresa/categoria/mês/moeda. A confirmação aplica os movimentos em conjunto; um comprovativo individual pode ser arquivado. PDFs repetidos são reutilizados. Empresas paradas/desativadas e contas inativas não podem operar.
+
+A vista mostra orçamentos com gastos calculados do ledger (incluindo compensações), comprovativos descarregáveis e exportação JSON da cópia financeira. Extratos com vários movimentos são revistos/aplicados como lote e não arquivados como comprovativo individual. Archive PDF/PNG/JPEG até 1 MB e 2 MB total; leitura segue os limites gerais.

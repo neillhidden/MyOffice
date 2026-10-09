@@ -66,7 +66,8 @@ export type ContactosSubmodule =
 export type FinanceiroSubmodule =
   | 'Contas'
   | 'Lançamentos'
-  | 'Dívidas';
+  | 'Dívidas'
+  | 'Documentos';
 
 interface SidebarProps {
   mode: OfficeMode;
@@ -138,6 +139,7 @@ const FINANCEIRO_SUBMODULES: { id: FinanceiroSubmodule; label: string; icon: Rea
   { id: 'Contas', label: 'Contas', icon: Building2 },
   { id: 'Lançamentos', label: 'Lançamentos', icon: ArrowLeftRight },
   { id: 'Dívidas', label: 'Dívidas', icon: HandCoins },
+  { id: 'Documentos', label: 'Extratos e documentos', icon: FileText },
 ];
 
 const MODULE_SUBMODULES: Partial<Record<MainModule, SubmoduleItem[]>> = {

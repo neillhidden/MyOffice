@@ -1,3 +1,4 @@
+import { pdfText } from './fixtures/financial-pdf.mjs';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import ExcelJS from 'exceljs';
@@ -18,29 +19,6 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 const today = new Date().toLocaleDateString('en-CA'),
   pt = today.split('-').reverse().join('/');
-function pdfText(items) {
-  const escaped = (s) =>
-    s.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)');
-  const stream = items
-    .map(([s, x, y]) => `BT /F1 12 Tf ${x} ${y} Td (${escaped(s)}) Tj ET`)
-    .join('\n');
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Count 1 /Kids [3 0 R] >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-  ];
-  let out = '%PDF-1.4\n',
-    offsets = [];
-  objects.forEach((o, i) => {
-    offsets.push(out.length);
-    out += `${i + 1} 0 obj\n${o}\nendobj\n`;
-  });
-  const xref = out.length;
-  out += `xref\n0 6\n0000000000 65535 f \n${offsets.map((n) => String(n).padStart(10, '0') + ' 00000 n ').join('\n')}\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return Buffer.from(out, 'latin1');
-}
 const receipt = pdfText([
   ['LOJA PDF', 40, 790],
   [`DATA ${pt}`, 40, 750],
@@ -155,6 +133,7 @@ try {
       'LOJA TESTE',
     );
     assert.equal((await data()).entries.length, 0);
+    await page.getByLabel('Orçamento do comprovativo').waitFor();
   }
   await nav(12);
   await nav(13);
@@ -172,8 +151,12 @@ try {
   await page
     .getByLabel('Categoria do comprovativo', { exact: true })
     .selectOption('Alimentação');
+  await page.getByLabel('Orçamento do comprovativo').selectOption('new');
+  await page.getByLabel('Limite do novo orçamento').fill('100');
   await applyReceiptUI();
   assert.equal((await data()).entries[0].amount, 25);
+  assert.equal((await data()).budgets.length, 1);
+  assert.equal((await data()).budgets[0].limit, 100);
   assert.equal(
     (await data()).documents[0].entityId,
     (await data()).entries[0].id,
@@ -190,7 +173,7 @@ try {
     .selectOption((await data()).entries[0].id);
   await applyReceiptUI();
   assert.equal((await data()).entries.length, 1);
-  assert.equal((await data()).documents.length, 2);
+  assert.equal((await data()).documents.length, 1);
   // Bank PDF with debit/credit/balance columns reads the movements instead of account balances.
   await nav(12);
   await page
@@ -296,9 +279,14 @@ try {
   await page
     .getByLabel('Categoria do comprovativo', { exact: true })
     .selectOption('Alimentação');
+  await page
+    .getByLabel('Orçamento do comprovativo')
+    .selectOption((await data()).budgets[0].id);
   await applyReceiptUI();
   assert.equal((await data()).entries.length, 2);
-  assert.equal((await data()).documents.length, 3);
+  assert.equal((await data()).budgets.length, 1);
+  assert.equal((await data()).budgets[0].limit, 100);
+  assert.equal((await data()).documents.length, 2);
   assert.deepEqual(outgoing, []);
   // Scanned PDF runs the OCR fallback and detects the same existing expense.
   const imageStream = `q 595 0 0 297 0 400 cm /Im0 Do Q`;
@@ -353,7 +341,7 @@ try {
   await applyReceiptUI();
   assert.equal((await data()).entries.length, 3);
   await page.reload();
-  assert.equal((await data()).documents.length, 3);
+  assert.equal((await data()).documents.length, 2);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#sidebar-brand-toggle').click();
   await nav(12);

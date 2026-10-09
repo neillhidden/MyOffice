@@ -137,7 +137,7 @@ test('applying a reviewed receipt posts and attaches atomically, while duplicate
   );
   assert.equal(d.entries.length, 1);
   assert.equal(balances(d)['home-wallet'], 75);
-  assert.equal(d.documents!.length, 2);
+  assert.equal(d.documents!.length, 1);
   assert.throws(
     () => applyReceipt(d, row, 'home-wallet', undefined, 'invalid'),
     /corresponde/,
@@ -247,5 +247,108 @@ test('MULTICAIXA-like labelled receipts work in statements without mixing signat
   assert.deepEqual(
     textDrafts('Comprovativo Digital\nSaldo 1.000,00 Kz', 'statement'),
     [],
+  );
+});
+
+test('receipt identity and renamed files never duplicate an expense or its archived original', () => {
+  const row = {
+    ...draftFromSigned(date, 'Loja', -25, 'AOA'),
+    category: 'Alimentação',
+    reference: 'transaction-123',
+    fileHash: 'a'.repeat(64),
+  };
+  let d = applyReceipt(fixture(), row, 'home-wallet', document);
+  const before = structuredClone(d);
+  assert.throws(
+    () => applyReceipt(d, { ...row, amount: '30' }, 'home-wallet'),
+    /já foi adicionado/,
+  );
+  assert.throws(
+    () =>
+      applyReceipt(
+        d,
+        { ...row, fileHash: 'b'.repeat(64), amount: '30' },
+        'home-wallet',
+      ),
+    /referência/,
+  );
+  d = applyReceipt(
+    d,
+    row,
+    'home-wallet',
+    { ...document, id: 'renamed', fileName: 'renamed.pdf' },
+    d.entries[0].id,
+  );
+  assert.equal(d.documents!.length, 1);
+  assert.equal(d.documents![0].id, document.id);
+  assert.equal(d.entries.length, 1);
+  assert.equal(balances(d)['home-wallet'], 75);
+  assert.deepEqual(before.entries[0].amount, d.entries[0].amount);
+  const noArchive = applyReceipt(fixture(), row, 'home-wallet');
+  assert.throws(
+    () =>
+      applyReceipt(noArchive, { ...row, reference: 'other' }, 'home-wallet'),
+    /comprovativo/,
+  );
+  assert.deepEqual(validateHomeData(JSON.parse(JSON.stringify(d))), d);
+});
+test('receipt budgets are selected or created atomically by expense category, month and currency', () => {
+  const row = {
+    ...draftFromSigned(date, 'Loja', -25, 'AOA'),
+    category: 'Alimentação',
+  };
+  let d = applyReceipt(fixture(), row, 'home-wallet', document, undefined, {
+    limit: 100,
+  });
+  assert.equal(d.budgets.length, 1);
+  assert.equal(d.budgets[0].month, date.slice(0, 7));
+  assert.equal(d.budgets[0].limit, 100);
+  assert.equal(balances(d)['home-wallet'], 75);
+  const before = structuredClone(d);
+  const other = { ...row, amount: '10' };
+  assert.throws(
+    () =>
+      applyReceipt(d, other, 'home-wallet', undefined, undefined, {
+        limit: 200,
+      }),
+    /Já existe um orçamento/,
+  );
+  assert.deepEqual(d, before);
+  d = applyReceipt(d, other, 'home-wallet', undefined, undefined, {
+    id: d.budgets[0].id,
+  });
+  assert.equal(d.budgets.length, 1);
+  assert.equal(d.budgets[0].limit, 100);
+  assert.equal(balances(d)['home-wallet'], 65);
+  assert.throws(
+    () =>
+      applyReceipt(
+        d,
+        { ...other, amount: '5', category: 'Saúde' },
+        'home-wallet',
+        undefined,
+        undefined,
+        { id: d.budgets[0].id },
+      ),
+    /categoria, mês e moeda/,
+  );
+  assert.throws(
+    () =>
+      applyReceipt(
+        fixture(),
+        { ...row, direction: 'income', category: 'Salário' },
+        'home-wallet',
+        undefined,
+        undefined,
+        { limit: 100 },
+      ),
+    /só podem/,
+  );
+  assert.throws(
+    () =>
+      applyReceipt(fixture(), row, 'home-wallet', undefined, undefined, {
+        limit: 0,
+      }),
+    /válido/,
   );
 });

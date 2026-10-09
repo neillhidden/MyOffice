@@ -94,3 +94,8 @@ Sem endpoints atuais. A futura API deverá transacionar dívida/pagamento/ledger
 ## Leitura de extratos e comprovativos
 
 PDF/CSV/XLSX/fotografias são processados no cliente. Não há endpoint, upload remoto de documentos, serviço OCR pago ou nova credencial. Workers/modelos são recursos estáticos do próprio site.
+
+
+## Documentos Business
+
+Importação continua inteiramente local, sem endpoint ou API paga. A futura API deverá validar empresa/conta ativa, moeda, saldo, identidade do ficheiro/referência e correspondência financeira sob lock/transação; guardar originais em armazenamento privado. Documentos ligados a movimentos existentes não exigem alterar o ledger Business.

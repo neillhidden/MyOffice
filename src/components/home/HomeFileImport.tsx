@@ -1,3 +1,4 @@
+import { fileDocument } from '../../utils/financialDocuments';
 import { csvTable } from '../../utils/financialTables';
 import React, { useEffect, useRef, useState } from 'react';
 import { useHome } from '../../context/HomeContext';
@@ -6,6 +7,8 @@ import { HomeModal } from './HomeModal';
 import { accountCurrency, todayLocal } from '../../utils/home';
 import {
   applyReceipt,
+  isBankReceipt,
+  readImportAmount,
   draftsToStatements,
   ImportDraft,
   receiptMatches,
@@ -43,29 +46,6 @@ function savedFile(d: HomeDocument) {
     { type: d.mime },
   );
 }
-async function fileDocument(file: File, title: string): Promise<HomeDocument> {
-  if (
-    !['application/pdf', 'image/png', 'image/jpeg'].includes(file.type) ||
-    file.size > 1024 * 1024
-  )
-    throw new Error(
-      'O comprovativo para arquivo deve ser PDF/PNG/JPEG até 1 MB.',
-    );
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let raw = '';
-  for (let i = 0; i < bytes.length; i += 8192)
-    raw += String.fromCharCode(...bytes.subarray(i, i + 8192));
-  return {
-    id: createId('read-document'),
-    title,
-    fileName: file.name,
-    mime: file.type as HomeDocument['mime'],
-    size: file.size,
-    content: btoa(raw),
-    uploadedAt: new Date().toISOString(),
-    kind: 'receipt',
-  };
-}
 export function HomeFileImport({
   mode,
   accountId: parentAccount = '',
@@ -87,6 +67,12 @@ export function HomeFileImport({
   );
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState('');
+  const receiptFlow = mode === 'receipt' || isBankReceipt(source);
+  const [fileHash, setFileHash] = useState('');
+  const [duplicateDocument, setDuplicateDocument] =
+    useState<HomeDocument | null>(null);
+  const [budgetChoice, setBudgetChoice] = useState('');
+  const [budgetLimit, setBudgetLimit] = useState('');
   const [result, setResult] = useState<FinancialReadResult | null>(null);
   const [sheet, setSheet] = useState(0);
   const [rows, setRows] = useState<ImportDraft[]>([]);
@@ -132,12 +118,32 @@ export function HomeFileImport({
     setRows([]);
     setSource('');
     setFile(selected);
+    setFileHash('');
+    setDuplicateDocument(null);
+    setBudgetChoice('');
+    setBudgetLimit('');
     setConfirmation(false);
     setAttach(
       selected.size <= 1024 * 1024 &&
         ['application/pdf', 'image/png', 'image/jpeg'].includes(selected.type),
     );
     try {
+      const digest = await crypto.subtle.digest(
+        'SHA-256',
+        await selected.arrayBuffer(),
+      );
+      const hash = Array.from(new Uint8Array(digest), (b) =>
+        b.toString(16).padStart(2, '0'),
+      ).join('');
+      let duplicate: HomeDocument | null = null;
+      if (
+        selected.size <= 1024 * 1024 &&
+        ['application/pdf', 'image/png', 'image/jpeg'].includes(selected.type)
+      ) {
+        const candidate = await fileDocument(selected, 'Leitura');
+        duplicate =
+          data.documents?.find((d) => d.content === candidate.content) ?? null;
+      }
       const r = await readFinancialFile(
         selected,
         mode,
@@ -152,6 +158,8 @@ export function HomeFileImport({
         abort.current !== controller
       )
         return;
+      setFileHash(hash);
+      setDuplicateDocument(duplicate);
       setResult(r);
       setSource(r.text);
       setSheet(0);
@@ -199,7 +207,7 @@ export function HomeFileImport({
   };
   const selected = rows.filter((r) => r.selected);
   let matches: ReturnType<typeof receiptMatches> = [];
-  if (mode === 'receipt' && wallet && selected.length === 1) {
+  if (receiptFlow && wallet && selected.length === 1) {
     try {
       matches = receiptMatches(data, selected[0], accountId);
     } catch {
@@ -218,7 +226,8 @@ export function HomeFileImport({
         );
       }
     }
-    if (mode === 'receipt') {
+    if (receiptFlow) {
+      if (budgetChoice === 'new') readImportAmount(budgetLimit);
       if (selected.length !== 1)
         throw new Error('Aplica um comprovativo de cada vez.');
       if (matches.length && !match)
@@ -244,7 +253,7 @@ export function HomeFileImport({
     setBusy(true);
     try {
       check();
-      if (mode === 'statement') {
+      if (!receiptFlow) {
         onRows?.(
           draftsToStatements(selected, accountId, accountCurrency(wallet)),
         );
@@ -255,14 +264,29 @@ export function HomeFileImport({
         setError('');
         setConfirmation(false);
       } else {
-        const row = selected[0];
+        const row = { ...selected[0], ...(fileHash ? { fileHash } : {}) };
         const document =
           existingDocument ??
+          duplicateDocument ??
           (attach && file ? await fileDocument(file, row.title) : undefined);
         update((current) =>
-          applyReceipt(current, row, accountId, document, match || undefined),
+          applyReceipt(
+            current,
+            row,
+            accountId,
+            document,
+            match || undefined,
+            budgetChoice
+              ? budgetChoice === 'new'
+                ? { limit: readImportAmount(budgetLimit) }
+                : { id: budgetChoice }
+              : undefined,
+          ),
         );
         setRows([]);
+        setFileHash('');
+        setDuplicateDocument(null);
+        setBudgetChoice('');
         setFile(null);
         setResult(null);
         setSource('');
@@ -341,8 +365,11 @@ export function HomeFileImport({
           className={button}
           disabled={busy}
           onClick={() => {
-            if (mode === 'receipt') {
+            if (receiptFlow) {
               setFile(null);
+              setFileHash('');
+              setDuplicateDocument(null);
+              setBudgetChoice('');
               setSource('');
               setResult(null);
               setMatch('');
@@ -501,6 +528,15 @@ export function HomeFileImport({
                 </select>
               </label>
               <label className="text-xs">
+                Referência da transação
+                <input
+                  aria-label={'Referência lida ' + (i + 1)}
+                  className={input}
+                  value={row.reference ?? ''}
+                  onChange={(e) => change(row.id, 'reference', e.target.value)}
+                />
+              </label>
+              <label className="text-xs">
                 Moeda identificada
                 <select
                   aria-label={'Moeda lida ' + (i + 1)}
@@ -513,7 +549,7 @@ export function HomeFileImport({
                   <option value="USD">USD / Dólar</option>
                 </select>
               </label>
-              {mode === 'receipt' && (
+              {receiptFlow && (
                 <>
                   <label className="text-xs">
                     Categoria
@@ -557,14 +593,91 @@ export function HomeFileImport({
           </div>
         );
       })}
-      {mode === 'receipt' && !!matches.length && (
+      {duplicateDocument && (
+        <p role="status" className="text-xs text-amber-700 dark:text-amber-300">
+          Este ficheiro já está guardado: {duplicateDocument.title}. Será
+          reutilizado sem criar uma cópia.
+        </p>
+      )}
+      {receiptFlow &&
+        selected.length === 1 &&
+        selected[0].direction === 'expense' && (
+          <div className="space-y-2">
+            <label className="block text-xs">
+              Orçamento da despesa
+              <select
+                aria-label="Orçamento do comprovativo"
+                className={input}
+                value={budgetChoice}
+                onChange={(e) => {
+                  setBudgetChoice(e.target.value);
+                  setConfirmation(false);
+                  const b = data.budgets.find((b) => b.id === e.target.value);
+                  if (b) change(selected[0].id, 'category', b.category);
+                }}
+              >
+                <option value="">Sem escolher orçamento</option>
+                {data.budgets
+                  .filter(
+                    (b) =>
+                      !b.deletedAt &&
+                      b.month === selected[0].date.slice(0, 7) &&
+                      (b.currency ?? 'AOA') === accountCurrency(wallet),
+                  )
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.category} · {b.month} · Limite {b.limit}{' '}
+                      {b.currency ?? 'AOA'}
+                    </option>
+                  ))}
+                <option value="new">Criar novo orçamento</option>
+              </select>
+            </label>
+            {budgetChoice === 'new' && (
+              <label className="block text-xs">
+                Limite do novo orçamento
+                <input
+                  aria-label="Limite do novo orçamento"
+                  className={input}
+                  inputMode="decimal"
+                  value={budgetLimit}
+                  onChange={(e) => {
+                    setBudgetLimit(e.target.value);
+                    setConfirmation(false);
+                  }}
+                />
+              </label>
+            )}
+            <p className="text-xs text-slate-500">
+              O orçamento é um limite para a categoria, mês da despesa e moeda
+              da carteira. Criar o limite não desconta dinheiro adicional.
+            </p>
+          </div>
+        )}
+      {receiptFlow && !!matches.length && (
         <label className="block text-xs">
           Já existe um movimento compatível. Associar a
           <select
             aria-label="Lançamento compatível"
             className={input}
             value={match}
-            onChange={(e) => setMatch(e.target.value)}
+            onChange={(e) => {
+              setMatch(e.target.value);
+              setConfirmation(false);
+              const entry = matches.find((m) => m.id === e.target.value);
+              if (entry)
+                setRows((old) =>
+                  old.map((r) =>
+                    r.selected
+                      ? {
+                          ...r,
+                          category: entry.category,
+                          subcategory: entry.subcategory ?? '',
+                        }
+                      : r,
+                  ),
+                );
+            }}
           >
             <option value="">Escolher lançamento existente</option>
             {matches.map((e) => (
@@ -575,7 +688,7 @@ export function HomeFileImport({
           </select>
         </label>
       )}
-      {mode === 'receipt' && file && !existingDocument && (
+      {receiptFlow && file && !existingDocument && !duplicateDocument && (
         <label className="text-xs block">
           <input
             type="checkbox"
@@ -596,7 +709,7 @@ export function HomeFileImport({
       )}
       {!!rows.length && (
         <button className={primary} disabled={busy} onClick={confirm}>
-          {mode === 'statement'
+          {!receiptFlow
             ? 'Enviar movimentos revistos para conferência'
             : 'Rever e aplicar movimento'}
         </button>
@@ -604,7 +717,7 @@ export function HomeFileImport({
       {confirmation && (
         <HomeModal
           title={
-            mode === 'statement'
+            !receiptFlow
               ? 'Confirmar leitura do extrato'
               : match
                 ? 'Associar comprovativo'
@@ -613,12 +726,19 @@ export function HomeFileImport({
           onClose={() => setConfirmation(false)}
         >
           <p className="text-sm mb-4">
-            {mode === 'statement'
+            {!receiptFlow
               ? `${selected.length} movimentos serão enviados para a pré-visualização do extrato, sem alterar o saldo. Confere-os antes de criar lançamentos.`
               : match
                 ? 'O comprovativo será associado ao lançamento escolhido; o saldo não será descontado novamente.'
                 : `Será registada uma ${selected[0].direction === 'income' ? 'entrada (+)' : 'saída (−)'} de ${selected[0].amount} ${accountCurrency(wallet)} na carteira ${wallet?.name}.`}
           </p>
+          {receiptFlow && budgetChoice && (
+            <p className="text-sm mb-4">
+              {budgetChoice === 'new'
+                ? `Será criado um orçamento com limite de ${budgetLimit} ${accountCurrency(wallet)} para ${selected[0].category}, no mês ${selected[0].date.slice(0, 7)}.`
+                : 'A despesa contará no orçamento selecionado, sem alterar o seu limite.'}
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               className={primary}

@@ -112,3 +112,10 @@ PDFs com texto são lidos diretamente; PDFs digitalizados e fotografias usam OCR
 Limites de leitura: 10 MB por ficheiro, 20 páginas PDF, 5.000 linhas/100 colunas Excel. Excel antigo `.xls` deve ser guardado como `.xlsx`. O arquivo de originais mantém os limites existentes: PDF/PNG/JPEG até 1 MB por documento e 2 MB no total. CSV, Excel, WebP e ficheiros maiores podem ser lidos sem arquivar o original. Dados continuam neste navegador; utiliza o backup JSON.
 
 Comprovativos bancários com campos Data - Hora, Operação, Comerciante, Montante e Transacção também são reconhecidos em Extratos. A data da operação tem prioridade sobre datas de assinatura digital; Compra prepara uma saída. Uma transferência sem sentido explícito continua a exigir escolha de Entrada/Saída.
+
+
+## Comprovativos repetidos e orçamentos
+
+A leitura identifica o ficheiro pelo conteúdo (SHA-256), mesmo com outro nome, e conserva a referência da transação. Um comprovativo já aplicado deve ser associado ao lançamento compatível; nunca cria automaticamente outra despesa. Um original já guardado é reutilizado. O arquivo manual também recusa ficheiros com conteúdo já existente. Valores/data/carteira continuam a proteger duplicados quando não há referência.
+
+Durante a revisão de uma saída, escolhe **Orçamento da despesa**: um limite existente para o mês/moeda ou **Criar novo orçamento** e preencher o limite. Selecionar um orçamento escolhe a categoria correspondente. Mês, categoria e moeda devem coincidir com a despesa; se já existir o mesmo orçamento, seleciona-o em vez de criar outro. Criar um limite não movimenta dinheiro: o gasto conta pela sua categoria/data, uma única vez. Comprovativos bancários reconhecidos em Extratos também oferecem este fluxo; extratos tabulares mantêm conferência separada.

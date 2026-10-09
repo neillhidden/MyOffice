@@ -430,6 +430,9 @@ export function validateHomeData(input: unknown): HomeData {
   const bills = new Set(data.bills.map((b) => b.id));
   const reversals = new Set<string>();
   for (const e of data.entries) {
+    if (e.receiptReference !== undefined) text(e.receiptReference);
+    if (e.receiptFileHash !== undefined && !/^[a-f0-9]{64}$/.test(e.receiptFileHash))
+      throw new Error('Identificação do comprovativo inválida.');
     text(e.title);
     text(e.category);
     money(e.amount);

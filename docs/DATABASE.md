@@ -143,3 +143,10 @@ Migração **006_home_life_tools.sql**, offline: 7 tabelas novas, total 48 com R
 ## Documentos lidos no Home
 
 Rascunhos de leitura ficam em memória até confirmação. A aplicação usa as entidades existentes: lançamentos, documentos vinculados e linhas de extrato; não cria outra chave de armazenamento nem migração SQL. O esquema offline 006 continua aplicável. Persistência permanece local ao navegador.
+
+
+## Identidade e documentos Business
+
+HomeEntry acrescenta os campos opcionais receiptReference e receiptFileHash, preservados no backup e edição. No Business, `myoffice-business-documents-v1` contém version/budgets/documents/links; o ledger continua em `myoffice_estoque_bankMovements`. Diário transitório: `myoffice-business-documents-transaction`. Não partilhar documentos/orçamentos pessoais e empresariais.
+
+Migração offline 007 prepara business_budgets, business_documents e business_receipt_links, totalizando 51 tabelas com RLS habilitada. Não há conexão ao frontend nem políticas de autorização prontas. Ficheiros futuros vão para armazenamento privado; metadados/hash e referências para as tabelas, com validação transacional no backend.

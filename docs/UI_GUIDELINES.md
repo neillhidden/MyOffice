@@ -107,3 +107,5 @@ Menu pessoal conserva home-nav-0..7 e acrescenta home-nav-8..13. Formulários au
 ## Revisão de documentos Home
 
 Mostrar campos editáveis e acessíveis de data, descrição, valor, sentido e moeda. Identificar entradas com + e saídas com −; não depender só de cor. Sentido desconhecido bloqueia aplicação. Mensagens identificam o número do movimento inválido. Usar HomeModal para confirmação e manter revisão legível no telefone.
+
+Business → Financeiro acrescenta a aba Extratos e documentos, com barra de abas que adapta para várias linhas no telefone. O leitor expõe referência, sinal e orçamento, com confirmação explícita. Avisos de comprovativo repetido não dependem de cor.

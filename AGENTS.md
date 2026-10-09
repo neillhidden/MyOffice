@@ -104,3 +104,7 @@ Consulte [`docs/BUSINESS_RULES.md`](./docs/BUSINESS_RULES.md) para o detalhe com
 ## Exceção Home autorizada pelo utilizador — 09/10/2026
 
 No Home pessoal, despesas/rendimentos admitem editar com o mesmo ID e eliminar logicamente, conservando snapshots/deletedAt/referências e recalculando saldos sem negativos. A regra de imutabilidade Business permanece. Valores de transferências Business não são editados isoladamente no Home; corrigir por compensação conjunta. Consultar HOME.md e HOME_ROADMAP.md; o pedido mais recente “Faz todos os Blocos.” autoriza concluir 3–6 sem novas confirmações.
+
+## Orientações aceites do utilizador — melhorias nos dois modos
+
+Aplicar melhorias relacionadas tanto no Home como no Business quando existir uma função correspondente, preservando os dados e as regras de cada modo. Antes de acrescentar novas preferências globais de ativar/desativar nas Definições, perguntar ao utilizador. Importação de documentos/revisão/orçamento está autorizada nos dois modos; não é necessário reconfirmar esta implementação.

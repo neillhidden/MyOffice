@@ -21,6 +21,14 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Comprovativos sem duplicação e orçamentos nos dois modos
+- **Pedidos**: detetar repetição de PDFs/transações, selecionar ou criar orçamento durante revisão, aplicar funções correspondentes também no Business; novas preferências globais de ativar/desativar exigem perguntar primeiro.
+- **Home**: identidade SHA-256/referência opcional no lançamento, reutilização de originais mesmo renomeados, bloqueio no arquivo manual; escolha/criação de limite por categoria/mês/moeda sem débito adicional. Comprovativos bancários em Extratos usam revisão de movimento individual.
+- **Business**: Financeiro → Extratos e documentos; leitor partilhado PDF/CSV/XLSX/foto/texto, revisão e aplicação em lote, associação sem alterar lançamentos antigos, arquivo/descarregamento e orçamento por empresa/categoria/mês/moeda. Estado Business separado no StockContext; gravação ledger/metadados com diário e recuperação, proteção de quota/conflitos. Sem novas preferências globais.
+- **Estrutura futura**: migração offline 007 acrescenta três tabelas (51 totais) com RLS, vínculos e índices de identidade. Sem conexão/backend. Documentação e orientação AGENTS atualizadas.
+- **Verificação**: 68 testes unitários, lint/build; Chromium compilado no Home/Business com PDF real do utilizador (não guardado no Git), Excel, CSV e fotografia OCR; repetição/renomeação, orçamento existente/novo, integridade, persistência e telefone. Regressões Home, ferramentas e finanças/Business passaram. Dois testes SQL de documentos/tabelas passaram.
+
+
 ### [2026-10-09] — OpenAI Codex — Corrigir leitura de comprovativo bancário
 - **Problema**: comprovativo de compra com data e montante em linhas separadas não era identificado em Extratos, cujo leitor procurava movimentos tabulares na mesma linha.
 - **Correção**: homeDocumentImport reconhece comprovativos bancários também em Extratos, lê campos separados/inline, prefere data da operação, usa comerciante e preserva referência. Transferências ambíguas continuam sem sentido automático. Leitura não movimenta dinheiro.

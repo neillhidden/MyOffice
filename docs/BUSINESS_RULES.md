@@ -195,3 +195,10 @@ Ocorrências aceites/ignoradas nunca são regeneradas, incluindo após eliminaç
 Saldo bancário não é receita/despesa. Débito é saída e crédito é entrada; sinal desconhecido exige confirmação. Valores revistos são absolutos e positivos, com sentido separado; moeda deve coincidir com a carteira, sem câmbio implícito. Ler/preparar/importar para conferência não movimenta dinheiro. Aplicar comprovativo valida carteira, categoria, saldo e documento antes de gravar tudo junto. Correspondência existente associa sem novo lançamento; lançamentos já conferidos também impedem débito duplicado. Referências bancárias são preservadas.
 
 Comprovativos bancários reconhecidos em Extratos passam pela mesma revisão/conferência. Preferir data da operação à assinatura digital, preservar referência de transacção e nunca inferir o sentido de uma transferência apenas pelo nome da operação.
+
+
+## Identidade de comprovativos e limites empresariais
+
+Ficheiro idêntico (SHA-256) ou referência bancária repetida na mesma conta/data impede novo movimento. Originais guardados com conteúdo igual são reutilizados, mesmo renomeados. Correspondências exigem conta/data/valor/sentido; operações estornadas não recebem associação automática. Despesa real sem referência continua protegida por conta/data/valor.
+
+Orçamento não é movimento: define limite por categoria/mês/moeda no Home e também empresa no Business. Não criar limite repetido nem sobrescrever o existente durante importação. Todas as validações de orçamento/documento/saldo ocorrem antes de guardar a despesa. Business conserva os movimentos existentes imutáveis; associação fica em metadados separados. Importação exige empresa/conta ativas, saldo para saídas e moeda compatível.

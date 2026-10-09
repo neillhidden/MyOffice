@@ -120,3 +120,8 @@ O teste funcional precisa de `pdftotext` (Poppler) para verificar o PDF descarre
 Dependências fixadas no `bun.lock`: PDF.js, ExcelJS, Tesseract e modelo português. `npm run dev` e `npm run build` executam `scripts/prepare-document-reader.mjs`, que copia worker/WASM/modelo para `public/document-reader/` (ignorado pelo Git); o build publica esses recursos, incluindo versões arquivadas. Instalação reproduzível: `bun install --frozen-lockfile`.
 
 `npm test` inclui regras de importação. `tests/home-file-import-browser.mjs` verifica PDFs reais com texto e digitalizados, CSV, XLSX com várias folhas, fotografia OCR, sinais, confirmação, associação sem duplicar, persistência e telefone. Executar com `PLAYWRIGHT_MODULE`, `CHROMIUM_PATH` e `HOME_TEST_URL` adequados ao ambiente, por exemplo `node tests/home-file-import-browser.mjs`. O teste verifica que OCR usa apenas a origem local.
+
+
+## Validação dos dois modos
+
+`tests/business-document-import.test.ts` cobre identidade, imutabilidade, limites, moedas/empresas/saldo, quota e recuperação. `tests/business-document-browser.mjs` usa PDF, CSV, Excel e foto reais com orçamento/duplicados/persistência/telefone; `HOME_BUSINESS_RECEIPT` permite testar um PDF local sem o incorporar no Git. `tests/fixtures/financial-pdf.mjs` partilha fixtures sintéticas. Migração 007: `MYOFFICE_PGLITE_MODULE=... node --test tests/business-document-database-regression.mjs tests/home-tools-database-regression.mjs`.

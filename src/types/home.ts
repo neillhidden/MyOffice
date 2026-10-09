@@ -28,6 +28,8 @@ export interface HomeAccount extends HomeAudit {
   kind: 'current' | 'savings';
 }
 export interface HomeEntry extends HomeAudit {
+  receiptReference?: string;
+  receiptFileHash?: string;
   originalCurrency?: HomeCurrency;
   originalAmount?: number;
   exchangeRate?: number;
