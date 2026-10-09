@@ -1,6 +1,12 @@
 {
-  "currentSha": "9e1e2d08423a45495e562805f18e2ab59fa57545",
+  "currentSha": "70703276df4a91b1a4188b9d483866bfc7cd8ad4",
   "entries": [
+    {
+      "sha": "70703276df4a91b1a4188b9d483866bfc7cd8ad4",
+      "date": "2026-10-09T16:04:08Z",
+      "title": "Ler extratos e comprovativos em PDF, Excel, CSV e fotografias",
+      "status": "ready"
+    },
     {
       "sha": "9e1e2d08423a45495e562805f18e2ab59fa57545",
       "date": "2026-10-09T15:12:37Z",
