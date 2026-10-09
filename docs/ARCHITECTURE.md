@@ -157,3 +157,7 @@ Home v1 normaliza campos opcionais de categorias/subcategorias/compras na leitur
 ## Ponte financeira local Home/Business (2026-10-08)
 
 `BusinessIncomeTransfer` coordena os dois contexts sem unir saldos. `homeBusinessStorage` grava um diário preparado, os dois documentos e confirmação; recupera antes da montagem React em `main.tsx`. Erros/abas desatualizadas preservam dados. `refreshFromStorage`/`refreshBankMovements` sincronizam estado após o commit local. Backups Home verificam compatibilidade com as transferências Business presentes. Não há servidor nem garantia de concorrência equivalente a uma transação SQL. Gráficos Home derivam apenas do ledger efetivo/mês/moeda; dados antigos sem moeda continuam AOA.
+
+## Gestão Home de categorias (09/10/2026)
+
+HomeCategories, CategoryIcons e HomeModal partilhado servem o bloco 1. homeCategories.ts migra/valida o catálogo estável e executa edição/eliminação/reclassificação; HomeContext continua a validar e persistir antes de atualizar a UI. HomeView/HomeShopping/HomeCharts resolvem nomes apresentados sem mudar chaves nem totais. Não foram trocadas bibliotecas, contexts ou arquitetura Business.

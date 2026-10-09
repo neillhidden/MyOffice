@@ -90,3 +90,7 @@ O seletor fica no rodapé da barra lateral, depois do menu, sem alterar a altura
 ## Definições, rolagem e barra recolhida (2026-10-08)
 
 Home e Business usam linhas com ícone, nome, descrição e seta nas Definições. Uma escolha abre uma página interna própria, com Voltar às Definições. `html/body/#root` não rolam; o shell ocupa `100dvh` e apenas `main`/menu têm rolagem interna limitada. Topo e sidebar permanecem fixos, sem continuação vazia abaixo do painel. Os ícones Home/Business recolhidos ficam centrados na largura da sidebar. `mode-switch-compact` é um botão: empresa no Home (Ir para Business), casa no Business (Ir para Home). IDs expandidos preservados.
+
+## Categorias Home — bloco 1 (09/10/2026)
+
+Barra de filtros em cápsula com divisórias, pesquisa e Adicionar só texto. Linhas (sem cartões por categoria), ações de lápis/lixo com nome acessível, navegação por breadcrumb e controlo segmentado. Modais criam vazios/editam preenchidos, ícone opcional pesquisável, erros junto ao campo sem popup. Respeitar temas e rolagem fixa. Em telefone, filtros podem quebrar linha e Adicionar mantém alinhamento à direita.

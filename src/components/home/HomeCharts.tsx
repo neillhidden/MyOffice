@@ -1,3 +1,5 @@
+import { homeCategoryName } from '../../utils/homeCategories';
+import { useHome } from '../../context/HomeContext';
 import {
   ResponsiveContainer,
   BarChart,
@@ -23,6 +25,7 @@ export function HomeCharts({
   currency: HomeCurrency;
 }) {
   const { actualTheme } = useTheme();
+  const { data } = useHome();
   const color = actualTheme === 'dark' ? '#a1a1aa' : '#64748b';
   const [year, monthNumber] = month.split('-').map(Number);
   const days = Array.from(
@@ -41,7 +44,8 @@ export function HomeCharts({
       );
   }
   const slices = Array.from(categories, ([name, value]) => ({
-    name,
+    id: name,
+    name: homeCategoryName(data, name, undefined, 'expense'),
     value,
   })).sort((a, b) => b.value - a.value);
   const total = slices.reduce((sum, s) => sum + s.value, 0);
@@ -151,7 +155,7 @@ export function HomeCharts({
                     isAnimationActive={false}
                   >
                     {slices.map((s, i) => (
-                      <Cell key={s.name} fill={colors[i % colors.length]} />
+                      <Cell key={s.id} fill={colors[i % colors.length]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -166,7 +170,7 @@ export function HomeCharts({
             <ul className="space-y-3">
               {slices.map((s, i) => (
                 <li
-                  key={s.name}
+                  key={s.id}
                   className="flex flex-wrap items-center justify-between gap-2 text-xs"
                 >
                   <span className="flex items-center gap-2 min-w-0">

@@ -1,3 +1,4 @@
+import { normalizeHomeCatalog } from '../src/utils/homeCategories';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -105,7 +106,7 @@ test('money is handled in cents and invalid dates and amounts are rejected', () 
 });
 test('restoring a backup validates identifiers, references, duplicate payments and reversal integrity', () => {
   const d = addHomeEntry(emptyHome(), entry());
-  assert.deepEqual(validateHomeData(JSON.parse(JSON.stringify(d))), d);
+  assert.deepEqual(validateHomeData(JSON.parse(JSON.stringify(d))), normalizeHomeCatalog(d));
   const bad = (change: (d: HomeData) => void) => {
     const copy = structuredClone(d);
     change(copy);

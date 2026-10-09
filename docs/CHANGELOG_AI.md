@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Bloco 1: categorias pessoais em linhas
+- **Pedido**: Executar/confirmar seis blocos individualmente; esta entrega implementa apenas 1.1–1.7.
+- **Implementação**: Filtros/cápsula, linhas e breadcrumb, vista de subcategorias, modais criar/editar, biblioteca com 12 temas, herança de ícones, duplicados confirmáveis e eliminação/movimentação protegidas. Catálogo estável migra legado sem alterar dinheiro; reclassificação preserva vínculos/IDs/classificação anterior. Conflito de limites bloqueia movimento completo. Compras partilha despesas existente. HomeModal extraído/reutilizado.
+- **Validação**: 25 testes unitários; percurso novo de categorias, Home completo, finanças e calendário/compras/Business no navegador passaram. Migração SQL offline 004 testada (metadados/duplicados/FKs/RLS). Lint/build passaram; percursos de categorias e finanças também na versão compilada. Aviso conhecido de bundle grande.
+- **Continuação**: Blocos 2–6 não iniciados; pedido integral em HOME_ROADMAP.md. Aguardar confirmação do bloco 1 antes do diagnóstico de edição (2.1).
+
 ### [2026-10-08] — OpenAI Codex — Finanças pessoais, metas, gráficos e navegação
 - **Pedido**: Contas AOA/USD, categorias de despesas/rendimentos, metas planeadas por padrão e reservas configuráveis, aquisição, transferência Business → Home, gráficos e correção de rolagem/ícones.
 - **Alterações**: Moedas separadas; despesas reais no orçamento; gráficos por dia e pizza por categoria; aquisição debita reserva sem débito duplicado. Ponte com saída/receita e estorno conjuntos, diário de recuperação, proteção de importação e abas antigas. Definições Home em linhas/páginas próprias; shell fixo; ícones centrados e botão recolhido mostra destino.

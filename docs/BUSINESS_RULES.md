@@ -167,3 +167,7 @@ Itens de compras são planeamento; não alteram saldos ao serem criados ou arqui
 Contas Home AOA/USD; moeda imutável nos lançamentos e totais separados. Transferências, pagamentos e reservas exigem mesma moeda. Metas novas são planeadas por padrão; a preferência de reserva é explícita. Aquisição reservada debita a reserva, nunca duas vezes a carteira de origem. Aquisição planeada não movimenta dinheiro. Estorno reabre aquisição e mantém histórico.
 
 Business → Home grava saída/receita vinculadas, com moeda/conta/valor/data compatíveis. Exige conta ativa, empresa associada ativa (conta geral permitida) e saldo suficiente. Estorno das duas pernas apenas no Home; estorno empresarial isolado bloqueado. Recuperação local protege gravação interrompida e importação Home não pode quebrar vínculos existentes. Consulte HOME.md para fluxos e limites.
+
+## Categorias pessoais — bloco 1 (09/10/2026)
+
+Renomear não altera IDs/chaves financeiras. Categorias/subcategorias em uso (incluindo lançamentos estornados) não podem desaparecer sem reclassificação explícita, mantendo dados e classificação anterior. Destino do mesmo tipo; pagamento/item reclassificados em conjunto. Conflito de limites bloqueia toda a operação, sem somar/apagar orçamentos. Duplicados confirmados têm identidade própria. Os pedidos posteriores de editar/eliminar lançamentos pessoais ainda aguardam bloco 2; regras do Business mantêm-se.

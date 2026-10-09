@@ -1,3 +1,5 @@
+import { homeCategoryName } from '../../utils/homeCategories';
+import { HomeModal } from './HomeModal';
 import {
   BusinessIncomeTransfer,
   useBusinessHomeTransfers,
@@ -81,78 +83,6 @@ type FormKind =
   | 'payment'
   | 'reversal';
 
-function HomeModal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement;
-    ref.current?.querySelector<HTMLElement>('input,select,button')?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close.current();
-      if (e.key === 'Tab') {
-        const items = Array.from<HTMLElement>(
-          ref.current?.querySelectorAll<HTMLElement>(
-            'button,input,select,textarea,[tabindex="0"]',
-          ) || [],
-        ).filter((el) => !el.hasAttribute('disabled'));
-        const first = items[0],
-          last = items[items.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    document.addEventListener('keydown', key);
-    return () => {
-      document.removeEventListener('keydown', key);
-      previous?.focus();
-    };
-  }, []);
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-3 sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="home-modal-title"
-        className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border shadow-xl"
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-dm-border p-5">
-          <h2 id="home-modal-title" className="text-base font-semibold">
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className={secondary}
-            aria-label="Fechar formulário"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="p-5">{children}</div>
-      </div>
-    </div>
-  );
-}
 function Progress({ value, label }: { value: number; label: string }) {
   return (
     <div
@@ -239,8 +169,7 @@ export function HomeView({
       .reduce((s, a) => s + Math.round(totals[a.id] * 100), 0) / 100;
   const expenseCategories = Array.from(
     new Set([
-      ...HOME_CATEGORIES,
-      ...(data.categories ?? []),
+      ...(data.categories ?? HOME_CATEGORIES),
       ...data.budgets.map((b) => b.category),
       ...data.bills.map((b) => b.category),
     ]),
@@ -307,7 +236,12 @@ export function HomeView({
         title: '',
         amount: '',
         date: todayLocal(),
-        category: kind === 'task' ? 'Casa' : 'Outros',
+        category:
+          kind === 'task'
+            ? 'Casa'
+            : expenseCategories.includes('Outros')
+              ? 'Outros'
+              : '',
         accountId:
           data.accounts.find(
             (a) => a.kind === 'current' && accountCurrency(a) === currency,
@@ -591,7 +525,17 @@ export function HomeView({
       value: a.id,
       label: `${a.name} · ${formatHomeMoney(totals[a.id], accountCurrency(a))}`,
     }));
-  const categoryOptions = categories.map((c) => ({ value: c, label: c }));
+  const categoryOptions = categories.map((c) => ({
+    value: c,
+    label: homeCategoryName(
+      data,
+      c,
+      undefined,
+      form?.kind === 'entry' && form.values.type === 'income'
+        ? 'income'
+        : 'expense',
+    ),
+  }));
   const titleMap: Record<FormKind, string> = {
     entry: 'Novo lançamento',
     account: 'Adicionar conta pessoal',
@@ -784,7 +728,7 @@ export function HomeView({
                 {budgetAlerts
                   .map(
                     (b) =>
-                      `${b.category} (${Math.round((spending(b.category) / b.limit) * 100)}%)`,
+                      `${homeCategoryName(data, b.category)} (${Math.round((spending(b.category) / b.limit) * 100)}%)`,
                   )
                   .join(' · ')}
               </div>
@@ -974,7 +918,8 @@ export function HomeView({
                     <div className="min-w-0">
                       <p className="text-sm break-words">{t.title}</p>
                       <p className={muted}>
-                        {dateLabel(t.date)} · {t.category}
+                        {dateLabel(t.date)} ·{' '}
+                        {homeCategoryName(data, t.category)}
                       </p>
                     </div>
                   </div>
@@ -1085,7 +1030,7 @@ export function HomeView({
                     (accountFilter === 'all' ||
                       e.accountId === accountFilter ||
                       e.destinationId === accountFilter) &&
-                    `${e.title} ${e.category}`
+                    `${e.title} ${homeCategoryName(data, e.category)}`
                       .toLowerCase()
                       .includes(query.toLowerCase()),
                 )
@@ -1121,7 +1066,7 @@ export function HomeView({
                             : ''}
                         </p>
                         <p className={`${muted} mt-1`}>
-                          {e.category}
+                          {homeCategoryName(data, e.category)}
                           {e.type !== 'reversal' && reversed
                             ? ' · Estornado'
                             : ''}
@@ -1170,7 +1115,7 @@ export function HomeView({
                   key={category}
                   className="flex justify-between gap-2 text-xs rounded-lg bg-slate-50 dark:bg-dm-elevated p-3"
                 >
-                  <span>{category}</span>
+                  <span>{homeCategoryName(data, category)}</span>
                   <span className="font-mono">{cash(spending(category))}</span>
                 </div>
               ))}
@@ -1186,10 +1131,12 @@ export function HomeView({
               return (
                 <section key={b.id} className={panel}>
                   <div className="flex justify-between gap-2 items-center">
-                    <h2 className="text-sm font-semibold">{b.category}</h2>
+                    <h2 className="text-sm font-semibold">
+                      {homeCategoryName(data, b.category)}
+                    </h2>
                     <button
                       className={secondary}
-                      aria-label={`Editar orçamento ${b.category}`}
+                      aria-label={`Editar orçamento ${homeCategoryName(data, b.category)}`}
                       onClick={() =>
                         open('budget', {
                           category: b.category,
@@ -1207,7 +1154,7 @@ export function HomeView({
                   <div className="mt-3">
                     <Progress
                       value={percent(used, b.limit)}
-                      label={`Orçamento ${b.category}`}
+                      label={`Orçamento ${homeCategoryName(data, b.category)}`}
                     />
                   </div>
                   <p className={`${muted} mt-2`}>
@@ -1249,7 +1196,8 @@ export function HomeView({
                         {b.title}
                       </h2>
                       <p className={`${muted} mt-1`}>
-                        {b.category} · Vence em {dateLabel(due)}
+                        {homeCategoryName(data, b.category)} · Vence em{' '}
+                        {dateLabel(due)}
                       </p>
                       <p className="text-xs mt-2">
                         {!b.active
@@ -1516,7 +1464,7 @@ export function HomeView({
                       {t.title}
                     </h2>
                     <p className={`${muted} mt-1`}>
-                      {dateLabel(t.date)} · {t.category}
+                      {dateLabel(t.date)} · {homeCategoryName(data, t.category)}
                       {!t.done && t.date < todayLocal() ? ' · Em atraso' : ''}
                     </p>
                   </div>

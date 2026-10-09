@@ -1,3 +1,4 @@
+import { normalizeHomeCatalog } from './homeCategories';
 import {
   HOME_SUBCATEGORIES,
   validateCategoryTree,
@@ -219,7 +220,7 @@ export function validateHomeData(input: unknown): HomeData {
       : { reserveGoals: false, showBusinessIncome: source.settings?.showBusinessIncome ?? true },
     incomeCategories: source.incomeCategories ?? [...HOME_INCOME_CATEGORIES],
     incomeSubcategories: source.incomeSubcategories ?? {},
-    categories: Array.isArray(source.categories)
+    categories: source.categoryCatalog ? source.categories ?? [] : Array.isArray(source.categories)
       ? [
           ...source.categories,
           ...HOME_CATEGORIES.filter(
@@ -455,7 +456,7 @@ export function validateHomeData(input: unknown): HomeData {
   }
   if (Object.values(balances(data)).some((v) => v < 0))
     throw new Error('A cópia contém saldos negativos.');
-  return data;
+  return normalizeHomeCatalog(data);
 }
 
 export function payHomeShopping(
@@ -478,6 +479,7 @@ export function payHomeShopping(
     type: 'expense',
     title: `Compra: ${item.name}`,
     category: item.category,
+    subcategory: item.subcategory,
     amount: money(Math.round(item.quantity * item.unitPrice * 100) / 100),
     accountId,
     date,

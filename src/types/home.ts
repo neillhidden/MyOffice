@@ -17,6 +17,7 @@ export interface HomeAccount {
   kind: 'current' | 'savings';
 }
 export interface HomeEntry {
+  subcategory?: string;
   businessMovementId?: string;
   goalId?: string;
   id: string;
@@ -25,6 +26,7 @@ export interface HomeEntry {
   amount: number;
   date: string;
   category: string;
+  categoryHistory?: { category: string; subcategory?: string; changedAt: string }[];
   accountId: string;
   destinationId?: string;
   billId?: string;
@@ -36,6 +38,7 @@ export interface HomeBudget {
   id: string;
   month: string;
   category: string;
+  categoryHistory?: { category: string; subcategory?: string; changedAt: string }[];
   limit: number;
 }
 export interface HomeBill {
@@ -44,6 +47,7 @@ export interface HomeBill {
   title: string;
   amount: number;
   category: string;
+  categoryHistory?: { category: string; subcategory?: string; changedAt: string }[];
   day: number;
   active: boolean;
 }
@@ -53,6 +57,7 @@ export interface HomeGoal {
   acquiredDate?: string;
   acquisitionEntryId?: string;
   category?: string;
+  categoryHistory?: { category: string; subcategory?: string; changedAt: string }[];
   id: string;
   title: string;
   target: number;
@@ -64,9 +69,20 @@ export interface HomeTask {
   title: string;
   date: string;
   category: string;
+  categoryHistory?: { category: string; subcategory?: string; changedAt: string }[];
   done: boolean;
 }
+export interface HomeCategory {
+  id: string;
+  key: string;
+  name: string;
+  kind: 'expense' | 'income';
+  parentId?: string;
+  icon?: string;
+  editedAt?: string;
+}
 export interface HomeData {
+  categoryCatalog?: HomeCategory[];
   settings?: { reserveGoals: boolean; showBusinessIncome?: boolean; goalsPreferenceSet?: boolean };
   incomeCategories?: string[];
   incomeSubcategories?: Record<string, string[]>;
@@ -89,6 +105,7 @@ export interface HomeShoppingItem {
   id: string;
   name: string;
   category: string;
+  categoryHistory?: { category: string; subcategory?: string; changedAt: string }[];
   quantity: number;
   unitPrice: number;
   entryId?: string;

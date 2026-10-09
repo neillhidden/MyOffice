@@ -19,9 +19,10 @@ try {
   await page.waitForFunction(()=>document.documentElement.classList.contains('dark'));
   await page.locator('#home-settings-overview').click();
   await page.locator('#home-settings-categories').click();
-  await page.locator('#home-subcategory-parent').selectOption('Games');
-  await page.locator('#home-subcategory-name').fill('Acessórios de teste');
+  await page.locator('[data-home-category-id]').filter({has:page.locator('strong').filter({hasText:/^Games$/})}).getByRole('button',{name:/^Games/}).click();
   await page.locator('#home-subcategory-add').click();
+  await page.locator('#home-subcategory-name').fill('Acessórios de teste');
+  await page.locator('#home-category-save').click();
   await page.locator('#home-nav-7').click();
   await page.locator('#home-shopping-name').fill('Jogo de teste');
   await page.locator('#home-shopping-category').selectOption('Games');

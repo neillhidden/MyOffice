@@ -84,3 +84,7 @@ O documento Home e o ledger Business são coordenados por `homeBusinessStorage.t
 A migração offline **003_home_goal_funding.sql** prepara modo/progresso planeado e aquisição das metas. Os vínculos Home/Business usam `transfer_group_id` e metadados no futuro ledger; a futura API deve criar/estornar ambas as pernas numa transação e verificar permissões nos dois espaços. Não há conexão de base de dados ativa.
 
 Testes adicionais: `tests/home-finance.test.ts`, `tests/home-finance-browser.mjs` e `tests/home-finance-database-regression.mjs` cobrem moedas, aquisição, dupla gravação/recuperação, transferência/estorno, gráficos e rolagem fixa. Usam dados isolados de teste.
+
+## Gestão de categorias — bloco 1 (09/10/2026)
+
+A página de categorias foi substituída por filtros e linhas navegáveis, pesquisa, vistas Categorias/Todas as subcategorias e modais com biblioteca de ícones. Editar/eliminar/mover têm proteções de uso e histórico. Consulte CATEGORIES.md. Os restantes pedidos em seis blocos estão registados em HOME_ROADMAP.md; ainda não foram aplicados nesta etapa.

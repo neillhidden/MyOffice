@@ -20,7 +20,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const [initial] = useState(() => {
     try {
       const saved = localStorage.getItem(HOME_STORAGE_KEY);
-      const loaded = saved ? validateHomeData(JSON.parse(saved)) : emptyHome();
+      const loaded = saved ? validateHomeData(JSON.parse(saved)) : validateHomeData(emptyHome());
       assertBusinessTransfersCompatible(
         loaded,
         JSON.parse(localStorage.getItem(BUSINESS_LEDGER_KEY) || '[]'),
@@ -92,7 +92,7 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
         },
         refreshFromStorage: () => {
           const raw = localStorage.getItem(HOME_STORAGE_KEY);
-          const next = raw ? validateHomeData(JSON.parse(raw)) : emptyHome();
+          const next = raw ? validateHomeData(JSON.parse(raw)) : validateHomeData(emptyHome());
           savedRaw.current = raw;
           current.current = next;
           setData(next);

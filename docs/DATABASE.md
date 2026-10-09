@@ -118,3 +118,7 @@ Business: `myoffice_estoque_subcategories` contém mapa categoria → nomes das 
 ## Extensão Home AOA/USD e metas (2026-10-08)
 
 HomeData v1 mantém compatibilidade: contas/moedas, limites, mensalidades e compras têm moeda opcional (legado AOA); metas guardam fundingMode, plannedAmount, acquiredDate/acquisitionEntryId e categoria. settings guarda reserveGoals (padrão false), goalsPreferenceSet e showBusinessIncome. incomeCategories/incomeSubcategories separadas das despesas. Entradas guardam goalId/businessMovementId. BankMovement guarda homeTransferId/personalAccountId/personalCurrency. Diário transitório: myoffice-home-business-transaction; não é ledger nem conexão externa. Migração offline 003 acrescenta colunas de financiamento/aquisição, mantendo 40 tabelas.
+
+## Catálogo Home estável — bloco 1 (09/10/2026)
+
+HomeData v1 inclui categoryCatalog com id/key/name/kind/parentId/icon/editedAt. `key` preserva referências atuais; `name` pode mudar. Repetições confirmadas recebem IDs/chaves independentes. categories/subcategories e incomeCategories/incomeSubcategories são projeções compatíveis. categoryHistory preserva classificação anterior e data em entidades reclassificadas; HomeEntry.subcategory suporta o vínculo de compras. Migração local idempotente, sem mudar dinheiro. Migração SQL offline 004 guarda metadados e permite subcategorias pessoais homónimas; Business mantém unicidade. Nenhuma conexão ativa.
