@@ -229,9 +229,20 @@ export function importStatementEntry(
     (r) => r.id === id && r.state === 'pending',
   );
   if (!row) throw new Error('Linha já tratada.');
-  if (statementEntryMatches(data, row).length)
+  if (
+    statementEntryMatches(data, row).length ||
+    effectiveEntries(data).some(
+      (e) =>
+        e.date === row.date &&
+        (e.accountId === row.accountId
+          ? entrySignedAmount(e)
+          : e.type === 'transfer' && e.destinationId === row.accountId
+            ? e.amount
+            : undefined) === row.amount,
+    )
+  )
     throw new Error(
-      'Há um lançamento com este valor e data. Confere a correspondência antes de criar outro.',
+      'Há um lançamento com este valor, carteira e data, incluindo os já conferidos. Verifica a correspondência para evitar duplicação; uma operação realmente distinta pode ser registada nas Finanças antes da conferência.',
     );
   const next = addHomeEntry(data, {
     type: row.amount > 0 ? 'income' : 'expense',

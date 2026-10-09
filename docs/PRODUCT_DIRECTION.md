@@ -38,3 +38,8 @@ Contas pessoais em AOA/USD e totais separados. Decisão inicial: metas planeadas
 ## Home completo — 09/10/2026
 
 Autorizado pelo utilizador implementar as oito melhorias propostas: calendário, histórico/recuperação, dívidas/prestações, previsões, relatórios CSV/PDF, tarefas detalhadas/recorrentes, extratos e documentos. Implementado com persistência local, backup JSON inclusive comprovativos e SQL offline 006 (48 tabelas). PostgreSQL e armazenamento privado de ficheiros constituem a preparação futura; nenhuma ligação/backend/login foi ativada. Guia corrente consolidado em HOME.md.
+
+
+## Pedido aceite: extratos e recibos
+
+Utilizador pediu PDF (prioritário), CSV, Excel e fotografias, permitindo também texto/manual. A interface distingue entrada positiva, saída negativa e saldo do banco. Leitura prepara propostas; só confirmação aplica dinheiro. Solução gratuita no navegador, integrada nas carteiras e conferência Home.

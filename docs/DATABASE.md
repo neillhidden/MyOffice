@@ -138,3 +138,8 @@ O mesmo JSON `myoffice-home-v1` acrescenta arrays `debts`, `debtPayments`, `plan
 Documentos são base64 no JSON local, com assinatura MIME validada, limite 1 MiB/ficheiro e 2 MiB no total incluindo eliminados. Snapshots de metadados não repetem binários; recuperação mantém o conteúdo original. A cópia JSON inclui comprovativos. Não usar Git para guardar dados pessoais.
 
 Migração **006_home_life_tools.sql**, offline: 7 tabelas novas, total 48 com RLS habilitada. Tarefas ampliam calendar_events e conclusões por ocorrência; dívidas/pagamentos, planos, extratos, documentos e revisões pessoais têm espaço explícito. Ficheiros futuros serão objetos privados separados, com object_key nos metadados PostgreSQL. Datas/referências e moeda dos pagamentos deverão ser validadas atomicamente pela futura API. Não existe importador, sincronização, autenticação ou conexão ativa; RLS habilitada não significa políticas de acesso configuradas.
+
+
+## Documentos lidos no Home
+
+Rascunhos de leitura ficam em memória até confirmação. A aplicação usa as entidades existentes: lançamentos, documentos vinculados e linhas de extrato; não cria outra chave de armazenamento nem migração SQL. O esquema offline 006 continua aplicável. Persistência permanece local ao navegador.

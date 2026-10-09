@@ -175,3 +175,8 @@ homeEditing.ts valida alterações, mantém IDs e snapshots e aplica eliminaçã
 `HomeTools.tsx` reúne interfaces de histórico, dívidas, planeamento, relatórios, extratos e documentos; `HomeCalendar` expande a Agenda existente e `HomeOverview` acrescenta atalhos/contadores ao Dashboard. Usa HomeContext/HomeModal e tokens existentes. `homeExtensions.ts` concentra operações/validação das entidades e `homeAnalysis.ts` gera calendário, previsões, relatórios e interpreta CSV. Nenhum serviço foi acrescentado.
 
 Armazenamento nesta fase: mesmo documento local, inclusive comprovativos base64 limitados. Exportação/importação JSON conserva entidades e vínculos. Preparação futura: PostgreSQL isolado por workspace, revisões auditadas e armazenamento privado de ficheiros; infraestrutura/fornecedor/autenticação ainda por escolher e implementar. Consultar HOME.md e migração SQL 006.
+
+
+## Leitura local de documentos financeiros
+
+`HomeFileImport` prepara rascunhos editáveis em memória; `homeDocumentImport` valida sinais, moedas, duplicados e aplicação atómica. `financialTables` centraliza o CSV. `financialFileReader` carrega PDF.js, ExcelJS e Tesseract apenas quando necessários. PDF.js usa worker do bundle; OCR português usa worker, WASM e modelo servidos pela própria aplicação, preparados por `scripts/prepare-document-reader.mjs`. Nenhum documento é enviado a terceiros. Context/persistência existentes permanecem.

@@ -154,3 +154,13 @@ Este documento descreve a árvore completa de diretórios e ficheiros do reposit
 - `src/utils/homeAnalysis.ts`: calendário/previsões/relatórios e interpretação CSV.
 - `database/migrations/006_home_life_tools.sql`: preparação offline, sem conexão.
 - `tests/home-extensions.test.ts`, `tests/home-tools-browser.mjs`, `tests/home-tools-database-regression.mjs`: regras, interface e schema offline.
+
+
+## Ficheiros do leitor financeiro
+
+- `src/components/home/HomeFileImport.tsx`: revisão e confirmação reutilizável.
+- `src/utils/financialFileReader.ts`: PDF, Excel e OCR local.
+- `src/utils/financialTables.ts`: CSV partilhado.
+- `src/utils/homeDocumentImport.ts`: propostas, sinais, validação e aplicação.
+- `scripts/prepare-document-reader.mjs`: recursos estáticos OCR.
+- `tests/home-document-import.test.ts` e `tests/home-file-import-browser.mjs`: regras e integração real.

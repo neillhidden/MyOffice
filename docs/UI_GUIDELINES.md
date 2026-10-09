@@ -102,3 +102,8 @@ Criação vazia; edição preenchida. Ações de pagamento/contribuição reutil
 ### Ferramentas Home — 09/10/2026
 
 Menu pessoal conserva home-nav-0..7 e acrescenta home-nav-8..13. Formulários auxiliares usam home-tool-*; inputs de extrato/documentos têm nomes acessíveis. Modais HomeModal conservam foco/Escape e confirmação sem popup nativo. Calendário tem grelha mensal/semanal com overflow horizontal apenas interno; formulários/tabelas mantêm tokens de tema e ações editar/eliminar por ícone.
+
+
+## Revisão de documentos Home
+
+Mostrar campos editáveis e acessíveis de data, descrição, valor, sentido e moeda. Identificar entradas com + e saídas com −; não depender só de cor. Sentido desconhecido bloqueia aplicação. Mensagens identificam o número do movimento inválido. Usar HomeModal para confirmação e manter revisão legível no telefone.

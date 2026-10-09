@@ -188,3 +188,8 @@ Ocorrências aceites/ignoradas nunca são regeneradas, incluindo após eliminaç
 - Relatórios separam AOA/USD e contas; consumo/rendimentos excluem transferências e amortizações. PDF/CSV listam movimentos efetivos. CSV protege fórmulas de folhas de cálculo.
 - Extrato CSV exige revisão antes de guardar linhas e confirmação antes de criar lançamentos. Correspondência exige mesma carteira/data/valor e é única por carteira/lançamento. Fingerprint/ordinal bloqueia reimportação exata sem apagar linhas legítimas iguais. Editar/eliminar/estornar devolve conferência a pendente. Saldo de banco opcional compara com saldo atual, não reconstrói saldo histórico.
 - Tarefa recorrente conclui por ocorrência; hora/prioridade/responsável não têm efeitos monetários. Documentos aceitam apenas PDF/PNG/JPEG com assinatura compatível. Cópia JSON inclui conteúdo; eliminação lógica preserva ficheiro e ocupa espaço.
+
+
+## Importação Home: sinais e comprovativos
+
+Saldo bancário não é receita/despesa. Débito é saída e crédito é entrada; sinal desconhecido exige confirmação. Valores revistos são absolutos e positivos, com sentido separado; moeda deve coincidir com a carteira, sem câmbio implícito. Ler/preparar/importar para conferência não movimenta dinheiro. Aplicar comprovativo valida carteira, categoria, saldo e documento antes de gravar tudo junto. Correspondência existente associa sem novo lançamento; lançamentos já conferidos também impedem débito duplicado. Referências bancárias são preservadas.

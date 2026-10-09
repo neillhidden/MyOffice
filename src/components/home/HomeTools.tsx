@@ -1,3 +1,4 @@
+import { HomeFileImport } from './HomeFileImport';
 import { useToday } from '../../hooks/useToday';
 import React, { useState, useRef, useEffect } from 'react';
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -1146,6 +1147,11 @@ export function HomeStatements() {
           ))}
         </select>
       </label>
+      <HomeFileImport
+        mode="statement"
+        accountId={account}
+        onRows={setPreview}
+      />
       <label className="block text-xs">
         Selecionar CSV
         <input
@@ -1381,6 +1387,9 @@ export function HomeStatements() {
 
 export function HomeDocuments() {
   const a = useActions();
+  const [readingDocument, setReadingDocument] = useState<
+    HomeDocument | undefined
+  >();
   const [file, setFile] = useState<File | null>(null);
   const [documentErrors, setDocumentErrors] = useState<Record<string, string>>(
     {},
@@ -1479,6 +1488,13 @@ export function HomeDocuments() {
         e guardados neste navegador. Eliminar conserva o ficheiro para
         recuperação no Histórico e continua a ocupar espaço.
       </p>
+      <div key={readingDocument?.id ?? 'new-reader'}>
+        <HomeFileImport
+          mode="receipt"
+          existingDocument={readingDocument}
+          onApplied={() => setReadingDocument(undefined)}
+        />
+      </div>
       <form noValidate onSubmit={submit} className={panel}>
         <h2 className="font-medium">Adicionar documento</h2>
         <label className="block text-xs">
@@ -1653,6 +1669,9 @@ export function HomeDocuments() {
               }
             >
               Descarregar ficheiro
+            </button>
+            <button className={btn} onClick={() => setReadingDocument(d)}>
+              Ler e preparar movimento
             </button>
           </section>
         ))}

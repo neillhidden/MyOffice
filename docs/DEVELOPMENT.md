@@ -113,3 +113,10 @@ MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-tool
 ```
 
 O teste funcional precisa de `pdftotext` (Poppler) para verificar o PDF descarregado; não é dependência do produto. Produção GitHub Pages: construir e iniciar preview com MYOFFICE_BASE_PATH=/MyOffice/ (ex.: `MYOFFICE_BASE_PATH=/MyOffice/ npm run preview -- --port 4199`) e testar a URL local correspondente `/MyOffice/`. Nenhum teste SQL liga a uma base externa.
+
+
+## Leitor financeiro local
+
+Dependências fixadas no `bun.lock`: PDF.js, ExcelJS, Tesseract e modelo português. `npm run dev` e `npm run build` executam `scripts/prepare-document-reader.mjs`, que copia worker/WASM/modelo para `public/document-reader/` (ignorado pelo Git); o build publica esses recursos, incluindo versões arquivadas. Instalação reproduzível: `bun install --frozen-lockfile`.
+
+`npm test` inclui regras de importação. `tests/home-file-import-browser.mjs` verifica PDFs reais com texto e digitalizados, CSV, XLSX com várias folhas, fotografia OCR, sinais, confirmação, associação sem duplicar, persistência e telefone. Executar com `PLAYWRIGHT_MODULE`, `CHROMIUM_PATH` e `HOME_TEST_URL` adequados ao ambiente, por exemplo `node tests/home-file-import-browser.mjs`. O teste verifica que OCR usa apenas a origem local.

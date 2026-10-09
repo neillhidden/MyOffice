@@ -1,3 +1,4 @@
+import { csvTable } from './financialTables';
 import { HomeData, HomeCurrency } from '../types/home';
 import {
   text,
@@ -474,37 +475,7 @@ export function reportPdf(
 }
 export function parseStatementCsv(content: string, accountId: string) {
   if (content.length > 2e6) throw new Error('O extrato excede 2 MB.');
-  const first = content.replace(/^\ufeff/, '').split(/\r?\n/)[0];
-  const delimiter = first.includes(';')
-    ? ';'
-    : first.includes('\t')
-      ? '\t'
-      : ',';
-  const table: string[][] = [];
-  let row: string[] = [],
-    cell = '',
-    quoted = false;
-  for (let i = 0; i < content.length; i++) {
-    const c = content[i];
-    if (c === '"') {
-      if (quoted && content[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else quoted = !quoted;
-    } else if (c === delimiter && !quoted) {
-      row.push(cell);
-      cell = '';
-    } else if ((c === '\n' || c === '\r') && !quoted) {
-      if (c === '\r' && content[i + 1] === '\n') i++;
-      row.push(cell);
-      if (row.some((c) => c.trim())) table.push(row);
-      row = [];
-      cell = '';
-    } else cell += c;
-  }
-  if (quoted) throw new Error('Aspas incompletas no CSV.');
-  row.push(cell);
-  if (row.some((c) => c.trim())) table.push(row);
+  const table = csvTable(content);
   if (table.length < 2 || table.length > 1001)
     throw new Error('Importa entre 1 e 1000 movimentos.');
   const norm = (s: string) =>

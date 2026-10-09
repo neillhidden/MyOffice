@@ -97,3 +97,16 @@ Podes pesquisar, descarregar, editar metadados e eliminar logicamente. Eliminar 
 Modelos: `src/types/home.ts`. Persistência: `HomeContext.tsx`. Regras: `home.ts`, `homeEditing.ts`, `homeExtensions.ts`, `homeRecurrence.ts`, `homeCategories.ts`. Calendário/previsões/CSV/PDF: `homeAnalysis.ts`. Interfaces: `HomeView.tsx`, `HomeTools.tsx`, `HomeModal.tsx`.
 
 Validação: `npm test`, `npm run lint`, `npm run build`. Testes funcionais e SQL offline constam de DEVELOPMENT.md. Regras Business permanecem; esta versão local não declara conformidade fiscal nem segurança de um backend inexistente. Documentos HOME_BLOCKS_3_6.md/HOME_ROADMAP.md conservam os pedidos históricos; este guia descreve o comportamento corrente.
+
+
+## Ler extratos e comprovativos
+
+Em **Home → Extratos**, escolhe a carteira e usa o leitor de PDF, CSV, Excel (`.xlsx`) ou fotografia (PNG/JPEG/WebP). Também podes colar texto ou adicionar movimentos manualmente. Revê data, descrição, moeda, valor e sentido; **+ Entrada** é rendimento e **− Saída** é despesa. A coluna Saldo do banco não é um movimento. Um valor sem sentido reconhecido exige escolha explícita.
+
+Envia os movimentos revistos para conferência e importa-os. Esta preparação não altera o saldo: associa cada linha a um lançamento existente ou cria o movimento após conferência. Referências originais ajudam a identificar repetições; valores/data/carteira já lançados bloqueiam um novo débito acidental, incluindo lançamentos já conferidos. Para duas operações realmente distintas com o mesmo valor/data, regista a segunda em Finanças antes de a conferir.
+
+Em **Home → Documentos**, lê um comprovativo, escolhe a carteira e categoria/subcategoria, revê e aplica. A confirmação cria o lançamento e associa o comprovativo numa única gravação. Se o gasto já existe, escolhe o lançamento compatível para associar sem cobrar novamente. Documentos guardados têm a opção **Ler e preparar movimento**. O botão de movimento manual inicia um comprovativo novo sem anexar o ficheiro anterior.
+
+PDFs com texto são lidos diretamente; PDFs digitalizados e fotografias usam OCR português no navegador. Não há envio do documento a servidores ou API paga. A primeira leitura OCR descarrega recursos do próprio site e pode demorar. O reconhecimento depende da legibilidade e do formato: confirma sempre os valores, datas e sentido.
+
+Limites de leitura: 10 MB por ficheiro, 20 páginas PDF, 5.000 linhas/100 colunas Excel. Excel antigo `.xls` deve ser guardado como `.xlsx`. O arquivo de originais mantém os limites existentes: PDF/PNG/JPEG até 1 MB por documento e 2 MB no total. CSV, Excel, WebP e ficheiros maiores podem ser lidos sem arquivar o original. Dados continuam neste navegador; utiliza o backup JSON.

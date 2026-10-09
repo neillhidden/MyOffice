@@ -158,3 +158,8 @@ O seletor no rodapé da barra lateral troca o menu Business por Dashboard, Finan
 ## Extensão Home — ferramentas pessoais (09/10/2026)
 
 Além das oito áreas originais, o menu pessoal inclui Histórico, Dívidas pessoais, Planeamento, Relatórios, Extratos e Documentos. Agenda apresenta calendário mensal/semanal integrado com contas, metas, prestações e garantias; detalhes das tarefas permitem hora, prioridade, responsável e repetição. Dashboard conserva os gráficos e acrescenta atalhos/contadores. O guia corrente completo está em HOME.md.
+
+
+## Home: leitura financeira
+
+Extratos integra leitor PDF/CSV/XLSX/imagens com seleção de folha, texto/manual e revisão antes da conferência existente. Documentos integra leitura e criação/associação de rendimento ou despesa com comprovativo. `HomeFileImport.tsx` reutiliza o mesmo fluxo de revisão nos dois destinos.

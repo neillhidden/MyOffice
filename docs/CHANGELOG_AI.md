@@ -21,6 +21,13 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Leitura de extratos e comprovativos
+- **Pedido**: PDF prioritário, CSV, Excel e fotografias, com texto/manual e distinção de entrada/saída/saldo.
+- **Implementação**: HomeFileImport em Extratos/Documentos; financialFileReader com PDF.js, ExcelJS e OCR Tesseract português local; financialTables partilha CSV; homeDocumentImport valida/revê/aplica e liga comprovativo atomicamente; homeExtensions protege duplicados já conferidos. Dependências fixadas no bun.lock; script de preparação gera recursos estáticos ignorados pelo Git. Sem nova API, armazenamento ou migração.
+- **Regras**: leitura não altera saldo; revisão explícita, moeda da carteira, saldo bancário separado; associação existente não duplica débito. Arquivo mantém limites anteriores. Excel suportado: XLSX; XLS deve ser convertido.
+- **Verificação**: 62 testes unitários; lint, build Pages e Bun frozen-lockfile; Chromium com PDF real/texto/digitalizado, Excel múltiplas folhas, CSV e foto OCR, confirmação, persistência e telefone. Regressões Home completo e oito ferramentas passaram. Documentação de arquitetura, regras, módulos, desenvolvimento e guia Home atualizada.
+
+
 ### [2026-10-09] — OpenAI Codex — Ferramentas completas da vida pessoal no Home
 - **Pedido**: implementar as oito melhorias propostas, mantendo frontend/armazenamento local e preparando a futura base; autorizado por “Ok... pode continuar.”.
 - **Interface**: calendário mensal/semanal integrado, tarefas com hora/prioridade/responsável/repetição e conclusão por ocorrência; Histórico com versões/recuperação; dívidas a pagar/receber/prestações; previsões; relatórios mês/ano/intervalo CSV/PDF; extratos com pré-visualização/conferência; documentos associados; atalhos/contadores no Dashboard. IDs antigos e estilo/tema preservados.
