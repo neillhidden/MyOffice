@@ -1,6 +1,12 @@
 {
-  "currentSha": "04b57ba3ed8e6b676c247254386bcc4e7a0a3b5e",
+  "currentSha": "2fcfa8a940d89ebc9bc5ddf6abc74afffc3366b3",
   "entries": [
+    {
+      "sha": "2fcfa8a940d89ebc9bc5ddf6abc74afffc3366b3",
+      "date": "2026-10-09T11:39:15Z",
+      "title": "Melhorar as categorias pessoais com ícones, edição e eliminação segura",
+      "status": "ready"
+    },
     {
       "sha": "04b57ba3ed8e6b676c247254386bcc4e7a0a3b5e",
       "date": "2026-10-08T22:05:36Z",
