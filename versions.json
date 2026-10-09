@@ -1,6 +1,12 @@
 {
-  "currentSha": "70703276df4a91b1a4188b9d483866bfc7cd8ad4",
+  "currentSha": "7868897cef0848dce04c1e181398aea9d19eb510",
   "entries": [
+    {
+      "sha": "7868897cef0848dce04c1e181398aea9d19eb510",
+      "date": "2026-10-09T18:25:43Z",
+      "title": "Corrigir leitura de comprovativos bancários no Home",
+      "status": "ready"
+    },
     {
       "sha": "70703276df4a91b1a4188b9d483866bfc7cd8ad4",
       "date": "2026-10-09T16:04:08Z",
