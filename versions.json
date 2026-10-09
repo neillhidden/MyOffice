@@ -1,6 +1,12 @@
 {
-  "currentSha": "2fcfa8a940d89ebc9bc5ddf6abc74afffc3366b3",
+  "currentSha": "2b5e96dda9041ae47569ddba15c29dafc2a39a10",
   "entries": [
+    {
+      "sha": "2b5e96dda9041ae47569ddba15c29dafc2a39a10",
+      "date": "2026-10-09T12:27:49Z",
+      "title": "Permitir editar e eliminar registos pessoais com histórico e recálculo",
+      "status": "ready"
+    },
     {
       "sha": "2fcfa8a940d89ebc9bc5ddf6abc74afffc3366b3",
       "date": "2026-10-09T11:39:15Z",
