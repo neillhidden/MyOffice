@@ -1,6 +1,12 @@
 {
-  "currentSha": "2b5e96dda9041ae47569ddba15c29dafc2a39a10",
+  "currentSha": "54da466ae5357f234f3d2a3aa34846c5a3c4bd05",
   "entries": [
+    {
+      "sha": "54da466ae5357f234f3d2a3aa34846c5a3c4bd05",
+      "date": "2026-10-09T13:37:49Z",
+      "title": "Completar contas recorrentes, câmbio e metas do Home",
+      "status": "ready"
+    },
     {
       "sha": "2b5e96dda9041ae47569ddba15c29dafc2a39a10",
       "date": "2026-10-09T12:27:49Z",
