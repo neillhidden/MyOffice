@@ -21,6 +21,12 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-09] — OpenAI Codex — Concluir blocos 3–6 do Home
+- **Pedido**: “Faz todos os Blocos.” substitui a confirmação entre blocos.
+- **Alterações**: programação de contas a pagar/receber, snapshots/idempotência/pausa e sino; USD original e conversão explícita; metas sem prazo, origem e preferência de desconto; formulários vazios/validação por campo/vocabulário; migração SQL 005 offline.
+- **Limites**: scheduler só no navegador; servidor/notificações push/importador SQL continuam ausentes. Regras Business preservadas. Relatório item a item em HOME_BLOCKS_3_6.md.
+- **Validação**: resultados finais em CURRENT_STATE.md; unitários financeiros/recorrência, testes funcionais Chromium e schema offline.
+
 ### [2026-10-09] — OpenAI Codex — Bloco 2: edição e eliminação no Home
 - **Diagnóstico antes da correção**: Orçamento não tinha despesas individuais/editáveis; o lápis do limite não passava editId e duplicava ao mudar categoria. Reproduzido com dados isolados; nenhuma mensagem de campo em falta reproduzida.
 - **Alterações**: CRUD pessoal com IDs preservados, snapshots, datas de edição, eliminação lógica/confirmada e recálculo. Ações em Orçamento/Finanças/carteiras/contas/metas/tarefas; categorias existentes mantidas. Pagamentos/compra reclassificados juntos, valor efetivo separado do preço planeado; aquisição mantém a reserva e ajusta a meta. Eliminação de rendimento Business compensa os dois ledgers; valores empresariais não editados.

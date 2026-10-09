@@ -175,3 +175,7 @@ Renomear não altera IDs/chaves financeiras. Categorias/subcategorias em uso (in
 ## Home — autorização de CRUD pessoal (09/10/2026)
 
 Por pedido explícito do utilizador, despesas/rendimentos Home admitem edição com mesmo ID e eliminação lógica. Edições preservam snapshot/data; eliminação mantém registo com deletedAt. Saldos derivam apenas de originais ativos, sem deletedAt/estorno. Preservar referências e recusar saldo negativo. Pagamento pessoal editado reclassifica compra e guarda valor efetivo sem reescrever quantidade/preço planeados. Aquisição editada ajusta valor da meta vinculada sem duplicar débito. Regras de histórico Business não mudam; transferência empresarial só altera descrição/categoria no Home e é eliminada por compensação conjunta. Ver HOME.md.
+
+### Home — blocos 3–6
+
+Ocorrências aceites/ignoradas nunca são regeneradas, incluindo após eliminação/estorno. Contabilização automática sem saldo fica pendente; não admite saldo negativo. Edições futuras conservam snapshots. USD sem taxa usa carteira USD; com taxa explícita usa AOA e guarda valor original. Reservas são transferências, aquisição debita reserva uma vez. Interruptor global afeta contribuições futuras; progresso planeado não cria saldo. Regras Business permanecem imutáveis e sem FX implícito. Ver HOME_BLOCKS_3_6.md.

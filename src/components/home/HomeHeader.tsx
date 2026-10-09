@@ -1,3 +1,4 @@
+import { HomeNotifications } from './HomeNotifications';
 import React from 'react';
 import { Sun, Moon, ChevronRight } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -21,6 +22,7 @@ export function HomeHeader({ section }: { section: HomeSection }) {
           <span className="hidden sm:block text-[11px] text-slate-500 dark:text-dm-muted">
             Finanças pessoais · Kz / USD
           </span>
+          <HomeNotifications />
           <button
             type="button"
             id="btn-toggle-theme"

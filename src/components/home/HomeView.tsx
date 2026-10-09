@@ -1,3 +1,9 @@
+import { homeFormErrors } from '../../utils/homeForms';
+import {
+  occurrenceSnapshot,
+  scheduledDates,
+  settleHomeOccurrence,
+} from '../../utils/homeRecurrence';
 import {
   homeAuditEdit,
   editHomeEntry,
@@ -18,7 +24,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Plus,
   Wallet,
   Target,
   Check,
@@ -47,6 +52,10 @@ import {
   HOME_CATEGORIES,
   HOME_INCOME_CATEGORIES,
   accountCurrency,
+  homeExchange,
+  settlementCurrency,
+  exchangeLabel,
+  entryMoneyLabel,
   entryCurrency,
   formatHomeMoney,
   contributeHomeGoal,
@@ -77,7 +86,7 @@ const input =
   'w-full min-w-0 rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-elevated px-3 py-2.5 text-sm text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-slate-400';
 const muted = 'text-xs text-slate-500 dark:text-dm-muted';
 const dateLabel = (date: string) =>
-  new Date(`${date}T12:00:00`).toLocaleDateString('pt-PT');
+  date ? new Date(`${date}T12:00:00`).toLocaleDateString('pt-PT') : 'Sem prazo';
 const percent = (saved: number, target: number) =>
   Math.min(100, Math.max(0, Math.round((saved / target) * 100)));
 type FormKind =
@@ -200,26 +209,55 @@ export function HomeView({
     new Set([
       ...(data.categories ?? HOME_CATEGORIES),
       ...data.budgets.map((b) => b.category),
-      ...data.bills.map((b) => b.category),
+      ...data.bills.filter((b) => b.type !== 'income').map((b) => b.category),
     ]),
   );
   const incomeCategories = data.incomeCategories ?? HOME_INCOME_CATEGORIES;
   const categories =
-    form?.kind === 'entry' && form.values.type === 'income'
+    ['entry', 'bill'].includes(form?.kind ?? '') &&
+    form?.values.type === 'income'
       ? incomeCategories
       : expenseCategories;
   const spending = (category: string) =>
     period
       .filter((e) => e.type === 'expense' && e.category === category)
       .reduce((s, e) => s + Math.round(e.amount * 100), 0) / 100;
+  const endOfMonth = dueDate(month, 31);
   const outstanding = data.bills
-    .filter(
-      (b) =>
-        (b.currency ?? 'AOA') === currency &&
-        b.active &&
-        !billPaid(data, b.id, month),
-    )
-    .sort((a, b) => a.day - b.day);
+    .flatMap((b) => {
+      if (!b.active) return [];
+      const dates = b.recurrence
+        ? scheduledDates(b, endOfMonth).filter(
+            (d) =>
+              d.startsWith(month) &&
+              (!b.generateAfter ||
+                d > b.generateAfter ||
+                data.occurrences?.some((o) => o.id === `${b.id}:${d}`)),
+          )
+        : [dueDate(month, b.day)];
+      return dates.flatMap((due) => {
+        const o = data.occurrences?.find((o) => o.id === `${b.id}:${due}`);
+        if (
+          (o && o.state !== 'pending') ||
+          (!b.recurrence && billPaid(data, b.id, month))
+        )
+          return [];
+        if ((o?.snapshot.type ?? b.type ?? 'expense') === 'income') return [];
+        const original = o?.snapshot.amount ?? b.amount;
+        const originalCurrency = o?.snapshot.currency ?? b.currency ?? 'AOA';
+        const rate = o?.snapshot.exchangeRate ?? b.exchangeRate;
+        if (settlementCurrency(originalCurrency, rate) !== currency) return [];
+        return [
+          {
+            ...b,
+            id: `${b.id}:${due}`,
+            due,
+            amount: homeExchange(original, originalCurrency, rate).amount,
+          },
+        ];
+      });
+    })
+    .sort((a, b) => a.due.localeCompare(b.due));
   const upcomingTasks = data.tasks
     .filter((t) => !t.done)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -261,30 +299,29 @@ export function HomeView({
     setForm({
       kind,
       values: {
-        currency,
-        fundingMode: data.settings?.reserveGoals ? 'reserve' : 'plan',
+        currency: '',
+        fundingMode: '',
         title: '',
         amount: '',
-        date: todayLocal(),
-        category:
-          kind === 'task'
-            ? 'Casa'
-            : expenseCategories.includes('Outros')
-              ? 'Outros'
-              : '',
-        accountId:
-          data.accounts.find(
-            (a) =>
-              !a.deletedAt &&
-              a.kind === 'current' &&
-              accountCurrency(a) === currency,
-          )?.id || '',
+        date: '',
+        category: '',
+        accountId: '',
         destinationId: '',
-        type: 'expense',
-        month,
-        day: '1',
+        type: '',
+        month: '',
+        day: '',
         deadline: '',
-        openingBalance: '0',
+        openingBalance: '',
+        sourceAccountId: '',
+        exchangeRate: '',
+        startDate: '',
+        frequency: '',
+        interval: '',
+        unit: '',
+        end: '',
+        until: '',
+        count: '',
+        accountingMode: '',
         ...values,
       },
     });
@@ -308,16 +345,11 @@ export function HomeView({
   const save = (event: React.FormEvent) => {
     event.preventDefault();
     if (!form) return;
-    const errors: Record<string, string> = {};
-    for (const el of Array.from<HTMLInputElement | HTMLSelectElement>(
-      (event.currentTarget as HTMLFormElement).querySelectorAll('[required]'),
-    )) {
-      if (el.disabled) continue;
-      const key = el.id.replace('home-field-', '');
-      if (!el.value.trim()) errors[key] = 'Preenche este campo.';
-      else if (!el.validity.valid)
-        errors[key] = 'Indica um valor válido para este campo.';
-    }
+    const errors = Object.fromEntries(
+      Object.entries(
+        homeFormErrors(event.currentTarget as HTMLFormElement),
+      ).map(([key, value]) => [key.replace('home-field-', ''), value]),
+    );
     setFieldErrors(errors);
     if (Object.keys(errors).length) return;
     run(() => {
@@ -353,7 +385,9 @@ export function HomeView({
           const goal = current.goals.find((g) => g.id === v.goalId);
           const values = {
             type:
-              kind === 'payment' ? 'expense' : (v.type as HomeEntry['type']),
+              kind === 'payment'
+                ? (v.type as 'income' | 'expense')
+                : (v.type as HomeEntry['type']),
             title: v.title,
             amount: Number(v.amount),
             date: v.date,
@@ -362,7 +396,42 @@ export function HomeView({
             destinationId: v.type === 'transfer' ? v.destinationId : undefined,
             billId: kind === 'payment' ? v.billId : undefined,
             billMonth: kind === 'payment' ? v.month : undefined,
+            ...(['income', 'expense'].includes(v.type) || kind === 'payment'
+              ? homeExchange(
+                  Number(v.amount),
+                  v.currency as HomeCurrency,
+                  v.exchangeRate ? Number(v.exchangeRate) : undefined,
+                )
+              : {}),
           };
+          if (kind === 'payment' && v.occurrenceDue) {
+            const occurrenceId = `${v.billId}:${v.occurrenceDue}`;
+            const bill = current.bills.find((b) => b.id === v.billId)!;
+            const withOccurrence = current.occurrences?.some(
+              (o) => o.id === occurrenceId,
+            )
+              ? current
+              : {
+                  ...current,
+                  occurrences: [
+                    ...(current.occurrences ?? []),
+                    occurrenceSnapshot(bill, v.occurrenceDue),
+                  ],
+                };
+            return settleHomeOccurrence(
+              withOccurrence,
+              occurrenceId,
+              'accept',
+              {
+                accountId: v.accountId,
+                date: v.date,
+                amount: Number(v.amount),
+                exchangeRate: v.exchangeRate
+                  ? Number(v.exchangeRate)
+                  : undefined,
+              },
+            );
+          }
           return v.editId
             ? editHomeEntry(current, v.editId, values)
             : addHomeEntry(current, values);
@@ -419,31 +488,58 @@ export function HomeView({
           };
         }
         if (kind === 'bill') {
-          const day = Number(v.day);
-          if (!Number.isInteger(day) || day < 1 || day > 31)
-            throw new Error('O dia deve estar entre 1 e 31.');
+          if (!validDate(v.startDate))
+            throw new Error('Indica a data do primeiro vencimento.');
+          const existing = current.bills.find((b) => b.id === id);
           return {
             ...current,
             bills: replace(current.bills, {
+              ...existing,
               id,
               title: text(v.title),
               amount: money(Number(v.amount)),
               category: text(v.category),
-              day,
+              day: Number(v.startDate.slice(8)),
               currency: v.currency as HomeCurrency,
-              active: current.bills.find((b) => b.id === id)?.active ?? true,
+              exchangeRate: v.exchangeRate ? Number(v.exchangeRate) : undefined,
+              type: v.type as 'income' | 'expense',
+              accountId: v.accountId,
+              startDate: v.startDate,
+              accountingMode: (v.accountingMode ||
+                current.settings?.accountingMode ||
+                'ask') as 'ask' | 'automatic',
+              recurrence: {
+                frequency: v.frequency as any,
+                interval:
+                  v.frequency === 'custom' ? Number(v.interval) : undefined,
+                unit: v.frequency === 'custom' ? (v.unit as any) : undefined,
+                end: (v.frequency === 'none' ? 'never' : v.end) as any,
+                until: v.end === 'date' ? v.until : undefined,
+                count: v.end === 'count' ? Number(v.count) : undefined,
+              },
+              generateAfter: existing ? todayLocal() : undefined,
+              active: existing?.active ?? true,
             }),
           };
         }
         if (kind === 'goal') {
-          if (!validDate(v.deadline))
+          if (v.deadline && !validDate(v.deadline))
             throw new Error('Indica uma data válida para a meta.');
           const existing = current.goals.find((g) => g.id === id);
           if (
             existing &&
             goalAcquired(current, id) &&
-            (existing.target !== Number(v.amount) ||
-              (existing.fundingMode ?? 'reserve') !== v.fundingMode)
+            (existing.target !==
+              homeExchange(
+                Number(v.amount),
+                v.currency as HomeCurrency,
+                v.exchangeRate ? Number(v.exchangeRate) : undefined,
+              ).amount ||
+              (existing.fundingMode ?? 'reserve') !==
+                (v.fundingMode ||
+                  (current.settings?.reserveGoals !== false
+                    ? 'reserve'
+                    : 'plan')))
           )
             throw new Error(
               'Uma meta adquirida mantém os seus dados originais.',
@@ -452,16 +548,46 @@ export function HomeView({
             existing &&
             accountCurrency(
               current.accounts.find((a) => a.id === existing.accountId),
-            ) !== v.currency
+            ) !==
+              settlementCurrency(
+                v.currency as HomeCurrency,
+                v.exchangeRate ? Number(v.exchangeRate) : undefined,
+              )
           )
             throw new Error('A moeda de uma meta existente não pode mudar.');
           if (
             existing &&
-            (existing.fundingMode ?? 'reserve') !== v.fundingMode &&
+            (existing.fundingMode ?? 'reserve') !==
+              (v.fundingMode ||
+                (current.settings?.reserveGoals !== false
+                  ? 'reserve'
+                  : 'plan')) &&
             balances(current)[existing.accountId] > 0
           )
             throw new Error(
               'Retira a reserva antes de mudar para planeamento.',
+            );
+          const converted = homeExchange(
+            Number(v.amount),
+            v.currency as HomeCurrency,
+            v.exchangeRate ? Number(v.exchangeRate) : undefined,
+          );
+          const fundingMode =
+            existing?.fundingMode ??
+            (current.settings?.reserveGoals !== false ? 'reserve' : 'plan');
+          const source = current.accounts.find(
+            (a) => a.id === v.sourceAccountId && !a.deletedAt,
+          );
+          if (
+            !source ||
+            accountCurrency(source) !==
+              settlementCurrency(
+                v.currency as HomeCurrency,
+                converted.exchangeRate,
+              )
+          )
+            throw new Error(
+              'Escolhe uma carteira de origem na moeda de contabilização.',
             );
           const accountId = existing?.accountId || createId('home-reserve');
           const title = text(v.title);
@@ -478,17 +604,24 @@ export function HomeView({
                     name: `Reserva: ${title}`,
                     openingBalance: 0,
                     kind: 'savings',
-                    currency: v.currency as HomeCurrency,
+                    currency: settlementCurrency(
+                      v.currency as HomeCurrency,
+                      converted.exchangeRate,
+                    ),
                   },
                 ],
             goals: replace(current.goals, {
               ...existing,
               id,
               title,
-              target: money(Number(v.amount)),
+              target: converted.amount,
+              originalAmount: converted.originalAmount,
+              originalCurrency: converted.originalCurrency,
+              exchangeRate: converted.exchangeRate,
+              sourceAccountId: v.sourceAccountId,
               deadline: v.deadline,
               accountId,
-              fundingMode: v.fundingMode as 'reserve' | 'plan',
+              fundingMode: fundingMode as 'reserve' | 'plan',
               plannedAmount: existing?.plannedAmount ?? 0,
               acquisitionEntryId: existing?.acquisitionEntryId,
               category: v.category,
@@ -509,7 +642,14 @@ export function HomeView({
         };
       });
       if (['account', 'budget', 'bill', 'goal'].includes(kind))
-        setCurrency(v.currency as HomeCurrency);
+        setCurrency(
+          kind === 'goal'
+            ? settlementCurrency(
+                v.currency as HomeCurrency,
+                v.exchangeRate ? Number(v.exchangeRate) : undefined,
+              )
+            : (v.currency as HomeCurrency),
+        );
       setForm(null);
     });
   };
@@ -518,11 +658,12 @@ export function HomeView({
       editId: e.id,
       type: e.type,
       title: e.title,
-      amount: String(e.amount),
+      amount: String(e.originalAmount ?? e.amount),
+      exchangeRate: e.exchangeRate === undefined ? '' : String(e.exchangeRate),
       date: e.date,
       category: e.category,
       accountId: e.accountId,
-      currency: entryCurrency(data, e),
+      currency: e.originalCurrency ?? entryCurrency(data, e),
       subcategory: e.subcategory ?? '',
     });
   const removeButton = (kind: HomeEntity, id: string, name: string) => (
@@ -578,45 +719,69 @@ export function HomeView({
         {options ? (
           <select
             id={`home-field-${key}`}
-            required
+            required={
+              ![
+                'deadline',
+                'exchangeRate',
+                'fundingMode',
+                'accountingMode',
+              ].includes(key)
+            }
             aria-invalid={Boolean(fieldErrors[key])}
             aria-describedby={
               fieldErrors[key] ? `home-error-${key}` : undefined
             }
             disabled={Boolean(
               form?.values.editId &&
-              ((form.kind === 'account' &&
-                ['currency', 'openingBalance'].includes(key)) ||
-                (form.kind === 'bill' &&
-                  key === 'currency' &&
-                  data.entries.some((e) => e.billId === form.values.editId)) ||
-                (form.kind === 'goal' &&
-                  ['amount', 'fundingMode', 'currency'].includes(key) &&
-                  goalAcquired(savedData, form.values.editId)) ||
-                (form.kind === 'entry' &&
-                  ((data.entries.find((e) => e.id === form.values.editId)
-                    ?.businessMovementId &&
-                    ['type', 'amount', 'date', 'accountId'].includes(key)) ||
-                    (data.entries.find((e) => e.id === form.values.editId)
-                      ?.goalId &&
-                      ['type', 'accountId'].includes(key)) ||
+                ((form.kind === 'account' &&
+                  ['currency', 'openingBalance'].includes(key)) ||
+                  (form.kind === 'bill' &&
+                    key === 'currency' &&
+                    data.entries.some(
+                      (e) => e.billId === form.values.editId && !e.occurrenceId,
+                    )) ||
+                  (form.kind === 'goal' &&
+                    [
+                      'amount',
+                      'fundingMode',
+                      'currency',
+                      'exchangeRate',
+                    ].includes(key) &&
+                    goalAcquired(savedData, form.values.editId)) ||
+                  (form.kind === 'entry' &&
                     ((data.entries.find((e) => e.id === form.values.editId)
-                      ?.billId ||
-                      data.shopping?.some(
-                        (i) => i.entryId === form.values.editId,
-                      )) &&
-                      key === 'type')))),
+                      ?.businessMovementId &&
+                      [
+                        'type',
+                        'amount',
+                        'date',
+                        'accountId',
+                        'currency',
+                        'exchangeRate',
+                      ].includes(key)) ||
+                      (data.entries.find((e) => e.id === form.values.editId)
+                        ?.goalId &&
+                        ['type', 'accountId'].includes(key)) ||
+                      ((data.entries.find((e) => e.id === form.values.editId)
+                        ?.billId ||
+                        data.shopping?.some(
+                          (i) => i.entryId === form.values.editId,
+                        )) &&
+                        key === 'type')))),
             )}
             value={v[key] || ''}
             onChange={(e) => {
               set(key, e.target.value);
-              if (key === 'type')
-                set(
-                  'category',
-                  e.target.value === 'income'
-                    ? (incomeCategories[0] ?? 'Salário')
-                    : expenseCategories[0],
-                );
+              if (key === 'currency') {
+                set('accountId', '');
+                set('sourceAccountId', '');
+                set('exchangeRate', '');
+              }
+              if (key === 'exchangeRate') {
+                set('accountId', '');
+                set('sourceAccountId', '');
+              }
+              if (key === 'type') set('category', '');
             }}
             className={input}
           >
@@ -631,7 +796,14 @@ export function HomeView({
           <input
             id={`home-field-${key}`}
             className={input}
-            required
+            required={
+              ![
+                'deadline',
+                'exchangeRate',
+                'fundingMode',
+                'accountingMode',
+              ].includes(key)
+            }
             maxLength={300}
             type={type}
             aria-invalid={Boolean(fieldErrors[key])}
@@ -640,38 +812,55 @@ export function HomeView({
             }
             disabled={Boolean(
               form?.values.editId &&
-              ((form.kind === 'account' &&
-                ['currency', 'openingBalance'].includes(key)) ||
-                (form.kind === 'bill' &&
-                  key === 'currency' &&
-                  data.entries.some((e) => e.billId === form.values.editId)) ||
-                (form.kind === 'goal' &&
-                  ['amount', 'fundingMode', 'currency'].includes(key) &&
-                  goalAcquired(savedData, form.values.editId)) ||
-                (form.kind === 'entry' &&
-                  ((data.entries.find((e) => e.id === form.values.editId)
-                    ?.businessMovementId &&
-                    ['type', 'amount', 'date', 'accountId'].includes(key)) ||
-                    (data.entries.find((e) => e.id === form.values.editId)
-                      ?.goalId &&
-                      ['type', 'accountId'].includes(key)) ||
+                ((form.kind === 'account' &&
+                  ['currency', 'openingBalance'].includes(key)) ||
+                  (form.kind === 'bill' &&
+                    key === 'currency' &&
+                    data.entries.some(
+                      (e) => e.billId === form.values.editId && !e.occurrenceId,
+                    )) ||
+                  (form.kind === 'goal' &&
+                    [
+                      'amount',
+                      'fundingMode',
+                      'currency',
+                      'exchangeRate',
+                    ].includes(key) &&
+                    goalAcquired(savedData, form.values.editId)) ||
+                  (form.kind === 'entry' &&
                     ((data.entries.find((e) => e.id === form.values.editId)
-                      ?.billId ||
-                      data.shopping?.some(
-                        (i) => i.entryId === form.values.editId,
-                      )) &&
-                      key === 'type')))),
+                      ?.businessMovementId &&
+                      [
+                        'type',
+                        'amount',
+                        'date',
+                        'accountId',
+                        'currency',
+                        'exchangeRate',
+                      ].includes(key)) ||
+                      (data.entries.find((e) => e.id === form.values.editId)
+                        ?.goalId &&
+                        ['type', 'accountId'].includes(key)) ||
+                      ((data.entries.find((e) => e.id === form.values.editId)
+                        ?.billId ||
+                        data.shopping?.some(
+                          (i) => i.entryId === form.values.editId,
+                        )) &&
+                        key === 'type')))),
             )}
             value={v[key] || ''}
             onChange={(e) => {
               set(key, e.target.value);
-              if (key === 'type')
-                set(
-                  'category',
-                  e.target.value === 'income'
-                    ? (incomeCategories[0] ?? 'Salário')
-                    : expenseCategories[0],
-                );
+              if (key === 'currency') {
+                set('accountId', '');
+                set('sourceAccountId', '');
+                set('exchangeRate', '');
+              }
+              if (key === 'exchangeRate') {
+                set('accountId', '');
+                set('sourceAccountId', '');
+              }
+              if (key === 'type') set('category', '');
             }}
             min={
               type === 'number'
@@ -679,7 +868,7 @@ export function HomeView({
                   (form!.kind === 'contribution' &&
                     form!.values.fundingMode === 'plan')
                   ? 0
-                  : key === 'day'
+                  : ['day', 'interval', 'count'].includes(key)
                     ? 1
                     : 0.01
                 : undefined
@@ -687,11 +876,19 @@ export function HomeView({
             max={
               key === 'day'
                 ? 31
-                : type === 'date' && form!.kind !== 'task' && key !== 'deadline'
+                : type === 'date' &&
+                    form!.kind !== 'task' &&
+                    !['deadline', 'startDate', 'until'].includes(key)
                   ? todayLocal()
                   : undefined
             }
-            step={key === 'day' ? 1 : type === 'number' ? 0.01 : undefined}
+            step={
+              ['day', 'interval', 'count'].includes(key)
+                ? 1
+                : type === 'number'
+                  ? 0.01
+                  : undefined
+            }
           />
         )}
         {fieldErrors[key] && (
@@ -707,7 +904,16 @@ export function HomeView({
     );
   };
   const accountOptions = financialAccounts
-    .filter((a) => accountCurrency(a) === (form?.values.currency ?? currency))
+    .filter(
+      (a) =>
+        accountCurrency(a) ===
+        settlementCurrency(
+          (form?.values.currency || currency) as HomeCurrency,
+          form?.values.exchangeRate
+            ? Number(form.values.exchangeRate)
+            : undefined,
+        ),
+    )
     .map((a) => ({
       value: a.id,
       label: `${a.name} · ${formatHomeMoney(totals[a.id], accountCurrency(a))}`,
@@ -718,7 +924,8 @@ export function HomeView({
       data,
       c,
       undefined,
-      form?.kind === 'entry' && form.values.type === 'income'
+      ['entry', 'bill'].includes(form?.kind ?? '') &&
+        form?.values.type === 'income'
         ? 'income'
         : 'expense',
     ),
@@ -807,7 +1014,6 @@ export function HomeView({
               className={primary}
               onClick={actionMap[section]}
             >
-              <Plus className="h-4 w-4" />
               {actionLabel[section]}
             </button>
           )}
@@ -860,7 +1066,11 @@ export function HomeView({
           <div className="grid grid-cols-1 min-[450px]:grid-cols-2 xl:grid-cols-4 gap-3">
             {[
               { label: 'Saldo disponível', value: available, icon: Wallet },
-              { label: 'Receitas do mês', value: income, icon: ArrowDownLeft },
+              {
+                label: 'Rendimentos do mês',
+                value: income,
+                icon: ArrowDownLeft,
+              },
               { label: 'Despesas do mês', value: spent, icon: ArrowUpRight },
               { label: 'Reservado para metas', value: reserved, icon: Target },
             ].map(({ label, value, icon: Icon }) => (
@@ -998,10 +1208,8 @@ export function HomeView({
                         {b.title}
                       </p>
                       <p className={`${muted} mt-1`}>
-                        {dueDate(month, b.day) < todayLocal()
-                          ? 'Em atraso · '
-                          : ''}
-                        {dateLabel(dueDate(month, b.day))}
+                        {b.due < todayLocal() ? 'Em atraso · ' : ''}
+                        {dateLabel(b.due)}
                       </p>
                     </div>
                     <span className="font-mono text-xs shrink-0">
@@ -1133,7 +1341,6 @@ export function HomeView({
                 className={secondary}
                 onClick={() => open('account')}
               >
-                <Plus className="h-4 w-4" />
                 Adicionar conta
               </button>
             </div>
@@ -1243,7 +1450,7 @@ export function HomeView({
                     (accountFilter === 'all' ||
                       e.accountId === accountFilter ||
                       e.destinationId === accountFilter) &&
-                    `${e.title} ${homeCategoryName(data, e.category)}`
+                    `${e.title} ${homeCategoryName(data, e.category, undefined, e.type === 'income' || (e.type === 'reversal' && data.entries.find((o) => o.id === e.reversalOf)?.type === 'income') ? 'income' : 'expense')}`
                       .toLowerCase()
                       .includes(query.toLowerCase()),
                 )
@@ -1280,14 +1487,24 @@ export function HomeView({
                             : ''}
                         </p>
                         <p className={`${muted} mt-1`}>
-                          {homeCategoryName(data, e.category)}
+                          {homeCategoryName(
+                            data,
+                            e.category,
+                            undefined,
+                            e.type === 'income' ||
+                              (e.type === 'reversal' &&
+                                data.entries.find((o) => o.id === e.reversalOf)
+                                  ?.type === 'income')
+                              ? 'income'
+                              : 'expense',
+                          )}
                           {e.type !== 'reversal' && reversed
                             ? ' · Estornado'
                             : ''}
                         </p>
                       </div>
                       <span className="font-mono text-xs">
-                        {cash(e.amount)}
+                        {entryMoneyLabel(data, e)}
                       </span>
                       {entryActions(e)}
                       {e.type !== 'reversal' && !reversed && (
@@ -1351,11 +1568,23 @@ export function HomeView({
                       <p className="text-sm font-medium">{e.title}</p>
                       <p className={muted}>
                         {dateLabel(e.date)} ·{' '}
-                        {homeCategoryName(data, e.category)}
+                        {homeCategoryName(
+                          data,
+                          e.category,
+                          undefined,
+                          e.type === 'income' ||
+                            (e.type === 'reversal' &&
+                              data.entries.find((o) => o.id === e.reversalOf)
+                                ?.type === 'income')
+                            ? 'income'
+                            : 'expense',
+                        )}
                       </p>
                       {editStamp(e)}
                     </div>
-                    <span className="font-mono text-xs">{cash(e.amount)}</span>
+                    <span className="font-mono text-xs">
+                      {entryMoneyLabel(data, e)}
+                    </span>
                     {entryActions(e)}
                   </div>
                 ))}
@@ -1425,15 +1654,54 @@ export function HomeView({
       {section === 'Contas da casa' && (
         <>
           <p className={muted}>
-            Contas mensais. Cada pagamento entra nas despesas uma única vez no
-            mês escolhido.
+            Contas a pagar e a receber. Define a repetição e acompanha cada
+            vencimento, sem duplicar os lançamentos.
           </p>
           <div className="space-y-3">
             {data.bills
               .filter((b) => (b.currency ?? 'AOA') === currency)
               .map((b) => {
-                const paid = billPaid(data, b.id, month);
-                const due = dueDate(month, b.day);
+                const dates = b.recurrence
+                  ? Array.from(
+                      new Set([
+                        ...scheduledDates(b, dueDate(month, 31)).filter((d) =>
+                          d.startsWith(month),
+                        ),
+                        ...(data.occurrences ?? [])
+                          .filter(
+                            (o) => o.billId === b.id && o.due.startsWith(month),
+                          )
+                          .map((o) => o.due),
+                      ]),
+                    ).sort()
+                  : [dueDate(month, b.day)];
+                const pendingDue = dates.find(
+                  (d) =>
+                    (!b.generateAfter ||
+                      d > b.generateAfter ||
+                      data.occurrences?.some((o) => o.id === `${b.id}:${d}`)) &&
+                    !(data.occurrences ?? []).some(
+                      (o) => o.id === `${b.id}:${d}` && o.state !== 'pending',
+                    ),
+                );
+                const due =
+                  pendingDue ??
+                  dates[0] ??
+                  b.startDate ??
+                  dueDate(month, b.day);
+                const legacyPaid = effectiveEntries(data).some(
+                  (e) =>
+                    e.billId === b.id &&
+                    e.billMonth === month &&
+                    !e.occurrenceId,
+                );
+                const paid = b.recurrence
+                  ? (dates.length > 0 && !pendingDue) ||
+                    (b.recurrence.frequency === 'none' && legacyPaid)
+                  : billPaid(data, b.id, month);
+                const pendingSnapshot = data.occurrences?.find(
+                  (o) => o.id === `${b.id}:${due}`,
+                )?.snapshot;
                 return (
                   <section
                     key={b.id}
@@ -1444,38 +1712,112 @@ export function HomeView({
                         {b.title}
                       </h2>
                       <p className={`${muted} mt-1`}>
-                        {homeCategoryName(data, b.category)} · Vence em{' '}
-                        {dateLabel(due)}
+                        {homeCategoryName(
+                          data,
+                          b.category,
+                          undefined,
+                          b.type === 'income' ? 'income' : 'expense',
+                        )}{' '}
+                        · {b.type === 'income' ? 'A receber' : 'A pagar'} ·
+                        Vence em {dateLabel(due)}
                       </p>
                       <p className="text-xs mt-2">
                         {!b.active
                           ? 'Pausada'
                           : paid
-                            ? 'Paga neste mês'
-                            : due < todayLocal()
-                              ? 'Em atraso'
-                              : 'Por pagar'}
+                            ? b.type === 'income'
+                              ? 'Recebida neste período'
+                              : 'Paga neste período'
+                            : b.recurrence && !dates.length
+                              ? 'Sem vencimento neste mês'
+                              : due < todayLocal()
+                                ? 'Em atraso'
+                                : 'Por pagar'}
                       </p>
                     </div>
+                    <p className={`${muted} w-full`}>
+                      {b.recurrence?.frequency === 'none'
+                        ? 'Pagamento manual'
+                        : b.accountingMode === 'automatic'
+                          ? 'Contabilização automática'
+                          : 'Perguntar antes de contabilizar'}{' '}
+                      ·{' '}
+                      {
+                        (data.occurrences ?? []).filter(
+                          (o) => o.billId === b.id && o.state === 'pending',
+                        ).length
+                      }{' '}
+                      confirmações pendentes
+                    </p>
+                    {(data.occurrences ?? [])
+                      .filter(
+                        (o) => o.billId === b.id && o.due.startsWith(month),
+                      )
+                      .map((o) => (
+                        <p key={o.id} className={`${muted} w-full`}>
+                          {dateLabel(o.due)} ·{' '}
+                          {o.state === 'accepted'
+                            ? 'Contabilizada'
+                            : o.state === 'ignored'
+                              ? 'Ignorada'
+                              : 'Por confirmar'}{' '}
+                          ·{' '}
+                          {exchangeLabel(
+                            o.snapshot.amount,
+                            o.snapshot.currency,
+                            o.snapshot.exchangeRate,
+                          )}
+                        </p>
+                      ))}
                     {editStamp(b)}
-                    <span className="font-mono text-sm">{cash(b.amount)}</span>
+                    <span className="font-mono text-sm">
+                      {exchangeLabel(
+                        b.amount,
+                        b.currency ?? 'AOA',
+                        b.exchangeRate,
+                      )}
+                    </span>
                     <div className="flex gap-2 flex-wrap">
-                      {b.active && !paid && (
+                      {
                         <button
                           className={primary}
+                          disabled={
+                            paid || Boolean(b.recurrence && !pendingDue)
+                          }
                           onClick={() =>
                             open('payment', {
                               billId: b.id,
-                              title: b.title,
-                              amount: String(b.amount),
-                              category: b.category,
+                              title: pendingSnapshot?.title ?? b.title,
+                              amount: String(
+                                pendingSnapshot?.amount ?? b.amount,
+                              ),
+                              category: pendingSnapshot?.category ?? b.category,
+                              currency:
+                                pendingSnapshot?.currency ??
+                                b.currency ??
+                                'AOA',
+                              exchangeRate:
+                                (pendingSnapshot?.exchangeRate ??
+                                  b.exchangeRate) === undefined
+                                  ? ''
+                                  : String(
+                                      pendingSnapshot?.exchangeRate ??
+                                        b.exchangeRate,
+                                    ),
+                              accountId:
+                                pendingSnapshot?.accountId ?? b.accountId ?? '',
+                              type:
+                                pendingSnapshot?.type ?? b.type ?? 'expense',
+                              occurrenceDue: b.recurrence ? due : '',
                               month,
                             })
                           }
                         >
-                          Registar pagamento
+                          {b.type === 'income'
+                            ? 'Registar recebimento'
+                            : 'Registar pagamento'}
                         </button>
-                      )}
+                      }
                       <button
                         className={secondary}
                         aria-label={`Editar ${b.title}`}
@@ -1487,6 +1829,20 @@ export function HomeView({
                             amount: String(b.amount),
                             day: String(b.day),
                             category: b.category,
+                            type: b.type ?? 'expense',
+                            startDate: b.startDate ?? dueDate(month, b.day),
+                            frequency: b.recurrence?.frequency ?? 'none',
+                            interval: String(b.recurrence?.interval ?? ''),
+                            unit: b.recurrence?.unit ?? '',
+                            end: b.recurrence?.end ?? 'never',
+                            until: b.recurrence?.until ?? '',
+                            count: String(b.recurrence?.count ?? ''),
+                            accountingMode: b.accountingMode ?? 'ask',
+                            accountId: b.accountId ?? '',
+                            exchangeRate:
+                              b.exchangeRate === undefined
+                                ? ''
+                                : String(b.exchangeRate),
                           })
                         }
                       >
@@ -1500,7 +1856,11 @@ export function HomeView({
                               ...d,
                               bills: d.bills.map((item) =>
                                 item.id === b.id
-                                  ? { ...item, active: !item.active }
+                                  ? {
+                                      ...item,
+                                      active: !item.active,
+                                      generateAfter: todayLocal(),
+                                    }
                                   : item,
                               ),
                             })),
@@ -1542,12 +1902,17 @@ export function HomeView({
               )
               .map((g) => {
                 const acquired = goalAcquired(data, g.id);
-                const saved =
+                const canAcquire =
                   g.fundingMode === 'plan'
-                    ? (g.plannedAmount ?? 0)
+                    ? (g.plannedAmount ?? 0) >= g.target
+                    : totals[g.accountId] >= g.target;
+                const saved =
+                  (g.plannedAmount ?? 0) +
+                  (g.fundingMode === 'plan'
+                    ? 0
                     : acquired
                       ? g.target + totals[g.accountId]
-                      : totals[g.accountId];
+                      : totals[g.accountId]);
                 return (
                   <section key={g.id} className={panel}>
                     <div className="flex justify-between gap-3">
@@ -1556,8 +1921,12 @@ export function HomeView({
                           {g.title}
                         </h2>
                         <p className={`${muted} mt-1`}>
-                          Até {dateLabel(g.deadline)}
-                          {g.deadline < todayLocal() && saved < g.target
+                          {g.deadline
+                            ? `Até ${dateLabel(g.deadline)}`
+                            : 'Sonho sem prazo'}
+                          {g.deadline &&
+                          g.deadline < todayLocal() &&
+                          saved < g.target
                             ? ' · Prazo ultrapassado'
                             : ''}
                         </p>
@@ -1567,7 +1936,12 @@ export function HomeView({
                     <p className="font-mono text-base font-semibold my-4 break-words">
                       {cash(saved)}{' '}
                       <span className="text-xs font-normal text-slate-500 dark:text-dm-muted">
-                        de {cash(g.target)}
+                        de{' '}
+                        {exchangeLabel(
+                          g.originalAmount ?? g.target,
+                          g.originalCurrency ?? currency,
+                          g.exchangeRate,
+                        )}
                       </span>
                     </p>
                     <Progress
@@ -1582,14 +1956,20 @@ export function HomeView({
                         : `Faltam ${cash(g.target - saved)}`}
                     </p>
                     <p className={`${muted} mt-2`}>
-                      {g.fundingMode === 'plan'
-                        ? 'Planeamento: sem desconto da carteira'
-                        : 'Reserva: dinheiro retirado do saldo disponível'}
+                      {`Reserva real: ${cash(totals[g.accountId])} · Progresso planeado: ${cash(g.plannedAmount ?? 0)}`}
+                      {g.sourceAccountId &&
+                        ` · Origem: ${data.accounts.find((a) => a.id === g.sourceAccountId)?.name ?? ''}`}
                     </p>
                     <div className="flex flex-wrap gap-2 mt-4">
                       {!acquired && saved >= g.target && (
                         <button
                           className={primary}
+                          disabled={!canAcquire}
+                          title={
+                            canAcquire
+                              ? undefined
+                              : 'Completa a reserva real antes de adquirir.'
+                          }
                           onClick={() =>
                             run(() =>
                               update((d) =>
@@ -1612,14 +1992,12 @@ export function HomeView({
                               data.accounts.find((a) => a.id === g.accountId),
                             ),
                             fundingMode: g.fundingMode ?? 'reserve',
-                            ...(g.fundingMode === 'plan'
-                              ? { amount: String(g.plannedAmount ?? 0) }
-                              : {}),
+                            accountId: g.sourceAccountId ?? '',
                           })
                         }
                       >
-                        {g.fundingMode === 'plan'
-                          ? 'Atualizar progresso'
+                        {data.settings?.reserveGoals === false
+                          ? 'Registar progresso'
                           : 'Reservar valor'}
                       </button>
                       {g.fundingMode !== 'plan' && totals[g.accountId] > 0 && (
@@ -1644,11 +2022,18 @@ export function HomeView({
                           open('goal', {
                             editId: g.id,
                             title: g.title,
-                            amount: String(g.target),
+                            amount: String(g.originalAmount ?? g.target),
+                            exchangeRate:
+                              g.exchangeRate === undefined
+                                ? ''
+                                : String(g.exchangeRate),
+                            sourceAccountId: g.sourceAccountId ?? '',
                             deadline: g.deadline,
-                            currency: accountCurrency(
-                              data.accounts.find((a) => a.id === g.accountId),
-                            ),
+                            currency:
+                              g.originalCurrency ??
+                              accountCurrency(
+                                data.accounts.find((a) => a.id === g.accountId),
+                              ),
                             fundingMode: g.fundingMode ?? 'reserve',
                             category: g.category ?? 'Outros',
                           })
@@ -1829,11 +2214,35 @@ export function HomeView({
           {settingsSection === 'goals' && (
             <section className={panel}>
               <h2 className="text-sm font-semibold">Metas e carteiras</h2>
+              <label className="block text-xs mt-4">
+                Contabilização padrão das contas
+                <select
+                  id="home-default-accounting"
+                  className={`${input} mt-1`}
+                  value={data.settings?.accountingMode ?? 'ask'}
+                  onChange={(e) =>
+                    run(() =>
+                      update((d) => ({
+                        ...d,
+                        settings: {
+                          ...d.settings!,
+                          accountingMode: e.target.value as 'ask' | 'automatic',
+                        },
+                      })),
+                    )
+                  }
+                >
+                  <option value="ask">Perguntar antes de contabilizar</option>
+                  <option value="automatic">
+                    Contabilizar automaticamente
+                  </option>
+                </select>
+              </label>
               <label className="flex items-start gap-3 mt-4 text-sm">
                 <input
                   id="home-goals-auto-reserve"
                   type="checkbox"
-                  checked={data.settings?.reserveGoals ?? false}
+                  checked={data.settings?.reserveGoals ?? true}
                   onChange={(e) =>
                     run(() =>
                       update((d) => ({
@@ -1848,12 +2257,13 @@ export function HomeView({
                   }
                 />
                 <span>
-                  Reservar dinheiro automaticamente nas novas metas
+                  Descontar automaticamente ao registar para metas
                   <span className={`${muted} block mt-1`}>
                     Desligado: progresso apenas planeado. Ligado: cada
-                    contribuição sai da carteira escolhida. As metas existentes
-                    conservam o seu modo; podes alterá-lo ao editar, depois de
-                    retirar eventuais reservas.
+                    contribuição sai da carteira escolhida. A opção aplica-se às
+                    próximas contribuições. Reservas e progresso já registados
+                    são preservados; progresso planeado não representa dinheiro
+                    disponível.
                   </span>
                 </span>
               </label>
@@ -1872,7 +2282,7 @@ export function HomeView({
                         ...d,
                         settings: {
                           ...d.settings,
-                          reserveGoals: d.settings?.reserveGoals ?? false,
+                          reserveGoals: d.settings?.reserveGoals ?? true,
                           goalsPreferenceSet: true,
                           showBusinessIncome: e.target.checked,
                         },
@@ -1992,22 +2402,71 @@ export function HomeView({
                 {error}
               </p>
             )}
-            {['account', 'goal', 'budget', 'bill'].includes(form.kind) &&
+            {['account', 'goal', 'budget', 'bill', 'entry', 'payment'].includes(
+              form.kind,
+            ) &&
               field('Moeda', 'currency', 'text', [
                 { value: 'AOA', label: 'Kwanza (Kz)' },
                 { value: 'USD', label: 'Dólar (USD)' },
               ])}
-            {form.kind === 'goal' &&
-              field('Funcionamento da meta', 'fundingMode', 'text', [
-                { value: 'plan', label: 'Planeamento, sem desconto' },
-                { value: 'reserve', label: 'Reserva, descontar da carteira' },
-              ])}
-            {form.kind === 'entry' &&
-              field('Operação', 'type', 'text', [
-                { value: 'income', label: 'Rendimento' },
-                { value: 'expense', label: 'Despesa' },
-                { value: 'transfer', label: 'Transferência' },
-              ])}
+            {['entry', 'bill', 'goal', 'payment'].includes(form.kind) &&
+              form.values.type !== 'transfer' &&
+              form.values.currency === 'USD' && (
+                <>
+                  {field(
+                    'Câmbio utilizado (Kz por 1 USD) — opcional',
+                    'exchangeRate',
+                    'number',
+                  )}
+                  {form.values.amount && (
+                    <p className={muted}>
+                      {exchangeLabel(
+                        Number(form.values.amount),
+                        'USD',
+                        form.values.exchangeRate
+                          ? Number(form.values.exchangeRate)
+                          : undefined,
+                      )}
+                    </p>
+                  )}
+                  {!form.values.exchangeRate && !accountOptions.length && (
+                    <p role="alert" className="text-xs text-rose-600">
+                      Não existe carteira em USD. Cria uma em Finanças, ou
+                      indica um câmbio e escolhe uma carteira em Kz.{' '}
+                      <button
+                        type="button"
+                        className="underline"
+                        onClick={() => open('account', { currency: 'USD' })}
+                      >
+                        Criar carteira USD
+                      </button>
+                    </p>
+                  )}
+                </>
+              )}
+            {['entry', 'bill'].includes(form.kind) &&
+              field(
+                form.kind === 'bill' ? 'Tipo de conta' : 'Operação',
+                'type',
+                'text',
+                [
+                  {
+                    value: 'income',
+                    label:
+                      form.kind === 'bill'
+                        ? 'A receber (rendimento)'
+                        : 'Rendimento',
+                  },
+                  {
+                    value: 'expense',
+                    label:
+                      form.kind === 'bill' ? 'A pagar (despesa)' : 'Despesa',
+                  },
+                  ...(form.kind === 'entry'
+                    ? [{ value: 'transfer', label: 'Transferência' }]
+                    : []),
+                ],
+              )}
             {!['contribution', 'budget'].includes(form.kind) &&
               field(
                 form.kind === 'reversal'
@@ -2043,7 +2502,7 @@ export function HomeView({
             {['entry', 'contribution', 'payment'].includes(form.kind) &&
               !(
                 form.kind === 'contribution' &&
-                form.values.fundingMode === 'plan'
+                data.settings?.reserveGoals === false
               ) &&
               field(
                 form.kind === 'entry' && form.values.type === 'income'
@@ -2092,10 +2551,73 @@ export function HomeView({
                 pago será registado como despesa.
               </p>
             )}
-            {form.kind === 'bill' &&
-              field('Dia de vencimento mensal (1–31)', 'day', 'number')}
+            {form.kind === 'bill' && (
+              <>
+                {field('Primeiro vencimento', 'startDate', 'date')}
+                {field('Repetição', 'frequency', 'text', [
+                  { value: 'none', label: 'Não repete (manual)' },
+                  { value: 'weekly', label: 'Semanal' },
+                  { value: 'fortnightly', label: 'Quinzenal' },
+                  { value: 'monthly', label: 'Mensal' },
+                  { value: 'yearly', label: 'Anual' },
+                  { value: 'custom', label: 'Personalizada' },
+                ])}
+                {form.values.frequency === 'custom' && (
+                  <>
+                    {field('A cada N', 'interval', 'number')}
+                    {field('Unidade', 'unit', 'text', [
+                      { value: 'days', label: 'Dias' },
+                      { value: 'weeks', label: 'Semanas' },
+                      { value: 'months', label: 'Meses' },
+                    ])}
+                  </>
+                )}
+                {form.values.frequency !== 'none' &&
+                  field('Fim da repetição', 'end', 'text', [
+                    { value: 'never', label: 'Nunca' },
+                    { value: 'date', label: 'Até uma data' },
+                    { value: 'count', label: 'Após N ocorrências' },
+                  ])}
+                {form.values.end === 'date' &&
+                  field('Até à data', 'until', 'date')}
+                {form.values.end === 'count' &&
+                  field('Número de ocorrências', 'count', 'number')}
+                {field(
+                  'Contabilização (opcional, usa a definição padrão)',
+                  'accountingMode',
+                  'text',
+                  [
+                    { value: 'ask', label: 'Perguntar antes de contabilizar' },
+                    {
+                      value: 'automatic',
+                      label: 'Contabilizar automaticamente',
+                    },
+                  ],
+                )}
+                {field(
+                  form.values.type === 'income'
+                    ? 'Carteira de destino'
+                    : 'Carteira de origem',
+                  'accountId',
+                  'text',
+                  accountOptions,
+                )}
+              </>
+            )}
             {form.kind === 'goal' &&
-              field('Data para alcançar a meta', 'deadline', 'date')}
+              field('Data para alcançar a meta (opcional)', 'deadline', 'date')}
+            {form.kind === 'goal' &&
+              field(
+                'Carteira de origem',
+                'sourceAccountId',
+                'text',
+                accountOptions.filter(
+                  (a) =>
+                    a.value !==
+                    data.goals.find((g) => g.id === form.values.editId)
+                      ?.accountId,
+                ),
+              )}
             {form.kind === 'account' && form.values.editId && (
               <p className={muted}>
                 O saldo é calculado pelos lançamentos. O saldo de abertura e a

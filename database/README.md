@@ -100,3 +100,9 @@ Mapear `HomeEntry.businessMovementId` / `BankMovement.homeTransferId` para as du
 ## Extensão offline 004
 
 Aplicar `004_home_category_metadata.sql` após 001–003 quando houver backend: icon/edited_at/legacy_key em categorias e subcategorias pessoais; índice de nomes das subcategorias passa a não único, permitindo duplicados explicitamente confirmados com IDs independentes. Business mantém regras atuais. Categorias não utilizadas podem ser eliminadas; FKs preservam vínculos. Reclassificação futura de um ledger imutável deverá usar uma camada auditada de classificações, sem reescrever valores financeiros. Teste offline em tests/home-category-database-regression.mjs; mantém 40 tabelas/RLS. Nenhuma migração executada pelo frontend.
+
+## Migração 005 — contas recorrentes e câmbio Home
+
+Aplicar depois de 001–004 quando existir backend. Acrescenta ocorrências únicas conta/data e programação, tipo rendimento/despesa, moeda original/taxa e carteira de origem da meta; total de 41 tabelas. RLS ativada na nova tabela; autenticação/políticas continuam para a fase backend. A moeda do lançamento é a da carteira contabilizada; o original USD não é substituído. Preferências default de Home: reserveGoals=true e accountingMode=ask, guardar em workspace_preferences. Preservar escolhas antigas explicitamente guardadas.
+
+Teste offline: `MYOFFICE_PGLITE_MODULE=/caminho/pglite/dist/index.js node --test tests/home-recurring-database-regression.mjs`. A aplicação frontend não executa SQL. O importador/overlays versionados para edição pessoal e scheduler servidor ainda não existem.

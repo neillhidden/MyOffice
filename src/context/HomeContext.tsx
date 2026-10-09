@@ -1,9 +1,17 @@
+import { processHomeRecurrences } from '../utils/homeRecurrence';
+import { useToday } from '../hooks/useToday';
 import {
   HOME_BRIDGE_JOURNAL,
   BUSINESS_LEDGER_KEY,
   assertBusinessTransfersCompatible,
 } from '../utils/homeBusinessStorage';
-import React, { createContext, useContext, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { HomeData } from '../types/home';
 import { HOME_STORAGE_KEY, emptyHome, validateHomeData } from '../utils/home';
 
@@ -20,7 +28,9 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
   const [initial] = useState(() => {
     try {
       const saved = localStorage.getItem(HOME_STORAGE_KEY);
-      const loaded = saved ? validateHomeData(JSON.parse(saved)) : validateHomeData(emptyHome());
+      const loaded = saved
+        ? validateHomeData(JSON.parse(saved))
+        : validateHomeData(emptyHome());
       assertBusinessTransfersCompatible(
         loaded,
         JSON.parse(localStorage.getItem(BUSINESS_LEDGER_KEY) || '[]'),
@@ -79,6 +89,20 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Recupera primeiro os dados com uma cópia válida.');
     save(operation(current.current));
   };
+  const today = useToday();
+  useEffect(() => {
+    if (storageError) return;
+    try {
+      const next = processHomeRecurrences(current.current, today);
+      if (next !== current.current) save(next);
+    } catch (e) {
+      setStorageError(
+        e instanceof Error
+          ? e.message
+          : 'Não foi possível processar as contas.',
+      );
+    }
+  }, [data, today, storageError]);
   return (
     <HomeContext.Provider
       value={{
@@ -92,7 +116,9 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
         },
         refreshFromStorage: () => {
           const raw = localStorage.getItem(HOME_STORAGE_KEY);
-          const next = raw ? validateHomeData(JSON.parse(raw)) : validateHomeData(emptyHome());
+          const next = raw
+            ? validateHomeData(JSON.parse(raw))
+            : validateHomeData(emptyHome());
           savedRaw.current = raw;
           current.current = next;
           setData(next);

@@ -52,7 +52,10 @@ try {
   ).id;
   assert.equal(await page.locator('#home-currency').inputValue(), 'USD');
   await page.locator('#home-add').click();
+  await choose('currency', 'USD');
   await choose('type', 'income');
+  await choose('category', 'Salário');
+  await field('date', '2026-10-09');
   await field('title', 'Salário USD');
   await field('amount', '10');
   await choose('accountId', dollar);
@@ -60,24 +63,30 @@ try {
   await nav(0);
   await page.locator('#home-dashboard-charts').waitFor();
   assert.match(
-    await page.getByText('Rendimentos do mês', { exact: true }).innerText(),
+    await page
+      .getByText('Rendimentos do mês', { exact: true })
+      .first()
+      .innerText(),
     /Rendimentos/,
   );
   await page.locator('#home-currency').selectOption('AOA');
+  await nav(6);
+  await page.locator('#home-settings-goals').click();
+  await page.locator('#home-goals-auto-reserve').uncheck();
   await nav(4);
   await page.locator('#home-add').click();
-  assert.equal(
-    await page.locator('#home-field-fundingMode').inputValue(),
-    'plan',
-  );
+  await choose('currency', 'AOA');
+  await choose('category', 'Roupa');
+  await choose('sourceAccountId', wallet);
   await field('title', 'Perfume planeado');
   await field('amount', '50');
   await field('deadline', '2027-12-01');
   await save();
   await goal('Perfume planeado')
-    .getByRole('button', { name: 'Atualizar progresso', exact: true })
+    .getByRole('button', { name: 'Registar progresso', exact: true })
     .click();
   await field('amount', '50');
+  await field('date', '2026-10-09');
   assert.equal(await page.locator('#home-field-accountId').count(), 0);
   await save();
   assert.equal((await home()).entries.length, 1);
@@ -90,10 +99,9 @@ try {
   await page.locator('#home-goals-auto-reserve').check();
   await nav(4);
   await page.locator('#home-add').click();
-  assert.equal(
-    await page.locator('#home-field-fundingMode').inputValue(),
-    'reserve',
-  );
+
+  await choose('currency', 'AOA');
+  await choose('sourceAccountId', wallet);
   await field('title', 'Perfume real');
   await field('amount', '300');
   await field('deadline', '2027-12-01');
@@ -103,6 +111,7 @@ try {
     .getByRole('button', { name: 'Reservar valor', exact: true })
     .click();
   await field('amount', '300');
+  await field('date', '2026-10-09');
   await choose('accountId', wallet);
   await save();
   assert.equal((await home()).entries[0].type, 'transfer');
@@ -188,6 +197,7 @@ try {
   await page.locator('#home-business-bank').selectOption(bank);
   await page.locator('#home-business-wallet').selectOption(wallet);
   await page.locator('#home-business-amount').fill('200');
+  await page.locator('#home-business-date').fill('2026-10-09');
   await page.locator('#home-business-reason').fill('Rendimento Business teste');
   const before = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('myoffice_estoque_bankMovements')),

@@ -97,6 +97,11 @@ try {
               amount: 20,
               category: 'Internet',
               day: 15,
+              startDate: '2026-10-15',
+              type: 'expense',
+              accountId: 'a',
+              accountingMode: 'ask',
+              recurrence: { frequency: 'none', end: 'never' },
               active: true,
               currency: 'AOA',
             },
@@ -109,6 +114,7 @@ try {
               deadline: '2027-01-01',
               accountId: 'reserve',
               fundingMode: 'plan',
+              sourceAccountId: 'a',
             },
           ],
           tasks: [],
@@ -261,6 +267,7 @@ try {
   await page.locator('#home-business-bank').selectOption(bank);
   await page.locator('#home-business-wallet').selectOption('a');
   await page.locator('#home-business-amount').fill('20');
+  await page.locator('#home-business-date').fill('2026-10-09');
   await page.locator('#home-business-reason').fill('Business ligado');
   await page.locator('#home-business-transfer').click();
   await page

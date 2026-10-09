@@ -22,6 +22,10 @@ export interface HomeAccount extends HomeAudit {
   kind: 'current' | 'savings';
 }
 export interface HomeEntry extends HomeAudit {
+  originalCurrency?: HomeCurrency;
+  originalAmount?: number;
+  exchangeRate?: number;
+  occurrenceId?: string;
   subcategory?: string;
   businessMovementId?: string;
   goalId?: string;
@@ -54,7 +58,47 @@ export interface HomeBudget extends HomeAudit {
   }[];
   limit: number;
 }
+export type HomeAccountingMode = 'ask' | 'automatic';
+export interface HomeRecurrence {
+  frequency:
+    | 'none'
+    | 'weekly'
+    | 'fortnightly'
+    | 'monthly'
+    | 'yearly'
+    | 'custom';
+  interval?: number;
+  unit?: 'days' | 'weeks' | 'months';
+  end: 'never' | 'date' | 'count';
+  until?: string;
+  count?: number;
+}
+export interface HomeOccurrence {
+  id: string;
+  billId: string;
+  due: string;
+  state: 'pending' | 'accepted' | 'ignored';
+  entryId?: string;
+  error?: string;
+  settledAt?: string;
+  snapshot: {
+    title: string;
+    amount: number;
+    category: string;
+    type: 'income' | 'expense';
+    currency: HomeCurrency;
+    exchangeRate?: number;
+    accountId?: string;
+  };
+}
 export interface HomeBill extends HomeAudit {
+  type?: 'income' | 'expense';
+  startDate?: string;
+  recurrence?: HomeRecurrence;
+  accountingMode?: HomeAccountingMode;
+  accountId?: string;
+  exchangeRate?: number;
+  generateAfter?: string;
   currency?: HomeCurrency;
   id: string;
   title: string;
@@ -69,6 +113,10 @@ export interface HomeBill extends HomeAudit {
   active: boolean;
 }
 export interface HomeGoal extends HomeAudit {
+  sourceAccountId?: string;
+  originalAmount?: number;
+  originalCurrency?: HomeCurrency;
+  exchangeRate?: number;
   fundingMode?: 'reserve' | 'plan';
   plannedAmount?: number;
   acquiredDate?: string;
@@ -107,9 +155,11 @@ export interface HomeCategory {
   editedAt?: string;
 }
 export interface HomeData {
+  occurrences?: HomeOccurrence[];
   categoryCatalog?: HomeCategory[];
   settings?: {
     reserveGoals: boolean;
+    accountingMode?: HomeAccountingMode;
     showBusinessIncome?: boolean;
     goalsPreferenceSet?: boolean;
   };

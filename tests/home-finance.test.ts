@@ -19,8 +19,8 @@ test('goals reserve once, acquire from the reserve and reverse the purchase with
  data=reverseHomeEntry(data,data.goals[0].acquisitionEntryId!,'Compra cancelada');
  assert.deepEqual(balances(data),{wallet:750,dollar:100,reserve:250});assert.equal(goalAcquired(data,'perfume'),false);validateHomeData(data);
 });
-test('planning goals and the default preference do not fabricate or withdraw money',()=>{
- let data=setup();data.goals[0].fundingMode='plan';
+test('planning contributions with the preference disabled do not fabricate or withdraw money',()=>{
+ let data=setup();data.goals[0].fundingMode='plan';data.settings!.reserveGoals=false;
  assert.equal(validateHomeData(data).settings?.reserveGoals,false);
  data=contributeHomeGoal(data,'perfume','',250,todayLocal());
  assert.equal(data.entries.length,0);assert.equal(balances(data).wallet,1000);

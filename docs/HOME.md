@@ -116,3 +116,7 @@ Com Carteira 1000 Kz, primeira despesa de Alimentação 10 Kz e limite de 100 Kz
 | Tarefas | Eliminar e indicação de edição | Acrescentados |
 
 Blocos 3–6 ainda não implementados. Os formulários de criação e alterações de repetição/câmbio/default de metas continuam a ser tratados nas etapas seguintes; esta entrega não declara essas etapas concluídas.
+
+## Blocos 3–6 — 09/10/2026
+
+Contas recorrentes/recebimentos e sino Home, câmbio USD explícito, metas sem prazo com origem guardada e desconto padrão ligado, formulários vazios e vocabulário português implementados. Guia item a item, limites e testes: [HOME_BLOCKS_3_6.md](HOME_BLOCKS_3_6.md). Pedidos/preferências antigos sobre padrão desligado são substituídos pelo pedido atual; escolhas explicitamente guardadas do utilizador não são sobrescritas.

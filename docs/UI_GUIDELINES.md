@@ -94,3 +94,7 @@ Home e Business usam linhas com ícone, nome, descrição e seta nas Definiçõe
 ## Categorias Home — bloco 1 (09/10/2026)
 
 Barra de filtros em cápsula com divisórias, pesquisa e Adicionar só texto. Linhas (sem cartões por categoria), ações de lápis/lixo com nome acessível, navegação por breadcrumb e controlo segmentado. Modais criam vazios/editam preenchidos, ícone opcional pesquisável, erros junto ao campo sem popup. Respeitar temas e rolagem fixa. Em telefone, filtros podem quebrar linha e Adicionar mantém alinhamento à direita.
+
+### Home — formulários e sino
+
+Criação vazia; edição preenchida. Ações de pagamento/contribuição reutilizam o registo selecionado. Botões de criação apenas texto, ações de edição/eliminação ícones. Erros por campo em vermelho sem popup nativo. USD usa formatação portuguesa. `home-notifications-button`, `home-notifications-badge`, `home-notifications-popover` identificam as confirmações Home junto ao tema. O popover é limitado ao viewport e rolável, com fecho externo/Escape.

@@ -126,3 +126,7 @@ HomeData v1 inclui categoryCatalog com id/key/name/kind/parentId/icon/editedAt. 
 ## HomeAudit — bloco 2 (09/10/2026)
 
 Entidades pessoais incluem editedAt, deletedAt e edits (changedAt/before). Nenhuma remoção física de entidades financeiras; backups conservam dados/referências/versões. effectiveEntries ignora deletedAt; listas ignoram entidades pessoais eliminadas. Limites únicos só entre ativos. Compras incluem paymentAmount e paymentSnapshot, separando pago efetivo de quantidade/preço planeados. A futura base deverá mapear metadados de entidades para details e fornecer revisões/classificação auditadas para o ledger pessoal; não alterar diretamente o bank_movements SQL append-only. Nenhuma conexão/migração nova executada nesta entrega.
+
+### Home — ocorrências e câmbio
+
+HomeData inclui occurrences (id conta:data, due, state, snapshot imutável, entryId/error/settledAt); bills incluem type/startDate/recurrence/accountingMode/accountId/exchangeRate/generateAfter; entries originalAmount/originalCurrency/exchangeRate/occurrenceId; goals sourceAccountId e originalAmount/originalCurrency/exchangeRate, deadline vazio permitido. settings.accountingMode guarda padrão; reserveGoals padrão true preserva preferências explícitas. Migração offline 005 acrescenta recurring_bill_occurrences (total 41 tabelas), atributos de programação e campos de original/conversão no ledger/goals. Nenhuma conexão. Correções pessoais SQL ainda exigem overlays versionados, sem UPDATE do ledger imutável.

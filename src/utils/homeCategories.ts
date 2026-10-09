@@ -64,7 +64,10 @@ export function normalizeHomeCatalog(data: HomeData): HomeData {
         kind: e.type === 'income' ? ('income' as const) : ('expense' as const),
       })),
     ...data.budgets.map((e) => ({ ...e, kind: 'expense' as const })),
-    ...data.bills.map((e) => ({ ...e, kind: 'expense' as const })),
+    ...data.bills.map((e) => ({
+      ...e,
+      kind: e.type === 'income' ? ('income' as const) : ('expense' as const),
+    })),
     ...data.tasks.map((e) => ({ ...e, kind: 'expense' as const })),
     ...data.goals
       .filter((e) => e.category)
@@ -264,10 +267,12 @@ export function homeCategoryUsage(data: HomeData, id: string) {
       c.kind === 'expense'
         ? data.budgets.filter((r) => uses(data, c, r)).length
         : 0,
-    contas:
-      c.kind === 'expense'
-        ? data.bills.filter((r) => uses(data, c, r)).length
-        : 0,
+    contas: data.bills.filter(
+      (r) => (r.type ?? 'expense') === c.kind && uses(data, c, r),
+    ).length,
+    ocorrências: (data.occurrences ?? []).filter(
+      (o) => o.snapshot.type === c.kind && uses(data, c, o.snapshot),
+    ).length,
     metas:
       c.kind === 'expense'
         ? data.goals.filter((r) => uses(data, c, r)).length
@@ -361,7 +366,12 @@ export function moveHomeCategory(data: HomeData, id: string, targetId: string) {
         : e,
     ),
     budgets,
-    bills: c.kind === 'expense' ? data.bills.map(move) : data.bills,
+    bills: data.bills.map((b) =>
+      (b.type ?? 'expense') === c.kind ? move(b) : b,
+    ),
+    occurrences: (data.occurrences ?? []).map((o) =>
+      o.snapshot.type === c.kind ? { ...o, snapshot: move(o.snapshot) } : o,
+    ),
     goals: c.kind === 'expense' ? data.goals.map(move) : data.goals,
     tasks: c.kind === 'expense' ? data.tasks.map(move) : data.tasks,
     shopping:

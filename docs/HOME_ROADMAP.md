@@ -1,6 +1,6 @@
 # Pedido Home em seis blocos — 09/10/2026
 
-Pedido do utilizador: implementar e confirmar cada bloco antes de passar ao seguinte. **Bloco 1 confirmado. Bloco 2 implementado e validado; aguarda confirmação antes do bloco 3. Blocos 3–6 pendentes.** A confirmação de um bloco não declara os seguintes concluídos.
+O pedido inicial previa confirmação por bloco. Em 09/10/2026, o utilizador autorizou concluir tudo com “Faz todos os Blocos.” **Blocos 1–2 publicados; blocos 3–6 concluídos e validados.** Relatório item a item em [HOME_BLOCKS_3_6.md](HOME_BLOCKS_3_6.md). Não pedir nova confirmação entre os blocos restantes.
 
 O bloco 1 mantém Compras/Despesas na taxonomia partilhada existente e Rendimentos separados. Categorias em uso são protegidas; mover reclassifica com histórico, preserva valores/saldos/IDs. Se houver dois limites no mesmo destino/mês/moeda, bloquear a operação inteira e explicar o conflito. Não combinar limites nem remover IDs automaticamente.
 

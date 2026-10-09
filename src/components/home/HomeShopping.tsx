@@ -1,3 +1,4 @@
+import { homeFormErrors } from '../../utils/homeForms';
 import { homeCategoryName } from '../../utils/homeCategories';
 import { HomeCurrency } from '../../types/home';
 import { categoryChildren, HOME_SUBCATEGORIES } from '../../utils/categories';
@@ -34,26 +35,30 @@ export function HomeShopping({
   const [name, setName] = useState('');
   const [subcategory, setSubcategory] = useState('');
   const [childFilter, setChildFilter] = useState('');
-  const [category, setCategory] = useState('Alimentação');
-  const [quantity, setQuantity] = useState('1');
+  const [category, setCategory] = useState('');
+  const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [account, setAccount] = useState(data.accounts[0].id);
-  const [date, setDate] = useState(todayLocal);
+  const [account, setAccount] = useState('');
+  const [date, setDate] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const inlineError = (id: string) =>
+    fieldErrors[id] ? (
+      <span role="alert" className="block text-xs text-rose-600 mt-1">
+        {fieldErrors[id]}
+      </span>
+    ) : null;
   const [notice, setNotice] = useState('');
   const active = new Set(effectiveEntries(data).map((e) => e.id));
   useEffect(() => {
-    setAccount(
-      data.accounts.find(
-        (a) =>
-          !a.deletedAt &&
-          a.kind === 'current' &&
-          accountCurrency(a) === currency,
-      )?.id ?? '',
-    );
+    setAccount('');
+    setDate('');
+    setCategory('');
+    setSubcategory('');
+    setQuantity('');
     setEditingId(null);
     setName('');
     setPrice('');
@@ -102,10 +107,14 @@ export function HomeShopping({
           </div>
         </div>
         <form
+          noValidate
           id="home-shopping-form"
           className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"
           onSubmit={(e) => {
             e.preventDefault();
+            const errors = homeFormErrors(e.currentTarget);
+            setFieldErrors(errors);
+            if (Object.keys(errors).length) return;
             run(() => {
               const amount = money(Number(price), false);
               const qty = Number(quantity);
@@ -137,7 +146,7 @@ export function HomeShopping({
                 };
               });
               setName('');
-              setQuantity('1');
+              setQuantity('');
               setPrice('');
               setEditingId(null);
             });
@@ -153,11 +162,13 @@ export function HomeShopping({
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+            {inlineError('home-shopping-name')}
           </label>
           <label className="text-xs">
             Categoria
             <select
               id="home-shopping-category"
+              required
               className={`${input} mt-1`}
               value={category}
               onChange={(e) => {
@@ -165,12 +176,14 @@ export function HomeShopping({
                 setSubcategory('');
               }}
             >
+              <option value="">Escolher…</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {homeCategoryName(data, c)}
                 </option>
               ))}
             </select>
+            {inlineError('home-shopping-category')}
           </label>
           <label className="text-xs">
             Subcategoria
@@ -204,6 +217,7 @@ export function HomeShopping({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
+            {inlineError('home-shopping-quantity')}
           </label>
           <label className="text-xs">
             Preço unitário previsto ({currency === 'AOA' ? 'Kz' : 'USD'})
@@ -217,6 +231,7 @@ export function HomeShopping({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
             />
+            {inlineError('home-shopping-price')}
           </label>
           <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
             <button id="home-shopping-save" className={button}>
@@ -230,7 +245,7 @@ export function HomeShopping({
                   setEditingId(null);
                   setName('');
                   setPrice('');
-                  setQuantity('1');
+                  setQuantity('');
                 }}
               >
                 Cancelar edição
@@ -263,6 +278,7 @@ export function HomeShopping({
               value={account}
               onChange={(e) => setAccount(e.target.value)}
             >
+              <option value="">Escolher…</option>
               {data.accounts
                 .filter(
                   (a) =>

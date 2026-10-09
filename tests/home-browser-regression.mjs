@@ -49,6 +49,7 @@ try {
   await page.locator('#home-add-account').click();
   await field('title', 'Conta pessoal');
   await field('openingBalance', '200000');
+  await select('currency', 'AOA');
   await save();
   const account = await page.evaluate(
     () =>
@@ -60,9 +61,16 @@ try {
   await select('type', 'income');
   await field('title', 'Salário');
   await field('amount', '50000');
+  await select('currency', 'AOA');
+  await select('category', 'Salário');
+  await select('accountId', account);
+  await field('date', '2026-10-09');
   await save();
   await page.locator('#home-add').click();
   await field('title', 'Supermercado');
+  await select('currency', 'AOA');
+  await select('type', 'expense');
+  await field('date', '2026-10-09');
   await field('amount', '5000');
   await select('category', 'Alimentação');
   await select('accountId', account);
@@ -71,6 +79,8 @@ try {
   await page.locator('#home-add').click();
   await select('category', 'Alimentação');
   await field('amount', '10000');
+  await select('currency', 'AOA');
+  await field('month', '2026-10');
   await save();
   if (
     !(await page.getByText('Ainda disponível:', { exact: false }).textContent())
@@ -80,18 +90,23 @@ try {
   await page.locator('#home-add').click();
   await field('title', 'Renda');
   await field('amount', '20000');
-  await field('day', '5');
+  await select('currency', 'AOA');
+  await select('type', 'expense');
+  await field('startDate', '2026-10-05');
+  await select('frequency', 'none');
+  await select('accountId', account);
   await select('category', 'Habitação');
   await save();
   await page
     .getByRole('button', { name: 'Registar pagamento', exact: true })
     .click();
   await select('accountId', account);
+  await field('date', '2026-10-09');
   await save();
   if (
-    await page
+    !(await page
       .getByRole('button', { name: 'Registar pagamento', exact: true })
-      .count()
+      .isDisabled())
   )
     throw Error('Duplicate bill payment offered');
   await nav(4);
@@ -99,10 +114,13 @@ try {
   await field('title', 'Férias');
   await field('amount', '100000');
   await field('deadline', '2027-12-01');
-  await select('fundingMode','reserve');
+  await select('currency', 'AOA');
+  await select('category', 'Lazer');
+  await select('sourceAccountId', account);
   await save();
   await page.getByRole('button', { name: 'Reservar valor' }).click();
   await field('amount', '30000');
+  await field('date', '2026-10-09');
   await select('accountId', account);
   await save();
   const progress = await page
@@ -113,6 +131,7 @@ try {
   await page.locator('#home-add').click();
   await field('title', 'Dentista');
   await field('date', '2027-01-10');
+  await select('category', 'Saúde');
   await save();
   await page.getByRole('checkbox', { name: 'Concluir Dentista' }).check();
   await nav(0);
@@ -161,25 +180,25 @@ try {
   await page.getByRole('button', { name: 'Guardar nome' }).click();
   await page.locator('#home-settings-overview').click();
   await page.locator('#home-settings-backup').click();
-  await page
-    .locator('#home-import')
-    .setInputFiles({
-      name: 'backup.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(backup)),
-    });
+  await page.locator('#home-import').setInputFiles({
+    name: 'backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
   await page.getByRole('dialog').getByRole('textbox').fill('RESTAURAR');
   await page.getByRole('button', { name: 'Restaurar Home' }).click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
-  if ((await page.evaluate(() => JSON.parse(localStorage.getItem('myoffice-home-v1')).name)) !== 'Minha casa')
+  if (
+    (await page.evaluate(
+      () => JSON.parse(localStorage.getItem('myoffice-home-v1')).name,
+    )) !== 'Minha casa'
+  )
     throw Error('Restore failed');
-  await page
-    .locator('#home-import')
-    .setInputFiles({
-      name: 'bad.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{"version":2}'),
-    });
+  await page.locator('#home-import').setInputFiles({
+    name: 'bad.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{"version":2}'),
+  });
   await page.getByRole('alert').waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#sidebar-brand-toggle').click();
@@ -226,6 +245,10 @@ try {
   await select('type', 'income');
   await field('title', 'Não guardar');
   await field('amount', '100');
+  await select('currency', 'AOA');
+  await select('category', 'Salário');
+  await select('accountId', account);
+  await field('date', '2026-10-09');
   await page.locator('#home-save').click();
   await page.getByRole('dialog').getByRole('alert').waitFor();
   if (
@@ -271,6 +294,8 @@ try {
   await recovery.locator('#home-nav-1').click();
   await recovery.locator('#home-add-account').click();
   await recovery.locator('#home-field-title').fill('Impossível');
+  await recovery.locator('#home-field-currency').selectOption('AOA');
+  await recovery.locator('#home-field-openingBalance').fill('0');
   await recovery.locator('#home-save').click();
   await recovery.getByRole('dialog').getByRole('alert').waitFor();
   if (

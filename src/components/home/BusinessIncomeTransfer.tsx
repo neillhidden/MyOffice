@@ -1,3 +1,4 @@
+import { homeFormErrors } from '../../utils/homeForms';
 import { useEffect, useState } from 'react';
 import { useStock } from '../../context/StockContext';
 import { useHome } from '../../context/HomeContext';
@@ -183,9 +184,16 @@ export function BusinessIncomeTransfer({
   const [bankId, setBankId] = useState('');
   const [accountId, setAccountId] = useState('');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(todayLocal);
-  const [reason, setReason] = useState('Rendimento do Business');
+  const [date, setDate] = useState('');
+  const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const inlineError = (id: string) =>
+    fieldErrors[id] ? (
+      <span role="alert" className="block text-xs text-rose-600 mt-1">
+        {fieldErrors[id]}
+      </span>
+    ) : null;
   const [notice, setNotice] = useState('');
   useEffect(() => {
     setBankId('');
@@ -222,9 +230,13 @@ export function BusinessIncomeTransfer({
         </p>
       </div>
       <form
+        noValidate
         className="grid sm:grid-cols-2 gap-3"
         onSubmit={(e) => {
           e.preventDefault();
+          const errors = homeFormErrors(e.currentTarget);
+          setFieldErrors(errors);
+          if (Object.keys(errors).length) return;
           try {
             bridge.transfer(bankId, accountId, Number(amount), date, reason);
             setAmount('');
@@ -256,6 +268,7 @@ export function BusinessIncomeTransfer({
               </option>
             ))}
           </select>
+          {inlineError('home-business-bank')}
         </label>
         <label className="text-xs">
           Carteira pessoal
@@ -273,6 +286,7 @@ export function BusinessIncomeTransfer({
               </option>
             ))}
           </select>
+          {inlineError('home-business-wallet')}
         </label>
         <label className="text-xs">
           Valor ({currency === 'AOA' ? 'Kz' : 'USD'})
@@ -286,6 +300,7 @@ export function BusinessIncomeTransfer({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
+          {inlineError('home-business-amount')}
         </label>
         <label className="text-xs">
           Data
@@ -298,6 +313,7 @@ export function BusinessIncomeTransfer({
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
+          {inlineError('home-business-date')}
         </label>
         <label className="text-xs sm:col-span-2">
           Descrição da retirada
@@ -309,6 +325,7 @@ export function BusinessIncomeTransfer({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
+          {inlineError('home-business-reason')}
         </label>
         <button
           id="home-business-transfer"

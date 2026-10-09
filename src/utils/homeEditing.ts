@@ -67,6 +67,15 @@ export function editHomeEntry(
             ? homeAuditEdit(g, {
                 ...g,
                 target: next.amount,
+                ...(g.originalCurrency
+                  ? {
+                      originalAmount: next.originalAmount ?? next.amount,
+                      originalCurrency:
+                        next.originalCurrency ?? g.originalCurrency,
+                      exchangeRate: next.exchangeRate,
+                    }
+                  : {}),
+                acquiredDate: next.date,
                 category: next.category,
               })
             : g,
@@ -91,7 +100,12 @@ export function editHomeEntry(
   });
 }
 export type HomeEntity =
-  'entry' | 'account' | 'budget' | 'bill' | 'goal' | 'task';
+  | 'entry'
+  | 'account'
+  | 'budget'
+  | 'bill'
+  | 'goal'
+  | 'task';
 export function deleteHomeEntity(data: HomeData, kind: HomeEntity, id: string) {
   const deletedAt = new Date().toISOString();
   if (kind === 'entry') {

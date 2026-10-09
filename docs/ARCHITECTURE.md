@@ -165,3 +165,7 @@ HomeCategories, CategoryIcons e HomeModal partilhado servem o bloco 1. homeCateg
 ## Bloco 2 — edição Home (09/10/2026)
 
 homeEditing.ts valida alterações, mantém IDs e snapshots e aplica eliminação lógica. HomeContext continua a validar/gravar antes de atualizar estado. HomeView distingue documento completo savedData (backup/validação) de listas de planeamento ativas; saldos/gráficos/limites são derivados do ledger efetivo. BusinessIncomeTransfer.reverse suporta eliminação pessoal com compensação e marcações na mesma gravação coordenada. StockContext não foi alterado.
+
+### Home — programação e câmbio (09/10/2026)
+
+`homeRecurrence.ts` calcula datas ancoradas e processa ocorrências no HomeProvider usando useToday. Snapshot pendente persiste em `HomeData.occurrences`; conta/data é a chave idempotente. A gravação existente protege quota, concorrência de abas e vínculos Business. `HomeNotifications` fica no HomeHeader; não mistura notificações StockContext. Lançamentos guardam valor original e taxa, e amount é a única quantia que afeta saldo/gráficos. `homeForms.ts` centraliza validação por campo sem bolhas nativas. Não há scheduler fora do navegador.

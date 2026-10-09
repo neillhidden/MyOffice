@@ -30,6 +30,8 @@ try {
   await page.locator('#home-shopping-quantity').fill('2');
   await page.locator('#home-shopping-price').fill('125');
   await page.locator('#home-shopping-save').click();
+  await page.locator('#home-shopping-account').selectOption('wallet');
+  await page.locator('#home-shopping-date').fill('2026-10-08');
   await page.getByRole('button',{name:'Registar pagamento',exact:true}).click();
   await page.getByText('Pago',{exact:true}).waitFor();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('myoffice-home-v1')));
