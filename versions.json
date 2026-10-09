@@ -1,6 +1,12 @@
 {
-  "currentSha": "7868897cef0848dce04c1e181398aea9d19eb510",
+  "currentSha": "9eb8f911d191175fe945173a510eb298000526e6",
   "entries": [
+    {
+      "sha": "9eb8f911d191175fe945173a510eb298000526e6",
+      "date": "2026-10-09T18:45:59Z",
+      "title": "Proteger comprovativos repetidos e integrar orçamentos no Home e Business",
+      "status": "ready"
+    },
     {
       "sha": "7868897cef0848dce04c1e181398aea9d19eb510",
       "date": "2026-10-09T18:25:43Z",
