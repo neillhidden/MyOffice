@@ -1,0 +1,85 @@
+MYOFFICE PARA WINDOWS — HOME + BUSINESS + SQLITE LOCAL
+Pacote portátil 1.0 — aplicação baseada no commit 9eb8f911, de 10/10/2026.
+Destinado a Windows 10/11 de 64 bits (x64: Intel/AMD).
+
+1. COMEÇAR
+- Extrai TODO o ZIP para uma pasta tua, por exemplo Documentos\MyOffice.
+- Não abras o programa dentro do ZIP nem coloques a pasta em Program Files.
+- Abre MyOffice.exe, ou INICIAR-MYOFFICE.bat.
+- O navegador abre o sistema. Mantém a janela do programa aberta.
+- Se o navegador não abrir, escreve http://localhost:4741 na barra de endereço.
+- Para parar: fecha o MyOffice no navegador e pressiona Ctrl+C na janela do programa.
+- Nas próximas vezes, basta abrir o mesmo MyOffice.exe.
+Não precisas de instalar Node.js, SQLite, Docker ou um servidor pago.
+É uma aplicação local apresentada no navegador, com um executável que inicia o serviço.
+O executável não tem assinatura digital. O Windows pode apresentar um aviso.
+
+2. ONDE FICAM OS DADOS
+A base é criada automaticamente em .data\myoffice.sqlite, ao lado do executável.
+Guarda os estados do Home, Business e preferências locais numa base SQLite real.
+O navegador mantém uma cache para compatibilidade com a aplicação atual.
+Ao abrir, a base SQLite é a fonte dos dados. Limpar o navegador não apaga a base.
+NÃO apagues .data. Não copies apenas o .exe: os ficheiros site e local-storage.js
+são necessários. Usa uma pasta local com permissão de escrita.
+Evita executar a mesma base numa pasta de rede/OneDrive sincronizada em simultâneo.
+Não há sincronização com o site do GitHub Pages nem entre computadores.
+Os dados existentes no site online não são copiados automaticamente para aqui.
+O Home permite exportar/importar o seu backup JSON, revendo a importação.
+A pasta database contém a estrutura SQL preparada para uma futura integração
+relacional; não é necessário executar essas migrações para usar este pacote.
+
+3. BACKUP E RESTAURO
+No canto inferior direito, clica em "Backup SQLite".
+O ficheiro myoffice-backup.sqlite inclui os estados guardados dos dois modos.
+Uma cópia consistente também fica em .data\backups.
+Guarda uma cópia noutro disco; uma cópia no mesmo disco não protege contra avaria.
+Para restaurar:
+- Fecha o programa (Ctrl+C) e as suas páginas no navegador.
+- Abre RESTAURAR-BANCO.bat.
+- Indica o caminho completo do backup e confirma com S.
+- A base atual é preservada em .data\backups\antes-restauro-....sqlite.
+- Abre novamente MyOffice.exe. O restauro substitui os dados pela cópia escolhida.
+Não copies só myoffice.sqlite com o programa aberto: podem existir alterações
+nos ficheiros SQLite -wal/-shm. Usa o botão de backup.
+
+4. ATUALIZAR SEM PERDER DADOS
+Os commits atualizam o site online conforme o fluxo GitHub já configurado.
+Este executável NÃO recebe atualizações automaticamente.
+Quando tiveres um novo pacote Windows:
+- Faz um backup SQLite.
+- Fecha o programa e as páginas do MyOffice.
+- Extrai o novo pacote numa pasta temporária.
+- Substitui os ficheiros do programa na tua pasta atual, mantendo .data intacta.
+- Abre o MyOffice.exe atualizado na mesma pasta.
+Nunca elimines a pasta antiga com dados antes de verificar a nova versão.
+Para voltar à aplicação anterior, repõe o pacote anterior e, se uma futura versão
+alterar o formato dos dados, restaura também o backup correspondente.
+
+5. INTERNET E CUSTOS
+Depois de descarregado e extraído, o sistema e o OCR funcionam localmente.
+PDF, CSV, Excel e fotografia são processados sem uma API paga.
+Abrir ligações externas continua a precisar de Internet.
+Não há mensalidade de alojamento ou base de dados neste pacote.
+O tamanho exato do download consta de VERSAO-E-VALIDACAO.txt.
+O espaço usado pelos teus dados e backups cresce conforme a utilização.
+
+6. RESOLVER PROBLEMAS
+Se aparecer "MyOffice já pode estar aberto", usa a janela existente; a porta é 4741.
+Se aparecer "dados mudaram noutra janela", recarrega antes de continuar.
+Trabalha numa janela de cada vez para evitar conflitos de edição.
+Se a base não responder, mantém o executável aberto e recarrega a página.
+Se faltar site ou local-storage.js, extrai novamente o pacote completo.
+Não uses http://127.0.0.1:4741 alternadamente com localhost: usa sempre localhost.
+Os teus dados financeiros não estão incluídos neste ZIP.
+
+7. VALIDAÇÃO E LIMITES
+Importação Home/Business, persistência, backup e restauro foram testados no Linux,
+incluindo o executável Linux produzido com o mesmo código incorporado.
+O .exe Windows foi gerado e a estrutura PE x64 foi verificada, mas não foi
+executado num Windows neste ambiente. Confirma o primeiro arranque na tua máquina.
+Esta entrega mantém a interface e as regras existentes; não constitui uma auditoria
+contabilística ou certificação fiscal. Não há autenticação multiutilizador nem
+serviço remoto. A base guarda o estado atual como documentos JSON/chave-valor;
+a migração integral para tabelas relacionais é uma etapa diferente.
+A cache continua sujeita aos limites de armazenamento do navegador. Erros de
+persistência são apresentados; não são tratados como gravações bem-sucedidas.
