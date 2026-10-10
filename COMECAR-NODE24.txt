@@ -1,0 +1,68 @@
+MYOFFICE PARA WINDOWS — NODE.JS OFICIAL + SQLITE
+Versão 1.1 de 10/10/2026, aplicação baseada no commit 9eb8f911.
+Alternativa ao executável MyOffice.exe sem assinatura digital.
+
+1. INSTALAR O NODE.JS
+Instala o Node.js 24.19.0 oficial para Windows x64:
+https://nodejs.org/dist/v24.19.0/node-v24.19.0-x64.msi
+Mantém as opções normais do instalador, incluindo adicionar ao PATH.
+Não precisas de instalar as ferramentas adicionais de compilação.
+Não desatives o Controlo Inteligente de Aplicações nem o antivírus.
+
+2. ABRIR O MYOFFICE
+Extrai toda a pasta deste ZIP para Documentos ou Ambiente de Trabalho.
+Abre a pasta que contém MyOffice.cjs.
+Na barra de endereço do Explorador de Ficheiros, escreve cmd e pressiona Enter.
+Na janela que abriu, escreve este comando e pressiona Enter:
+
+node MyOffice.cjs
+
+O navegador deve abrir. Se não abrir, visita http://localhost:4741.
+Mantém a janela de comandos aberta enquanto usas o sistema.
+Para fechar o servidor, pressiona Ctrl+C na janela de comandos.
+Nas próximas vezes, repete apenas os passos do ponto 2.
+Se aparecer "node não é reconhecido", fecha e reabre o Explorador/terminal após
+instalar Node.js. Em alternativa, executa:
+
+"C:\Program Files\nodejs\node.exe" MyOffice.cjs
+
+3. DADOS E BACKUP
+A base é criada em .data\myoffice.sqlite dentro desta pasta.
+Home e Business conservam os seus estados na mesma base SQLite local.
+O navegador mantém uma cache; ao reabrir, recupera os dados da base.
+O site online não sincroniza automaticamente os seus dados com esta versão.
+Para backup consistente, clica em "Backup SQLite" no canto inferior direito.
+Uma cópia também fica em .data\backups. Guarda outra cópia noutro disco.
+Não copies só a base com o programa aberto: usa o botão de backup.
+Se já tens uma pasta .data na versão anterior, fecha primeiro os programas e
+copia essa pasta completa para esta pasta antes de começar. Conserva a original.
+Nunca elimines .data ao atualizar.
+
+4. RESTAURAR
+Fecha o programa (Ctrl+C) e as páginas do MyOffice no navegador.
+Abre cmd na pasta do programa, como no ponto 2, e executa:
+
+node MyOffice.cjs --restaurar "C:\caminho\myoffice-backup.sqlite"
+
+Substitui o caminho pelo teu backup real. Isto substitui os dados atuais pelos
+que constam do backup. A base anterior fica preservada em .data\backups.
+Depois abre novamente: node MyOffice.cjs
+
+5. ATUALIZAR
+Faz um backup, fecha o programa e substitui os ficheiros pelo novo pacote,
+mantendo .data intacta. As atualizações locais são manuais.
+O programa e o OCR funcionam sem Internet depois da instalação/download.
+Ligações externas continuam a precisar de Internet. Não exige API paga.
+
+6. LIMITES E VALIDAÇÃO
+A versão original teve importações Home/Business, persistência, backup e restauro
+validados no Linux. Esta alternativa usa o mesmo servidor e frontend, sem o
+executável alterado. Foi validada a execução das fontes com Node 24 no Linux;
+o arranque Windows e a decisão do Controlo Inteligente de Aplicações precisam
+ser confirmados na tua máquina. O pacote não garante uma aprovação do Windows.
+Se o Node oficial também for bloqueado, regista a mensagem antes de continuar.
+A pasta database contém as migrações PostgreSQL futuras, não a base SQLite ativa.
+A base ativa conserva estados JSON/chave-valor; mantém a cache do navegador e
+os limites desta. Não há autenticação multiutilizador ou sincronização remota.
+Conserva também os documentos originais fora da aplicação, quando necessário.
+O ZIP não inclui dados pessoais nem as bases usadas nos testes.
