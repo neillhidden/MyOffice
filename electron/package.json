@@ -1,0 +1,16 @@
+{
+  "name": "myoffice-desktop",
+  "productName": "MyOffice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MyOffice Home e Business para computador",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "package:windows": "node scripts/package-windows.cjs"
+  },
+  "devDependencies": {
+    "adm-zip": "0.5.16",
+    "electron": "44.7.0"
+  }
+}

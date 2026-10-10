@@ -1,0 +1,92 @@
+MYOFFICE DESKTOP — ELECTRON + SQLITE
+Versão 1.0.0 — 10/10/2026. Windows 10/11 x64 (Intel/AMD).
+
+INSTALAR
+1. Se ainda não tens Node.js 24 x64, instala a distribuição oficial:
+https://nodejs.org/dist/v24.19.0/node-v24.19.0-x64.msi
+2. Extrai toda a pasta do pacote MyOffice-Electron-Instalacao.zip.
+3. Abre a pasta que contém INSTALAR-MYOFFICE.cjs.
+4. Na barra de endereço do Explorador, escreve cmd e pressiona Enter.
+5. Executa: node INSTALAR-MYOFFICE.cjs
+O instalador descarrega Electron 44.7.0 oficial, verifica o SHA-256, instala
+em %LOCALAPPDATA%\Programs\MyOffice e cria atalhos no Ambiente de Trabalho
+e no menu Iniciar. O primeiro download usa aproximadamente 170 MB, incluindo
+este pacote de aplicação e o runtime Electron. Não precisas de compiladores.
+Depois abres pelo atalho MyOffice. Node.js só é usado na instalação/atualização.
+A primeira instalação descarrega o runtime completo. As atualizações deste
+instalador também descarregam o runtime; os dados do utilizador são preservados.
+
+CONTROLO INTELIGENTE DE APLICAÇÕES
+O executável Electron desta distribuição oficial NÃO tem assinatura digital.
+Conservamos o executável sem editar os seus bytes, incluindo ao renomeá-lo.
+O Windows pode mesmo assim bloqueá-lo: Electron não elimina a necessidade de
+assinatura ou reputação reconhecida pelo Windows. Não desatives a proteção.
+Se for bloqueado, não há neste pacote uma assinatura que resolva essa restrição.
+Mantém a versão MyOffice com Node.js no navegador enquanto se prepara uma
+assinatura de código reconhecida. Certificados autoassinados não resolvem isto.
+A execução no teu Windows e a aprovação pelo Controlo Inteligente ainda não
+foram testadas. Os testes funcionais foram executados no Electron para Linux.
+
+DADOS
+A base SQLite fica em %APPDATA%\MyOffice\dados\myoffice.sqlite.
+Os dados não ficam na pasta do programa e não são enviados para a Internet.
+O navegador interno mantém uma cache; a base é recuperada ao reabrir.
+A base conserva os estados JSON/chave-valor dos dois modos. A cache continua
+sujeita aos limites de armazenamento do navegador. Não há sincronização com
+GitHub Pages nem autenticação multiutilizador.
+
+IMPORTAR A VERSÃO ANTERIOR
+Faz um Backup SQLite na versão anterior e fecha essa versão.
+No Electron, abre Ficheiro → Importar base da versão anterior.
+Escolhe o backup .sqlite e confirma. Home e Business serão substituídos
+pelos dados escolhidos. A base anterior do Electron será preservada em backups.
+Não elimines os dados da versão antiga antes de confirmar a importação.
+Os dados online do GitHub Pages não são importados automaticamente.
+
+BACKUP E RESTAURO
+Ficheiro → Criar backup SQLite: escolhe onde guardar.
+Ficheiro → Restaurar backup: escolhe a cópia e confirma a substituição.
+Cópias de segurança também são preservadas na pasta dados\backups.
+Ficheiro → Abrir pasta dos dados permite localizar a base e os backups.
+Guarda também um backup noutro disco. Usa o backup consistente em vez de
+copiar apenas a base SQLite com o programa aberto.
+
+ATUALIZAÇÕES
+Ficheiro → Obter atualizações abre a página de distribuição no GitHub.
+As atualizações são manuais. Faz backup, fecha o MyOffice e executa o novo
+INSTALAR-MYOFFICE.cjs. Mantém %APPDATA%\MyOffice intacta.
+O instalador preserva a aplicação anterior numa pasta MyOffice-anterior-....
+Depois de verificar a atualização, podes remover essa pasta de programa antigo.
+Voltar à versão antiga da aplicação não faz o restauro automático dos dados.
+Se uma futura versão alterar o seu formato, restaura o backup correspondente.
+Não existe atualização automática por commit do aplicativo desktop.
+
+UTILIZAÇÃO
+Home e Business abrem na janela própria. Importações de PDF, Excel, CSV e
+fotografia usam os componentes existentes; o OCR é local, sem API paga.
+Os menus Ficheiro/Editar/Ver/Ajuda incluem backup, restauro, zoom e atalhos.
+As ligações externas abrem no navegador normal.
+Não é necessário manter uma janela de comandos aberta após a instalação.
+Não precisas de pagar alojamento ou uma base remota para usar este pacote.
+O custo/fornecimento de uma assinatura de código não está incluído.
+
+VALIDAÇÃO
+Janela real Electron, Home/Business, leitura/aplicação de PDF, SQLite, backup,
+importação da versão anterior, rejeição de base inválida e reinício passaram
+no Linux. O instalador Windows, os atalhos Windows e o bloqueio de segurança
+não foram executados num Windows real neste ambiente.
+A validação funcional não é uma certificação fiscal/contabilística.
+A pasta database contém o esquema relacional futuro, separado da base ativa.
+O pacote não contém dados pessoais, bases de testes ou documentos privados.
+
+SE O WINDOWS BLOQUEAR O ELECTRON
+Na pasta do pacote de instalação, podes usar o modo navegador executando:
+
+node ABRIR-NAVEGADOR.cjs
+
+Este modo alternativo usa Node.js oficial, não o Electron, e conserva a mesma
+base em %APPDATA%\MyOffice\dados. Mantém a janela de comandos aberta.
+Para importar um backup neste modo: fecha o servidor e executa
+node ABRIR-NAVEGADOR.cjs --restaurar "C:\caminho\myoffice-backup.sqlite"
+Depois volta a executar node ABRIR-NAVEGADOR.cjs. O restauro substitui os dados
+pela cópia escolhida e conserva a base anterior na pasta dados\backups.
