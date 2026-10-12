@@ -1,6 +1,12 @@
 {
-  "currentSha": "9eb8f911d191175fe945173a510eb298000526e6",
+  "currentSha": "9806cd9431d73e71513f960cf0d49f902bf53a71",
   "entries": [
+    {
+      "sha": "9806cd9431d73e71513f960cf0d49f902bf53a71",
+      "date": "2026-10-12T17:02:48Z",
+      "title": "Corrige produtos, reservas de metas e navegação do MyOffice",
+      "status": "ready"
+    },
     {
       "sha": "9eb8f911d191175fe945173a510eb298000526e6",
       "date": "2026-10-09T18:45:59Z",
