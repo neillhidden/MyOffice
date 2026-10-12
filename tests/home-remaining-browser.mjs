@@ -201,6 +201,10 @@ try {
     d.entries.find((e) => e.title === 'Despesa em USD').exchangeRate,
     undefined,
   );
+  // Real reservation is explicitly enabled; new installations default to planning.
+  await nav(6);
+  await page.locator('#home-settings-goals').click();
+  await page.locator('#home-goals-auto-reserve').check();
   // A dream without a deadline chooses its source; repeated contributions preserve funds.
   await nav(4);
   await page.locator('#home-add').click();

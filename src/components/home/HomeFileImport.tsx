@@ -1,3 +1,4 @@
+import { statementAccountMatch } from '../../utils/statementAccounts';
 import { fileDocument } from '../../utils/financialDocuments';
 import { csvTable } from '../../utils/financialTables';
 import React, { useEffect, useRef, useState } from 'react';
@@ -50,12 +51,14 @@ export function HomeFileImport({
   mode,
   accountId: parentAccount = '',
   onRows,
+  onAccount,
   existingDocument,
   onApplied,
 }: {
   mode: 'statement' | 'receipt';
   accountId?: string;
   onRows?: (rows: HomeStatementRow[]) => void;
+  onAccount?: (id: string) => void;
   existingDocument?: HomeDocument;
   onApplied?: () => void;
 }) {
@@ -162,6 +165,10 @@ export function HomeFileImport({
       setDuplicateDocument(duplicate);
       setResult(r);
       setSource(r.text);
+      if (mode === 'statement' && !isBankReceipt(r.text)) {
+        const match = statementAccountMatch(r.text, data.accounts.filter((a) => !a.deletedAt && a.kind === 'current'));
+        if (match.accountId) onAccount?.(match.accountId);
+      }
       setSheet(0);
       propose(r);
     } catch (e) {
@@ -216,6 +223,11 @@ export function HomeFileImport({
   }
   const check = () => {
     if (!wallet) throw new Error('Escolhe a carteira do movimento.');
+      if (!receiptFlow) {
+        const identification = statementAccountMatch(source, data.accounts.filter((a) => !a.deletedAt && a.kind === 'current'));
+        if (identification.identified && identification.accountId !== accountId) throw new Error('A conta indicada no extrato não corresponde a uma única carteira selecionada. Confere o número da conta ou IBAN em Finanças.');
+      }
+
     if (!selected.length) throw new Error('Seleciona pelo menos um movimento.');
     for (const row of selected) {
       try {
@@ -318,6 +330,7 @@ export function HomeFileImport({
         PNG/JPEG/WebP. Leitura local; revê todos os valores. Entrada (+) aumenta
         a carteira; saída (−) reduz. Saldo do banco não é valor do movimento.
       </p>
+      {!receiptFlow && statementAccountMatch(source, data.accounts.filter((a) => !a.deletedAt && a.kind === 'current')).identified && <p role="status" className="text-xs text-slate-600 dark:text-dm-muted">O extrato contém um identificador bancário. A confirmação exige correspondência única com o número da conta ou IBAN da carteira.</p>}
       {mode === 'receipt' && (
         <label className="block text-xs">
           Carteira do comprovativo

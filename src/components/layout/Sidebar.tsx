@@ -410,9 +410,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { section: 'Relatórios', icon: FileText },
             { section: 'Extratos', icon: FileCheck },
             { section: 'Documentos', icon: Paperclip },
-          ] as const).map(({ section, icon: Icon }, index) => (
+          ] as const).map(({ section, icon: Icon }, index) => ({ section, Icon, index })).filter(({ section }) => section !== 'Definições').map(({ section, Icon, index }) => (
             <button type="button" key={section} id={`home-nav-${index}`}
-              title={isCollapsed ? section : undefined} aria-label={section}
+              title={isCollapsed ? (section === 'Agenda' ? 'Calendário' : section) : undefined} aria-label={section === 'Agenda' ? 'Calendário' : section}
               aria-current={homeSection === section ? 'page' : undefined}
               onClick={() => onSelectHomeSection(section)}
               className={`w-full min-h-11 flex items-center ${isCollapsed ? 'justify-center gap-0 px-0' : 'gap-3 px-3'} py-2.5 rounded-lg text-left text-xs font-medium ${homeSection === section
@@ -420,14 +420,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}
             >
               <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-              {!isCollapsed && <span className="min-w-0">{section}</span>}
+              {!isCollapsed && <span className="min-w-0">{section === 'Agenda' ? 'Calendário' : section}</span>}
             </button>
           ))}
         </nav>
       )}
       {/* Navigation List: começa exatamente abaixo da barra de topo h-14 */}
       <nav hidden={mode !== 'business'} style={mode !== 'business' ? {display:'none'} : undefined} className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1 flex flex-col">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => item.id !== 'Definições').map((item) => {
           const Icon = item.icon;
           const submodules = MODULE_SUBMODULES[item.id];
           const hasSubmodules = Boolean(submodules && submodules.length > 0);
@@ -528,6 +528,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </nav>
+
+      <div className="shrink-0 border-t border-slate-200 dark:border-dm-border p-2">
+        <button type="button" id={mode === 'home' ? 'home-nav-6' : 'nav-item-definições'}
+          aria-label="Definições" title={isCollapsed ? 'Definições' : undefined}
+          aria-current={(mode === 'home' ? homeSection === 'Definições' : activeModule === 'Definições') ? 'page' : undefined}
+          onClick={() => { setHoveredFlyout(null); mode === 'home' ? onSelectHomeSection('Definições') : onSelectModule('Definições'); }}
+          className={`w-full min-h-11 flex items-center rounded-lg text-xs font-medium ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} ${(mode === 'home' ? homeSection === 'Definições' : activeModule === 'Definições') ? 'bg-slate-900 dark:bg-dm-elevated text-white' : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}>
+          <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />
+          {!isCollapsed && <span>Definições</span>}
+        </button>
+      </div>
 
       <ModeSwitcher mode={mode} compact={isCollapsed} onChange={(value) => {
         setHoveredFlyout(null);

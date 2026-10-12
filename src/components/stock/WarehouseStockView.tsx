@@ -1,3 +1,5 @@
+import { Eye as DetailsIcon } from 'lucide-react';
+import { detailRowProps } from '../../utils/detailRows';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Search,
@@ -665,7 +667,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
           <button
             type="button"
             id="btn-stock-add-product"
-            onClick={onOpenAddProduct}
+            onClick={() => onOpenAddProduct()}
             className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer"
           >
             <span>Adicionar</span>
@@ -727,7 +729,7 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                   return (
                     <tr
                       key={product.id}
-                      onClick={() => onSelectProduct(product.id)}
+                      {...detailRowProps(() => onSelectProduct(product.id))}
                       className={`cursor-pointer transition-colors group ${
                         isCompanyStopped
                           ? 'bg-amber-50/30 hover:bg-amber-50/60 dark:bg-amber-950/20 dark:hover:bg-amber-950/40'
@@ -899,9 +901,9 @@ export const WarehouseStockView: React.FC<WarehouseStockViewProps> = ({
                             type="button"
                             id={`btn-detail-product-${product.id}`}
                             onClick={() => onSelectProduct(product.id)}
-                            className="dm-btn-primary hidden dark:inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold bg-dm-text text-dm-page hover:opacity-90 transition-opacity cursor-pointer"
+                            className="dm-icon-action inline-flex p-1.5 rounded-lg text-slate-400 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated"
                           >
-                            Ver detalhes
+                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
                           </button>
 
                           <button

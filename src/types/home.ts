@@ -21,6 +21,8 @@ export type HomeSection =
   | 'Extratos'
   | 'Documentos';
 export interface HomeAccount extends HomeAudit {
+  accountNumber?: string;
+  iban?: string;
   currency?: HomeCurrency;
   id: string;
   name: string;

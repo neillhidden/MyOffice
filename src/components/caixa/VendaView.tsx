@@ -1,3 +1,5 @@
+import { detailRowProps } from '../../utils/detailRows';
+import { Eye as DetailsIcon } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import {
   ShoppingCart,
@@ -380,7 +382,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
                   const itemsCount = sale.items.reduce((acc, it) => acc + it.quantity, 0);
 
                   return (
-                    <tr key={sale.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr {...detailRowProps(() => handleOpenReceipt(sale))} key={sale.id} className="cursor-pointer hover:bg-slate-50/60 transition-colors">
                       <td className="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
                         #{sale.id}
                       </td>
@@ -470,7 +472,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
                             className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
                             title="Ver Recibo de Venda"
                           >
-                            Ver detalhes
+                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
                           </button>
 
                           {isCompleted && (

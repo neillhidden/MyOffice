@@ -131,3 +131,7 @@ Depois de 001–006, prepara três tabelas empresariais, totalizando 51: busines
 Mapear `myoffice-business-documents-v1` para essas tabelas. Gerar IDs dos links ao migrar; calcular SHA-256 de originais existentes. No Home, receiptReference/receiptFileHash podem ir em bank_movements.import_details na criação ou overlay de metadados auditado para movimentos antigos, preservando imutabilidade. Nunca enviar o base64 para campos de metadados remotos.
 
 Teste: `MYOFFICE_PGLITE_MODULE=... node --test tests/business-document-database-regression.mjs tests/home-tools-database-regression.mjs` verifica duplicados, FKs/isolamento, imutabilidade e 51 tabelas com RLS.
+
+### Identificadores de contas na interface local (12/10/2026)
+
+Os campos opcionais Home `accountNumber` e `iban` são metadados da conta e conservam-se nos backups. Na futura conexão, mapear esses valores para `bank_accounts.details` (JSONB já existente); não representam vínculos de saldo entre workspaces. Business possui os mesmos campos no tipo Bank. A identificação local de cabeçalhos de extratos não substitui verificação bancária, autorização nem validação de assinatura digital.

@@ -109,6 +109,10 @@ try {
       .isDisabled())
   )
     throw Error('Duplicate bill payment offered');
+  await nav(6);
+  await page.locator('#home-settings-goals').click();
+  if (await page.locator('#home-goals-auto-reserve').isChecked()) throw Error('New Home must default to planning');
+  await page.locator('#home-goals-auto-reserve').check();
   await nav(4);
   await page.locator('#home-add').click();
   await field('title', 'Férias');

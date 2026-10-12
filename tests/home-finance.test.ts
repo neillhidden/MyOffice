@@ -6,7 +6,7 @@ import {HOME_STORAGE_KEY} from '../src/utils/home';
 import {HomeData} from '../src/types/home';
 import {BankMovement} from '../src/types/stock';
 
-const setup=():HomeData=>({...emptyHome(),accounts:[{id:'wallet',name:'Carteira Kz',kind:'current',currency:'AOA',openingBalance:1000},{id:'dollar',name:'Carteira USD',kind:'current',currency:'USD',openingBalance:100},{id:'reserve',name:'Perfume',kind:'savings',currency:'AOA',openingBalance:0}],goals:[{id:'perfume',title:'Perfume',target:250,deadline:'2027-01-01',accountId:'reserve',fundingMode:'reserve',category:'Roupa'}]});
+const setup=():HomeData=>({...emptyHome(),settings:{...emptyHome().settings!,reserveGoals:true},accounts:[{id:'wallet',name:'Carteira Kz',kind:'current',currency:'AOA',openingBalance:1000},{id:'dollar',name:'Carteira USD',kind:'current',currency:'USD',openingBalance:100},{id:'reserve',name:'Perfume',kind:'savings',currency:'AOA',openingBalance:0}],goals:[{id:'perfume',title:'Perfume',target:250,deadline:'2027-01-01',accountId:'reserve',fundingMode:'reserve',category:'Roupa'}]});
 test('goals reserve once, acquire from the reserve and reverse the purchase without double-debit',()=>{
  let data=contributeHomeGoal(setup(),'perfume','wallet',250,todayLocal());
  assert.deepEqual(balances(data),{wallet:750,dollar:100,reserve:250});

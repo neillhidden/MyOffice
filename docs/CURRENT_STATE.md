@@ -9,9 +9,10 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 > **INSTRUÇÃO PARA O PRÓXIMO AGENTE (Claude Code / Gemini / Codex)**:
 > Sempre que iniciares uma sessão neste repositório, lê este bloco primeiro e verifica `git status` e `git diff`. Se o agente anterior tiver sido interrompido a meio de uma tarefa (por limite de quota ou contexto), retoma a partir do ponto indicado abaixo. Ao trabalhares numa tarefa, mantém este bloco atualizado.
 
-- **Último Agente Ativo**: OpenAI Codex — `2026-10-09`
-- **Estado de Validação**: 68 testes unitários passaram; lint/build Pages passaram. Chromium compilado: Home e Business com PDF real do utilizador, PDF sintético/digitalizado, CSV, Excel e foto OCR; duplicados/renomeação, orçamento existente/novo, confirmação, persistência e telefone. Regressões Home completo, ferramentas e finanças/transferências Business passaram. Dois testes SQL verificaram migração 007, isolamento, repetição e 51 tabelas com RLS. Aviso conhecido de bundle grande permanece.
-- **Tarefa em Andamento / Pendente de Retoma**: Proteção de comprovativos repetidos e revisão com orçamento concluídas no Home e Business. Verificar workflow Pages desta entrega ao retomar; recolher feedback. Não acrescentar preferências globais de ativar/desativar sem perguntar primeiro ao utilizador.
+- **Último Agente Ativo**: OpenAI Codex — `2026-10-12`
+- **Estado de Validação**: Revisão de 12/10: 72 testes unitários passaram; TypeScript/build passaram (aviso conhecido de chunks grandes). Chromium com dados fictícios: abertura de produto, teclado/temas, reservas/saldos/reload, navegação fixa, Calendário, previsão móvel e identificação/rejeição de contas de PDF Home/Business. Oito regressões financeiras Business e scripts Home financeiro/completo/blocos 3–6/ficheiros Home e Business passaram. Sem dados reais ou serviços de produção; nenhuma mudança SQL nesta revisão.
+- **Tarefa em Andamento / Pendente de Retoma**: Correções prioritárias do relatório concluídas; commit solicitado pelo utilizador. Integração/push/publicação ainda pendentes. Falha original do produto era evento de clique usado como categoria. Reserva está desligada por padrão para novos dados, preservando preferências explícitas. Não acrescentar preferências globais sem perguntar.
+
 - **O que foi concluído**:
   1. IDs novos com UUID aleatório criptográfico; IDs antigos preservados. Validação central de produtos/variações, quantidades, preços e transporte antes de gravar vendas.
   2. Estorno financeiro preserva original e cria compensação vinculada. Bloqueio de estornos duplicados/restauro, cancelamento de venda integrado e pagamentos de dívida preservados com motivo obrigatório.

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { StockProvider } from './context/StockContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WarehouseFilterProvider, useWarehouseFilters } from './context/WarehouseFilterContext';
@@ -93,6 +93,11 @@ function AppContent() {
   const [movementProductId, setMovementProductId] = useState<string | null>(null);
   const [movementWarehouseId, setMovementWarehouseId] = useState<string | null>(null);
   const [movementVariationId, setMovementVariationId] = useState<string | null>(null);
+
+  const navigationKey = mode === 'home' ? `home:${homeSection}` : `business:${activeModule}:${activeSubmodule}:${activeCaixaSubmodule}:${activeContactosSubmodule}:${activeFinanceiroSubmodule}`;
+  useLayoutEffect(() => {
+    document.querySelector<HTMLElement>('#app-root-shell main')?.scrollTo({ top: 0, left: 0 });
+  }, [navigationKey]);
 
   const handleOpenNewProduct = (category?: string, subcategory?: string) => {
     setNewProductCategory(category);

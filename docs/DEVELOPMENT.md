@@ -125,3 +125,5 @@ Dependências fixadas no `bun.lock`: PDF.js, ExcelJS, Tesseract e modelo portugu
 ## Validação dos dois modos
 
 `tests/business-document-import.test.ts` cobre identidade, imutabilidade, limites, moedas/empresas/saldo, quota e recuperação. `tests/business-document-browser.mjs` usa PDF, CSV, Excel e foto reais com orçamento/duplicados/persistência/telefone; `HOME_BUSINESS_RECEIPT` permite testar um PDF local sem o incorporar no Git. `tests/fixtures/financial-pdf.mjs` partilha fixtures sintéticas. Migração 007: `MYOFFICE_PGLITE_MODULE=... node --test tests/business-document-database-regression.mjs tests/home-tools-database-regression.mjs`.
+
+Regressão da revisão de UI: `PLAYWRIGHT_MODULE=/caminho/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium HOME_TEST_URL=http://127.0.0.1:3000 node --import tsx tests/audit-ui-browser.mjs`. Abrange abertura de produto, reservas e persistência, navegação inferior, Calendário e dashboard móvel com dados fictícios em contextos isolados.

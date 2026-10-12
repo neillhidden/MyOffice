@@ -288,6 +288,7 @@ test('recurring USD bills use immutable exchange snapshots when future rate chan
 });
 test('goals allow no deadline, use saved source, reserve once and preserve converted purchase original', () => {
   let d = emptyHome();
+  d.settings!.reserveGoals = true;
   d.accounts[0].openingBalance = 50000;
   d.accounts.push({
     id: 'reserve',
@@ -318,9 +319,9 @@ test('goals allow no deadline, use saved source, reserve once and preserve conve
   assert.equal(d.entries[0].originalAmount, 25);
   assert.equal(balances(d).reserve, 0);
 });
-test('goal preference defaults on; off contributions only add progress, then on reserves without losing progress', () => {
+test('goal preference defaults off; off contributions only add progress, then on reserves without losing progress', () => {
   let d = emptyHome();
-  assert.equal(validateHomeData(d).settings!.reserveGoals, true);
+  assert.equal(validateHomeData(d).settings!.reserveGoals, false);
   d.accounts[0].openingBalance = 1000;
   d.accounts.push({
     id: 'reserve',
@@ -352,3 +353,13 @@ test('goal preference defaults on; off contributions only add progress, then on 
   assert.equal(balances(d)['home-wallet'], 980);
   assert.equal(balances(d).reserve, 20);
 });
+
+ test('goal preference migration preserves explicit choices and defaults missing choices off', () => {
+ const legacy = emptyHome();
+ legacy.settings = undefined;
+ assert.equal(validateHomeData(legacy).settings!.reserveGoals, false);
+ for (const choice of [true, false]) {
+ const data = emptyHome(); data.settings!.reserveGoals = choice;
+ assert.equal(validateHomeData(data).settings!.reserveGoals, choice);
+ }
+ });

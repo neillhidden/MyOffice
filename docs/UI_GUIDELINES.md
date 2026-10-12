@@ -109,3 +109,11 @@ Menu pessoal conserva home-nav-0..7 e acrescenta home-nav-8..13. Formulários au
 Mostrar campos editáveis e acessíveis de data, descrição, valor, sentido e moeda. Identificar entradas com + e saídas com −; não depender só de cor. Sentido desconhecido bloqueia aplicação. Mensagens identificam o número do movimento inválido. Usar HomeModal para confirmação e manter revisão legível no telefone.
 
 Business → Financeiro acrescenta a aba Extratos e documentos, com barra de abas que adapta para várias linhas no telefone. O leitor expõe referência, sinal e orçamento, com confirmação explícita. Avisos de comprovativo repetido não dependem de cor.
+
+## Revisão de navegação e registos — 12/10/2026
+
+Definições permanece fixa acima do alternador Home/Business nos dois modos, mantendo `home-nav-6` e `nav-item-definições`. O menu diário é rolável independentemente. O nome apresentado Agenda é Calendário; a chave interna Agenda permanece.
+
+Linhas selecionáveis de stock, vendas, transporte, dívidas Business e contactos abrem detalhes com clique, Enter ou Espaço e mostram foco visível. Cliques nas ações internas não abrem simultaneamente os detalhes. Em contactos preserva-se o formulário de consulta/edição existente. Ações acessíveis conservam os IDs; rótulos e disponibilidade não dependem do tema. Barras de rolagem continuam visíveis conforme o navegador, sem espera por hover.
+
+Mudança de página reinicia a rolagem do workspace no topo sem remontar formulários/contextos. O estado dos dados mantém-se separado da posição visual.

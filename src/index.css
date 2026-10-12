@@ -245,3 +245,6 @@ body { margin: 0; overscroll-behavior: none; }
 #app-root-shell { height: 100dvh; max-height: 100dvh; }
 #app-root-shell main, #app-sidebar nav { overscroll-behavior: contain; }
 #app-sidebar { min-height: 0; }
+
+/* Keyboard access to selectable record rows, in both themes. */
+tr[tabindex="0"]:focus-visible { outline: 2px solid #6366f1; outline-offset: -2px; }

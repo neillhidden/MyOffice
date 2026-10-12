@@ -33,7 +33,7 @@ Pedido adicional de 2026-10-08: seletor na parte inferior, calendário baseado n
 
 ## Preferências confirmadas em 2026-10-08
 
-Contas pessoais em AOA/USD e totais separados. Decisão inicial: metas planeadas por padrão; substituída em 09/10/2026 por reserva ativada nas instalações novas, preservando escolhas explícitas. Reserva financeira configurável, aquisição sem desconto duplicado. Business transfere para carteira pessoal separada, sem saldo partilhado; opção de ocultar formulário. Categorias principais de despesa incluem Alimentação/Internet/etc.; rendimentos têm taxonomia própria. ATT significa atenção. Dashboard com gráficos de receitas/despesas e pizza de categorias, orçamento com gastos reais. Definições preservam estilo em linhas/páginas próprias; scroll interno com topo/sidebar fixos. Barra recolhida mostra ícone do destino na alternância Home/Business.
+Contas pessoais em AOA/USD e totais separados. Na revisão autorizada de 12/10/2026, metas planeadas por padrão nas instalações novas; a reserva automática fica desligada e as escolhas explícitas existentes são preservadas. Reserva financeira configurável, aquisição sem desconto duplicado. Business transfere para carteira pessoal separada, sem saldo partilhado; opção de ocultar formulário. Categorias principais de despesa incluem Alimentação/Internet/etc.; rendimentos têm taxonomia própria. ATT significa atenção. Dashboard com gráficos de receitas/despesas e pizza de categorias, orçamento com gastos reais. Definições preservam estilo em linhas/páginas próprias; scroll interno com topo/sidebar fixos. Barra recolhida mostra ícone do destino na alternância Home/Business.
 
 ## Home completo — 09/10/2026
 

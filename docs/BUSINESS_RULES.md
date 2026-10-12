@@ -164,7 +164,7 @@ Itens de compras são planeamento; não alteram saldos ao serem criados ou arqui
 
 ## Finanças Home e transferência empresarial (2026-10-08)
 
-Contas Home AOA/USD; moeda imutável nos lançamentos e totais separados. Transferências, pagamentos e reservas exigem mesma moeda. Nas instalações novas, reserva está ativada desde os blocos 3–6; preferências antigas explícitas são preservadas e a reserva pode ser desligada nas Definições. Aquisição reservada debita a reserva, nunca duas vezes a carteira de origem. Aquisição planeada não movimenta dinheiro. Estorno reabre aquisição e mantém histórico.
+Contas Home AOA/USD; moeda imutável nos lançamentos e totais separados. Transferências, pagamentos e reservas exigem mesma moeda. Nas instalações novas, reserva está desligada conforme a revisão autorizada de 12/10/2026; preferências antigas explícitas são preservadas e a reserva pode ser ativada nas Definições. Aquisição reservada debita a reserva, nunca duas vezes a carteira de origem. Aquisição planeada não movimenta dinheiro. Estorno reabre aquisição e mantém histórico.
 
 Business → Home grava saída/receita vinculadas, com moeda/conta/valor/data compatíveis. Exige conta ativa, empresa associada ativa (conta geral permitida) e saldo suficiente. Estorno das duas pernas apenas no Home; estorno empresarial isolado bloqueado. Recuperação local protege gravação interrompida e importação Home não pode quebrar vínculos existentes. Consulte HOME.md para fluxos e limites.
 

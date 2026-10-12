@@ -15,7 +15,7 @@ export function HomeHeader({ section }: { section: HomeSection }) {
           <span>Home</span>
           <ChevronRight className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate font-medium text-slate-700 dark:text-dm-text">
-            {section}
+            {section === 'Agenda' ? 'Calendário' : section}
           </span>
         </nav>
         <div className="flex items-center gap-3 shrink-0">

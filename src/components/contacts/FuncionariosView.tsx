@@ -1,3 +1,5 @@
+import { detailRowProps } from '../../utils/detailRows';
+import { Eye as DetailsIcon } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import {
   Users,
@@ -307,7 +309,7 @@ export const FuncionariosView: React.FC = () => {
                   const cleanPhone = emp.phone?.replace(/\D/g, '') || '';
 
                   return (
-                    <tr key={emp.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr {...detailRowProps(() => handleOpenEdit(emp))} key={emp.id} className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                       {/* Name with initials avatar */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2.5">
@@ -425,7 +427,7 @@ export const FuncionariosView: React.FC = () => {
                             onClick={() => handleOpenEdit(emp)}
                             className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
                           >
-                            Ver detalhes
+                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
                           </button>
 
                           <button

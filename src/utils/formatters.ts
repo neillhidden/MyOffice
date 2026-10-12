@@ -12,15 +12,12 @@ export function formatKwanza(value: number): string {
   })
     .format(value)
     .replace('AOA', 'Kz')
+    .replace(/[\u00a0\u202f]/g, ' ')
     .trim();
 }
 
 export function formatUSD(value: number): string {
-  if (isNaN(value) || value === null || value === undefined) return '$0.00';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(value);
+  return formatForeignCurrency(value, 'USD');
 }
 
 /**
@@ -31,11 +28,11 @@ export function formatForeignCurrency(value: number, currency: string = 'USD'): 
   if (isNaN(value) || value === null || value === undefined) {
     return `0,00 ${currency}`;
   }
-  const formatted = new Intl.NumberFormat('pt-PT', {
+  const formatted = new Intl.NumberFormat('pt-AO', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
-  return `${formatted} ${currency}`;
+  return `${formatted.replace(/[\u00a0\u202f]/g, ' ')} ${currency}`;
 }
 
 export function formatCurrencyValue(value: number, currency: string = 'Kz'): string {
@@ -47,11 +44,11 @@ export function formatCurrencyValue(value: number, currency: string = 'Kz'): str
     return formatUSD(value);
   }
   if (curr.toUpperCase() === 'EUR' || curr === '€') {
-    return new Intl.NumberFormat('pt-PT', {
+    return new Intl.NumberFormat('pt-AO', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 2,
-    }).format(value);
+    }).format(value).replace(/[\u00a0\u202f]/g, ' ');
   }
   // Default Kwanza (Kz)
   return formatKwanza(value);

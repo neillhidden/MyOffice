@@ -113,6 +113,7 @@ test('editing a paid shopping amount/classification preserves the payment ID and
 });
 test('metas with reserved funds cannot be deleted; deleting their acquisition reopens progress', () => {
   let d = emptyHome();
+  d.settings!.reserveGoals = true;
   d.accounts[0].openingBalance = 100;
   d.accounts.push({
     id: 'r',

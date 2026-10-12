@@ -1,3 +1,4 @@
+import { HomeForecastPanel } from './HomeForecastPanel';
 import { HomeCalendar, HomeTools, HomeOverview } from './HomeTools';
 import { completeHomeTask } from '../../utils/homeExtensions';
 import { homeFormErrors } from '../../utils/homeForms';
@@ -305,7 +306,7 @@ export function HomeView({
         fundingMode: '',
         title: '',
         amount: '',
-        date: '',
+        date: todayLocal(),
         category: '',
         accountId: '',
         destinationId: '',
@@ -314,6 +315,8 @@ export function HomeView({
         day: '',
         deadline: '',
         openingBalance: '',
+        accountNumber: '',
+        iban: '',
         sourceAccountId: '',
         exchangeRate: '',
         startDate: '',
@@ -328,10 +331,14 @@ export function HomeView({
       },
     });
   };
-  const set = (key: string, value: string) =>
-    setForm((f) =>
-      f ? { ...f, values: { ...f.values, [key]: value } } : null,
-    );
+  const set = (key: string, value: string) => {
+    setForm((f) => f ? { ...f, values: { ...f.values, [key]: value } } : null);
+    setFieldErrors((errors) => {
+      const next = { ...errors };
+      delete next[key];
+      return next;
+    });
+  };
   const exportBackup = () => {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(savedData, null, 2)], {
@@ -447,6 +454,8 @@ export function HomeView({
             accounts: replace(current.accounts, {
               id,
               name: text(v.title),
+              accountNumber: v.accountNumber.trim() || undefined,
+              iban: v.iban.trim().toUpperCase() || undefined,
               openingBalance:
                 existing?.openingBalance ??
                 money(Number(v.openingBalance), false),
@@ -732,6 +741,8 @@ export function HomeView({
                 'exchangeRate',
                 'fundingMode',
                 'accountingMode',
+                'accountNumber',
+                'iban',
               ].includes(key)
             }
             aria-invalid={Boolean(fieldErrors[key])}
@@ -792,7 +803,7 @@ export function HomeView({
             }}
             className={input}
           >
-            <option value="">Escolher…</option>
+            <option value="">{key === 'accountId' || key === 'sourceAccountId' ? 'Escolher carteira' : 'Escolher…'}</option>
             {options.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -809,6 +820,8 @@ export function HomeView({
                 'exchangeRate',
                 'fundingMode',
                 'accountingMode',
+                'accountNumber',
+                'iban',
               ].includes(key)
             }
             maxLength={300}
@@ -943,7 +956,7 @@ export function HomeView({
     budget: 'Definir orçamento',
     bill: 'Conta recorrente da casa',
     goal: 'Meta ou sonho',
-    contribution: 'Reservar para a meta',
+    contribution: data.settings?.reserveGoals === false ? 'Registar progresso da meta' : 'Reservar para a meta',
     task: 'Compromisso ou tarefa',
     payment: 'Registar pagamento',
     reversal: 'Estornar lançamento',
@@ -970,7 +983,7 @@ export function HomeView({
             Home · {data.name}
           </p>
           <h1 className="text-xl font-bold tracking-tight">
-            {section === 'Dashboard' ? 'A tua vida, com mais clareza' : section}
+            {section === 'Dashboard' ? 'A tua vida, com mais clareza' : section === 'Agenda' ? 'Calendário' : section}
           </h1>
           <p className={`${muted} mt-1`}>
             {section === 'Dashboard'
@@ -1111,6 +1124,7 @@ export function HomeView({
             ))}
           </div>
           <HomeCharts entries={period} month={month} currency={currency} />
+          <HomeForecastPanel currency={currency} onOpenPlanning={() => onNavigate('Planeamento')} />
           <section className={panel} id="home-dashboard-planning">
             <h2 className="text-sm font-semibold">O mês em perspetiva</h2>
             <div className="grid sm:grid-cols-3 gap-4 mt-4">
@@ -1410,6 +1424,8 @@ export function HomeView({
                                 title: a.name,
                                 currency: accountCurrency(a),
                                 openingBalance: String(a.openingBalance),
+                                accountNumber: a.accountNumber ?? '',
+                                iban: a.iban ?? '',
                               })
                             }
                           >
@@ -2018,7 +2034,9 @@ export function HomeView({
                               data.accounts.find((a) => a.id === g.accountId),
                             ),
                             fundingMode: g.fundingMode ?? 'reserve',
-                            accountId: g.sourceAccountId ?? '',
+                            accountId: financialAccounts
+                              .filter((a) => a.id !== g.accountId && accountCurrency(a) === accountCurrency(data.accounts.find((a) => a.id === g.accountId)) && totals[a.id] > 0)
+                              .sort((a, b) => totals[b.id] - totals[a.id])[0]?.id ?? '',
                           })
                         }
                       >
@@ -2517,6 +2535,10 @@ export function HomeView({
                 'amount',
                 'number',
               )}
+            {form.kind === 'account' && <>
+              {field('Número da conta (opcional, para identificar extratos)', 'accountNumber')}
+              {field('IBAN (opcional)', 'iban')}
+            </>}
             {form.kind === 'account' &&
               field(
                 `Saldo atual inicial (${form.values.currency === 'USD' ? 'USD' : 'Kz'})`,

@@ -112,7 +112,7 @@ export const emptyHome = (): HomeData => ({
   version: 1,
   occurrences: [],
   settings: {
-    reserveGoals: true,
+    reserveGoals: false,
     goalsPreferenceSet: true,
     showBusinessIncome: true,
     accountingMode: 'ask',
@@ -328,9 +328,7 @@ export function validateHomeData(input: unknown): HomeData {
     occurrences: source.occurrences ?? [],
     settings: {
       ...source.settings,
-      reserveGoals: source.settings?.goalsPreferenceSet
-        ? source.settings.reserveGoals
-        : true,
+      reserveGoals: source.settings?.reserveGoals ?? false,
       goalsPreferenceSet: true,
       showBusinessIncome: source.settings?.showBusinessIncome ?? true,
       accountingMode: source.settings?.accountingMode ?? 'ask',
@@ -404,6 +402,11 @@ export function validateHomeData(input: unknown): HomeData {
         throw new Error('Histórico de edição inválido.');
       ids.add(row.id);
     }
+  for (const account of data.accounts) {
+    for (const value of [account.accountNumber, account.iban]) {
+      if (value !== undefined && (typeof value !== 'string' || value.length > 60 || !/^[a-zA-Z0-9 .\/-]+$/.test(value))) throw new Error('Identificador bancário inválido.');
+    }
+  }
   const accounts = new Set(data.accounts.map((a) => a.id));
   for (const a of data.accounts) {
     text(a.name);

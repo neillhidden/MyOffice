@@ -21,6 +21,17 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-12] — OpenAI Codex — Correções prioritárias do relatório MyOffice
+- **Pedido**: Prosseguir com a ordem proposta após analisar o relatório e imagens; corrigir funcionamento antes de ampliar funcionalidades.
+- **Produto**: Ecrã branco reproduzido em Chromium: evento React passado como `initialCategory` pelo botão Adicionar causava JSON circular em `computeSnapshot`. Ligação corrigida sem mudar o cadastro/saldos.
+- **Home**: Data local por padrão, carteira de maior saldo positivo na moeda da reserva, fallback sem saldo, erros de campo limpos quando corrigidos. Reserva desligada em instalações novas/migrações sem preferência; escolhas explícitas mantidas. Testes financeiros que requerem reserva agora ativam-na explicitamente.
+- **UI**: Definições fixa acima de Home/Business; Calendário como nome visível, chaves/IDs preservados. Detalhes por linha/Enter/Espaço em stock, vendas, transporte, dívidas Business e contactos, com ações internas independentes e aparência consistente entre temas. Navegação reinicia rolagem do workspace.
+- **Dashboard**: Previsão de 7/30 dias reutiliza `homeForecast`, com referência do saldo atual, sem novos movimentos. Dívidas sem carteira são explicitamente excluídas da simulação. Formatação monetária com milhares separados em Kz/USD/EUR.
+- **Extratos**: Identificação exata e única por cabeçalhos Conta:/IBAN: nos dois modos; recusa correspondências ausentes/ambíguas antes de confirmar. Home acrescenta identificadores opcionais editáveis e validados nos backups. Sem identificação, mantém revisão manual; comprovativos não usam cabeçalhos para inferir propriedade de contas de terceiros. Dados futuros cabem em bank_accounts.details já existente.
+- **Validação**: 72 unidades; TypeScript/build; oito regressões financeiras Business; scripts Home financeiro, Home completo, blocos 3–6, leitura de ficheiros Home e Business; nova regressão de UI/produtos/reserva/metadados/PDF com contextos fictícios isolados. Aviso conhecido de chunks grandes permanece. Commit solicitado pelo utilizador após validação. Sem push/publicação e sem alterar dependências/lockfile ou conectar SQL.
+- **Limites**: Não implementa partilha de saldos Home/Business, vigilância de pastas do telefone nem verificação criptográfica de assinaturas; mantém as decisões de revisão e transferência separada. O restante redesign de simulador, POS, contactos/dívidas pessoais e biblioteca de documentos não faz parte desta entrega prioritária.
+
+
 ### [2026-10-09] — OpenAI Codex — Comprovativos sem duplicação e orçamentos nos dois modos
 - **Pedidos**: detetar repetição de PDFs/transações, selecionar ou criar orçamento durante revisão, aplicar funções correspondentes também no Business; novas preferências globais de ativar/desativar exigem perguntar primeiro.
 - **Home**: identidade SHA-256/referência opcional no lançamento, reutilização de originais mesmo renomeados, bloqueio no arquivo manual; escolha/criação de limite por categoria/mês/moeda sem débito adicional. Comprovativos bancários em Extratos usam revisão de movimento individual.

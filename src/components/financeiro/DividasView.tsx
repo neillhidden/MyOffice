@@ -1,3 +1,5 @@
+import { detailRowProps } from '../../utils/detailRows';
+import { Eye as DetailsIcon } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import {
   HandCoins,
@@ -432,7 +434,7 @@ export const DividasView: React.FC = () => {
                       : 0;
 
                   return (
-                    <tr key={debt.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr {...detailRowProps(() => { setLedgerTargetDebt(debt); setIsLedgerModalOpen(true); })} key={debt.id} className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                       {/* Contraparte */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className="font-semibold text-slate-900 dark:text-slate-100 block">
@@ -537,7 +539,7 @@ export const DividasView: React.FC = () => {
                             title="Histórico e extrato"
                             aria-label={`Ver histórico de pagamentos de ${debt.counterpartyName}`}
                           >
-                            Ver detalhes
+                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
                           </button>
 
                           {/* Registar Pagamento (só se não quitada) */}

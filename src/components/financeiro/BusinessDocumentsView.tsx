@@ -1,3 +1,5 @@
+import { statementAccountMatch } from '../../utils/statementAccounts';
+import { isBankReceipt } from '../../utils/homeDocumentImport';
 import React, { useRef, useState, useEffect } from 'react';
 import { useStock } from '../../context/StockContext';
 import { HomeModal } from '../home/HomeModal';
@@ -134,6 +136,10 @@ export function BusinessDocumentsView() {
         ).join(''),
       );
       setSource(result.text);
+      if (!isBankReceipt(result.text)) {
+        const match = statementAccountMatch(result.text, banks.filter((b) => b.status === 'ativo' || b.status === 'ativa'));
+        if (match.accountId) setBankId(match.accountId);
+      }
       setSheets(result.sheets || []);
       setSheet(0);
       if (result.drafts) {
@@ -156,6 +162,11 @@ export function BusinessDocumentsView() {
     document?: HomeDocument,
   ) => {
     if (!bank) throw new Error('Escolhe uma conta empresarial.');
+      if (!isBankReceipt(source)) {
+        const identification = statementAccountMatch(source, banks.filter((b) => b.status === 'ativo' || b.status === 'ativa'));
+        if (identification.identified && identification.accountId !== bankId) throw new Error('A conta indicada no extrato não corresponde a uma única conta empresarial selecionada. Confere o número da conta ou IBAN.');
+      }
+
     if (!selected.length) throw new Error('Seleciona pelo menos um movimento.');
     let result = { movements, tools };
     for (const row of selected) {

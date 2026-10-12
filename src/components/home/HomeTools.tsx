@@ -1150,6 +1150,7 @@ export function HomeStatements() {
       <HomeFileImport
         mode="statement"
         accountId={account}
+        onAccount={setAccount}
         onRows={setPreview}
       />
       <label className="block text-xs">

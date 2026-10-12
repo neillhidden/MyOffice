@@ -1,3 +1,5 @@
+import { detailRowProps } from '../../utils/detailRows';
+import { Eye as DetailsIcon } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Truck,
@@ -349,7 +351,7 @@ export const TransporteView: React.FC<TransporteViewProps> = ({
                   const company = companies.find((c) => c.id === warehouse?.companyId);
 
                   return (
-                    <tr key={transport.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr {...detailRowProps(() => { setSelectedTransport(transport); setIsModalOpen(true); })} key={transport.id} className="cursor-pointer hover:bg-slate-50/60 transition-colors">
                       <td className="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
                         #{transport.id}
                         {transport.trackingCode && (
@@ -450,7 +452,7 @@ export const TransporteView: React.FC<TransporteViewProps> = ({
                             className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
                             title="Ver e editar detalhes do transporte"
                           >
-                            Ver detalhes
+                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
                           </button>
 
                           <button
