@@ -1,6 +1,12 @@
 {
-  "currentSha": "9806cd9431d73e71513f960cf0d49f902bf53a71",
+  "currentSha": "3277dfa878ca3fe78557de2938cc6b3bac489de4",
   "entries": [
+    {
+      "sha": "3277dfa878ca3fe78557de2938cc6b3bac489de4",
+      "date": "2026-10-21T14:02:03+01:00",
+      "title": "chore: update documentation and project metadata",
+      "status": "ready"
+    },
     {
       "sha": "9806cd9431d73e71513f960cf0d49f902bf53a71",
       "date": "2026-10-12T17:02:48Z",
