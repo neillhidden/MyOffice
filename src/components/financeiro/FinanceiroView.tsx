@@ -79,7 +79,12 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
             onExternalSearchChange={onExternalSearchChange}
           />
         )}
-        {activeSubmodule === 'Dívidas' && <DividasView />}
+        {activeSubmodule === 'Dívidas' && (
+          <DividasView
+            externalSearchQuery={externalSearchQuery}
+            onExternalSearchChange={onExternalSearchChange}
+          />
+        )}
       </div>
     </div>
   );

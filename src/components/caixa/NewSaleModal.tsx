@@ -71,6 +71,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   const [seller, setSeller] = useState<string>('Administrador');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [customClientName, setCustomClientName] = useState<string>('');
+  const [dueDate, setDueDate] = useState<string>('');
+  const [clientFieldError, setClientFieldError] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
 
   // Transport details
@@ -133,6 +135,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
       setPaymentMethod('dinheiro');
       setSelectedClientId('');
       setCustomClientName('');
+      setDueDate('');
+      setClientFieldError(null);
       setRequiresTransport(false);
       setDeliveryAddress('');
       setTransportCost('0');
@@ -346,28 +350,51 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
       return;
     }
 
-    if (!selectedBankId) {
-      setError(
-        `Nenhuma conta bancária ativa em ${currency} encontrada para a empresa "${currentCompany?.name || ''}". Verifique as contas no módulo Financeiro.`
-      );
-      return;
+    const isCreditSale = paymentMethod === 'a_prazo';
+    const chosenClient = clients.find((c) => c.id === selectedClientId);
+    const finalClientName = chosenClient ? chosenClient.name : customClientName.trim() || undefined;
+
+    setClientFieldError(null);
+    if (isCreditSale) {
+      const trimmedName = (finalClientName || '').trim().toLowerCase();
+      const isGeneric =
+        !finalClientName ||
+        trimmedName === 'consumidor final' ||
+        trimmedName === 'consumidor final (não registado)' ||
+        trimmedName.includes('consumidor final');
+
+      if (!selectedClientId && isGeneric) {
+        setClientFieldError('Vendas a prazo exigem um cliente identificado. Não é permitido Consumidor final.');
+        const clientEl = document.getElementById('sale-client-select') || document.getElementById('sale-custom-client-input');
+        clientEl?.focus();
+        return;
+      }
     }
 
-    const chosenBank = banks.find((b) => b.id === selectedBankId);
-    const chosenBankComp = chosenBank ? getCompanyForBank(chosenBank.id) : undefined;
-    const isChosenBankActive = chosenBank?.status === 'ativo' || chosenBank?.status === 'ativa';
+    if (!isCreditSale) {
+      if (!selectedBankId) {
+        setError(
+          `Nenhuma conta bancária ativa em ${currency} encontrada para a empresa "${currentCompany?.name || ''}". Verifique as contas no módulo Financeiro.`
+        );
+        return;
+      }
 
-    if (!chosenBank || !isChosenBankActive) {
-      setError('A conta bancária selecionada não está ativa.');
-      return;
-    }
-    if (!chosenBankComp || chosenBankComp.id !== currentCompany?.id) {
-      setError('A conta bancária selecionada deve pertencer à mesma empresa da venda.');
-      return;
-    }
-    if ((chosenBank.currency || 'Kz') !== currency) {
-      setError(`A conta bancária selecionada deve estar na mesma moeda da venda (${currency}).`);
-      return;
+      const chosenBank = banks.find((b) => b.id === selectedBankId);
+      const chosenBankComp = chosenBank ? getCompanyForBank(chosenBank.id) : undefined;
+      const isChosenBankActive = chosenBank?.status === 'ativo' || chosenBank?.status === 'ativa';
+
+      if (!chosenBank || !isChosenBankActive) {
+        setError('A conta bancária selecionada não está ativa.');
+        return;
+      }
+      if (!chosenBankComp || chosenBankComp.id !== currentCompany?.id) {
+        setError('A conta bancária selecionada deve pertencer à mesma empresa da venda.');
+        return;
+      }
+      if ((chosenBank.currency || 'Kz') !== currency) {
+        setError(`A conta bancária selecionada deve estar na mesma moeda da venda (${currency}).`);
+        return;
+      }
     }
 
     if (requiresTransport && !deliveryAddress.trim()) {
@@ -376,12 +403,9 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     }
 
     try {
-      const chosenClient = clients.find((c) => c.id === selectedClientId);
-      const finalClientName = chosenClient ? chosenClient.name : customClientName.trim() || undefined;
-
       const result = completeSale({
         warehouseId,
-        bankId: selectedBankId,
+        bankId: isCreditSale ? undefined : selectedBankId,
         seller: seller.trim() || 'Administrador',
         clientId: selectedClientId || undefined,
         clientName: finalClientName,
@@ -397,6 +421,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
         })),
         paymentMethod,
         notes: notes.trim() || undefined,
+        dueDate: isCreditSale && dueDate ? dueDate : undefined,
         requiresTransport,
         transportDetails: requiresTransport
           ? {
@@ -458,19 +483,20 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
         {/* Modal Body: Two Columns on large screens */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 dark:text-rose-300">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Top Bar: Warehouse Selector & Bank Link Information */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
-              <WarehouseIcon className="w-4 h-4 text-slate-500 shrink-0" />
-              <div className="flex-1 sm:w-64">
-                <label htmlFor="sale-warehouse-select" className="block text-[10px] uppercase font-semibold text-slate-500 mb-0.5">
-                  Armazém de Saída
+          {/* Top Bar: Warehouse Selector & Bank Link Information (Bloco 5.3: armazém e empresa em linha secundária sem truncar, rótulo 14px, valor 16px) */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Armazém de Saída */}
+              <div>
+                <label htmlFor="sale-warehouse-select" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5 flex items-center gap-1.5">
+                  <WarehouseIcon className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>Armazém de Saída</span>
                 </label>
                 <select
                   id="sale-warehouse-select"
@@ -479,26 +505,36 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     setWarehouseId(e.target.value);
                     setCart([]); // Clear cart to re-validate stock for new warehouse
                   }}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base font-semibold text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer"
                 >
                   {operationalWarehouses.map((w) => {
                     const comp = companies.find((c) => c.id === w.companyId);
                     const isParada = comp?.status === 'parada';
                     return (
                       <option key={w.id} value={w.id} disabled={isParada}>
-                        {w.name} ({comp?.name || 'Empresa'}){isParada ? ' — [PARADA - Vendas Bloqueadas]' : ''}
+                        {w.name} — {comp?.name || 'Empresa'}{isParada ? ' [PARADA]' : ''}
                       </option>
                     );
                   })}
                 </select>
+                {/* Linha secundária do armazém: nome da empresa e estado sem truncar */}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-dm-muted">
+                  <span className="font-semibold text-slate-800 dark:text-dm-text">{currentWarehouse?.name}</span>
+                  <span>·</span>
+                  <span className="text-slate-600 dark:text-dm-muted">{currentCompany?.name}</span>
+                  {currentCompany?.status === 'parada' && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                      Parada (Bloqueada)
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
-              <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
-              <div className="flex-1 sm:w-72">
-                <label htmlFor="sale-bank-select" className="block text-[10px] uppercase font-semibold text-slate-500 mb-0.5">
-                  Conta / Banco de Liquidação ({currentCompany?.name})
+              {/* Conta / Banco de Liquidação */}
+              <div>
+                <label htmlFor="sale-bank-select" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5 flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>Conta / Banco de Liquidação</span>
                 </label>
                 <select
                   id="sale-bank-select"
@@ -508,7 +544,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     setError(null);
                   }}
                   disabled={currentCompany?.status === 'parada' || companyValidBanks.length === 0}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base font-semibold text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer disabled:opacity-60"
                 >
                   {companyValidBanks.length === 0 ? (
                     <option value="">Sem conta ativa em {currency} nesta empresa</option>
@@ -521,40 +557,43 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     ))
                   )}
                 </select>
+                <div className="mt-1.5 text-xs text-slate-500 dark:text-dm-muted">
+                  {selectedBank ? `Entrada direta na conta ${selectedBank.name} (${selectedBank.currency})` : 'Selecione a conta bancária'}
+                </div>
               </div>
             </div>
+
+            {currentCompany?.status === 'parada' && (
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Empresa Parada (Operações Bloqueadas)</p>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5 leading-relaxed">
+                    A empresa &ldquo;{currentCompany.name}&rdquo; encontra-se temporariamente Parada. O histórico e os dados de estoque estão preservados para consulta, porém a emissão de vendas, faturamento e saída de mercadorias estão bloqueados.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {currentCompany?.status === 'parada' && (
-            <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-3 text-xs text-amber-900">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Empresa Parada (Operações Bloqueadas)</p>
-                <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  A empresa &ldquo;{currentCompany.name}&rdquo; encontra-se temporariamente Parada. O histórico e os dados de estoque estão preservados para consulta, porém a emissão de vendas, faturamento e saída de mercadorias estão bloqueados.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Section: Add Products to Cart */}
-          <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5 text-slate-500" />
-              <span>1. Selecionar Artigos para Venda</span>
+          {/* Section: Add Products to Cart (Divisória e 24px de espaço - Bloco 5.3) */}
+          <div className="pt-6 border-t border-slate-200/80 dark:border-dm-border space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-dm-text flex items-center gap-2">
+              <Package className="w-4 h-4 text-slate-600 dark:text-dm-muted" />
+              <span>1. Artigos para Venda</span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
               {/* Product Select */}
               <div className="sm:col-span-5">
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                <label htmlFor="sale-product-select" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
                   Artigo / Produto
                 </label>
                 <select
                   id="sale-product-select"
                   value={selectedProductId}
                   onChange={(e) => handleProductSelect(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer"
                 >
                   <option value="">Selecione um artigo do estoque...</option>
                   {operationalProducts.map((prod) => (
@@ -568,14 +607,14 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               {/* Variation Select if applicable */}
               {selectedProduct && selectedProduct.variations && selectedProduct.variations.length > 0 && (
                 <div className="sm:col-span-3">
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                  <label htmlFor="sale-variation-select" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
                     Variação
                   </label>
                   <select
                     id="sale-variation-select"
                     value={selectedVariationId}
                     onChange={(e) => handleVariationSelect(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
+                    className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer"
                   >
                     {selectedProduct.variations.map((v) => {
                       const desc = [v.color, v.size].filter(Boolean).join(' / ') || v.sku;
@@ -591,7 +630,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
               {/* Quantity */}
               <div className={selectedProduct?.variations && selectedProduct.variations.length > 0 ? 'sm:col-span-2' : 'sm:col-span-3'}>
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                <label htmlFor="sale-item-qty-input" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
                   Qtd
                 </label>
                 <input
@@ -601,13 +640,13 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   max={availableStock > 0 ? availableStock : 1}
                   value={itemQuantity}
                   onChange={(e) => setItemQuantity(parseInt(e.target.value, 10) || 1)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                 />
               </div>
 
               {/* Unit Price */}
               <div className={selectedProduct?.variations && selectedProduct.variations.length > 0 ? 'sm:col-span-2' : 'sm:col-span-4'}>
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                <label htmlFor="sale-item-price-input" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
                   Preço Unit. ({currency})
                 </label>
                 <div className="flex gap-2">
@@ -618,16 +657,16 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={itemUnitPrice}
                     onChange={(e) => setItemUnitPrice(e.target.value)}
                     placeholder="0.00"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                    className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   />
                   <button
                     type="button"
                     id="btn-add-item-to-cart"
                     onClick={handleAddToCart}
                     disabled={!selectedProductId || availableStock <= 0}
-                    className="dm-btn-primary px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-dm-text dark:text-dm-page disabled:bg-slate-200 dark:disabled:bg-dm-elevated text-white disabled:text-slate-400 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors shrink-0 shadow-xs cursor-pointer"
+                    className="dm-btn-primary min-h-[44px] h-11 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-dm-text dark:text-dm-page disabled:bg-slate-200 dark:disabled:bg-dm-elevated text-white disabled:text-slate-400 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 shadow-xs cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4" />
                     <span>Adicionar</span>
                   </button>
                 </div>
@@ -636,15 +675,15 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
             {/* Stock Availability indicator badge */}
             {selectedProduct && (
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
-                <span className="text-slate-500">
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-slate-500 dark:text-dm-muted">
                   Estoque em tempo real ({currentWarehouse?.name}):
                 </span>
                 <span
-                  className={`font-semibold px-2 py-0.5 rounded-md ${
+                  className={`font-semibold px-2.5 py-1 rounded-md text-xs ${
                     availableStock > 0
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900'
                   }`}
                 >
                   {availableStock > 0
@@ -653,77 +692,78 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 </span>
               </div>
             )}
-          </div>
 
-          {/* Section: Cart Items Table */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-            <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
-                Carrinho de Venda ({cart.length} {cart.length === 1 ? 'artigo' : 'artigos'})
-              </span>
-              <span className="text-xs font-bold text-slate-900">
-                Subtotal: {formatCurrencyValue(subtotalProducts, currency)}
-              </span>
-            </div>
-
-            {cart.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
-                Nenhum produto adicionado ao carrinho ainda. Selecione um artigo acima e clique em "Adicionar".
+            {/* Cart Items Table */}
+            <div className="border border-slate-200 dark:border-dm-border rounded-xl overflow-hidden bg-white dark:bg-dm-surface">
+              <div className="px-4 py-3 bg-slate-50 dark:bg-dm-elevated border-b border-slate-200 dark:border-dm-border flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800 dark:text-dm-text uppercase tracking-wider">
+                  Carrinho de Venda ({cart.length} {cart.length === 1 ? 'artigo' : 'artigos'})
+                </span>
+                <span className="text-sm font-bold font-mono text-slate-900 dark:text-dm-text">
+                  Subtotal: {formatCurrencyValue(subtotalProducts, currency)}
+                </span>
               </div>
-            ) : (
-              <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
-                {cart.map((item, index) => (
-                  <div key={index} className="p-3 flex items-center justify-between text-xs hover:bg-slate-50/60">
-                    <div className="flex-1 pr-3">
-                      <div className="font-semibold text-slate-900">{item.productName}</div>
-                      <div className="text-[11px] text-slate-500 flex items-center gap-3">
-                        {item.variationDetails && (
-                          <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
-                            {item.variationDetails}
+
+              {cart.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400 dark:text-dm-muted">
+                  Nenhum produto adicionado ao carrinho ainda. Selecione um artigo acima e clique em &ldquo;Adicionar&rdquo;.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-dm-border max-h-48 overflow-y-auto">
+                  {cart.map((item, index) => (
+                    <div key={index} className="p-3.5 flex items-center justify-between text-xs hover:bg-slate-50/60 dark:hover:bg-dm-elevated/40">
+                      <div className="flex-1 pr-3">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-dm-text">{item.productName}</div>
+                        <div className="text-xs text-slate-500 dark:text-dm-muted flex items-center gap-3 mt-0.5">
+                          {item.variationDetails && (
+                            <span className="bg-slate-100 dark:bg-dm-elevated px-1.5 py-0.5 rounded text-slate-700 dark:text-dm-text">
+                              {item.variationDetails}
+                            </span>
+                          )}
+                          <span>
+                            {item.quantity} x {formatCurrencyValue(item.unitPrice, currency)}
                           </span>
-                        )}
-                        <span>
-                          {item.quantity} x {formatCurrencyValue(item.unitPrice, currency)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold font-mono text-slate-900 dark:text-dm-text whitespace-nowrap">
+                          {formatCurrencyValue(item.subtotal, currency)}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFromCart(index)}
+                          className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+                          title="Remover do carrinho"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-slate-900 whitespace-nowrap">
-                        {formatCurrencyValue(item.subtotal, currency)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFromCart(index)}
-                        className="text-slate-400 hover:text-rose-600 p-1 rounded-md transition-colors"
-                        title="Remover do carrinho"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Section: Payment & Seller */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-slate-500" />
+          {/* Section: Payment & Seller (Divisória e 24px de espaço - Bloco 5.3) */}
+          <div className="pt-6 border-t border-slate-200/80 dark:border-dm-border grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Forma de Pagamento */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-dm-text flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-slate-600 dark:text-dm-muted" />
                 <span>2. Forma de Pagamento</span>
               </h3>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   id="btn-payment-dinheiro"
                   onClick={() => setPaymentMethod('dinheiro')}
-                  className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all ${
+                  className={`p-3 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
                     paymentMethod === 'dinheiro'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600 font-semibold'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-600 font-semibold'
+                      : 'border-slate-200 dark:border-dm-border bg-slate-50 dark:bg-dm-elevated text-slate-700 dark:text-dm-text hover:bg-slate-100'
                   }`}
                 >
                   Numerário / Dinheiro
@@ -733,10 +773,10 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   type="button"
                   id="btn-payment-tpa"
                   onClick={() => setPaymentMethod('tpa')}
-                  className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all ${
+                  className={`p-3 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
                     paymentMethod === 'tpa'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600 font-semibold'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-600 font-semibold'
+                      : 'border-slate-200 dark:border-dm-border bg-slate-50 dark:bg-dm-elevated text-slate-700 dark:text-dm-text hover:bg-slate-100'
                   }`}
                 >
                   Multicaixa
@@ -746,10 +786,10 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   type="button"
                   id="btn-payment-transferencia"
                   onClick={() => setPaymentMethod('transferencia')}
-                  className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all ${
+                  className={`p-3 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
                     paymentMethod === 'transferencia'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600 font-semibold'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-600 font-semibold'
+                      : 'border-slate-200 dark:border-dm-border bg-slate-50 dark:bg-dm-elevated text-slate-700 dark:text-dm-text hover:bg-slate-100'
                   }`}
                 >
                   Transferência Bancária
@@ -759,18 +799,30 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   type="button"
                   id="btn-payment-prazo"
                   onClick={() => setPaymentMethod('a_prazo')}
-                  className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all ${
+                  className={`p-3 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
                     paymentMethod === 'a_prazo'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600 font-semibold'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-600 font-semibold'
+                      : 'border-slate-200 dark:border-dm-border bg-slate-50 dark:bg-dm-elevated text-slate-700 dark:text-dm-text hover:bg-slate-100'
                   }`}
                 >
-                  A Prazo / Conta Corrente
+                  A Prazo / C. Corrente
                 </button>
               </div>
 
+              {paymentMethod === 'a_prazo' && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                  <div>
+                    <span className="font-semibold block">Venda a Prazo / Conta Corrente</span>
+                    <span className="text-[11px] text-amber-800 dark:text-amber-300">
+                      Não gera entrada bancária imediata. Uma dívida a receber será registada no Financeiro em nome do cliente identificado.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div>
-                <label htmlFor="sale-notes-input" className="block text-[11px] font-medium text-slate-600 mb-1">
+                <label htmlFor="sale-notes-input" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
                   Observações da Venda <span className="text-slate-400 font-normal">(Opcional)</span>
                 </label>
                 <input
@@ -779,30 +831,36 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ex.: Cliente solicitou embalagem especial para presente"
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                 />
               </div>
             </div>
 
-            {/* Seller / Empregado & Transport Toggle */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-slate-500" />
+            {/* Cliente, Operador & Transporte */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-dm-text flex items-center gap-2">
+                <User className="w-4 h-4 text-slate-600 dark:text-dm-muted" />
                 <span>3. Cliente, Operador & Transporte</span>
               </h3>
 
               {/* Cliente Selector */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="sale-client-select" className="text-[11px] font-medium text-slate-600">
-                    Cliente
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="sale-client-select" className="text-sm font-medium text-slate-700 dark:text-dm-muted flex items-center gap-1.5">
+                    <span>Cliente</span>
+                    {paymentMethod === 'a_prazo' && (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        Obrigatório a prazo
+                      </span>
+                    )}
                   </label>
-                  <span className="text-[10px] text-slate-400">Módulo Contactos</span>
+                  <span className="text-xs text-slate-400 dark:text-dm-muted">Módulo Contactos</span>
                 </div>
                 <select
                   id="sale-client-select"
                   value={selectedClientId}
                   onChange={(e) => {
+                    setClientFieldError(null);
                     const cId = e.target.value;
                     setSelectedClientId(cId);
                     if (cId) {
@@ -817,7 +875,9 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       setCustomClientName('');
                     }
                   }}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 mb-1.5"
+                  className={`w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border ${
+                    clientFieldError ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-dm-border'
+                  } rounded-xl text-base text-slate-900 dark:text-dm-text font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 mb-2 cursor-pointer`}
                 >
                   <option value="">Consumidor Final (Não registado)</option>
                   {clients
@@ -834,15 +894,46 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     id="sale-custom-client-input"
                     type="text"
                     value={customClientName}
-                    onChange={(e) => setCustomClientName(e.target.value)}
-                    placeholder="Nome avulso do cliente (opcional)"
-                    className="w-full px-3 py-1 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                    onChange={(e) => {
+                      setClientFieldError(null);
+                      setCustomClientName(e.target.value);
+                    }}
+                    placeholder={
+                      paymentMethod === 'a_prazo'
+                        ? 'Nome do cliente obrigatório a prazo'
+                        : 'Nome avulso do cliente (opcional)'
+                    }
+                    className={`w-full px-3.5 py-2 bg-white dark:bg-dm-elevated border ${
+                      clientFieldError ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-dm-border'
+                    } rounded-xl text-base text-slate-700 dark:text-dm-text placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10`}
                   />
+                )}
+
+                {clientFieldError && (
+                  <p id="sale-client-error-msg" className="text-xs text-rose-600 dark:text-rose-400 mt-1.5 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{clientFieldError}</span>
+                  </p>
+                )}
+
+                {paymentMethod === 'a_prazo' && (
+                  <div className="mt-3">
+                    <label htmlFor="sale-due-date-input" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
+                      Data de Vencimento <span className="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      id="sale-due-date-input"
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer"
+                    />
+                  </div>
                 )}
               </div>
 
               <div>
-                <label htmlFor="sale-seller-input" className="block text-[11px] font-medium text-slate-600 mb-1">
+                <label htmlFor="sale-seller-input" className="block text-sm font-medium text-slate-700 dark:text-dm-muted mb-1.5">
                   Vendedor Responsável
                 </label>
                 <input
@@ -851,15 +942,12 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   value={seller}
                   onChange={(e) => setSeller(e.target.value)}
                   placeholder="Administrador"
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-slate-200 dark:border-dm-border rounded-xl text-base text-slate-900 dark:text-dm-text font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Integrado com o módulo Contactos / Funcionários.
-                </p>
               </div>
 
               {/* Checkbox Transport Toggle */}
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-slate-100 dark:border-dm-border">
                 <label className="flex items-center gap-2.5 cursor-pointer select-none">
                   <input
                     id="checkbox-requires-transport"
@@ -869,16 +957,16 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     aria-label="Requer transporte ou entrega ao domicílio"
                     className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 border-slate-300"
                   />
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-dm-text">
                     <Truck className="w-4 h-4 text-sky-600" />
                     <span>Requer Transporte / Entrega ao Domicílio?</span>
                   </div>
                 </label>
 
                 {requiresTransport && (
-                  <div className="mt-3 p-3 bg-sky-50/60 rounded-xl border border-sky-100 space-y-2.5 animate-in fade-in">
+                  <div className="mt-3 p-3.5 bg-sky-50/60 dark:bg-sky-950/30 rounded-xl border border-sky-100 dark:border-sky-900 space-y-3 animate-in fade-in">
                     <div>
-                      <label className="block text-[11px] font-semibold text-sky-900 mb-1">
+                      <label htmlFor="transport-address-input" className="block text-sm font-semibold text-sky-900 dark:text-sky-200 mb-1">
                         Endereço de Entrega <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -888,13 +976,13 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
                         placeholder="Ex.: Rua Major Kanhangulo, Edifício Bengo nº 12, Luanda"
-                        className="w-full px-2.5 py-1.5 bg-white border border-sky-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-dm-elevated border border-sky-200 dark:border-sky-800 rounded-xl text-base text-slate-900 dark:text-dm-text placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-600"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-semibold text-sky-900 mb-1">
+                        <label htmlFor="transport-cost-input" className="block text-xs font-semibold text-sky-900 dark:text-sky-200 mb-1">
                           Taxa de Transporte ({currency})
                         </label>
                         <input
@@ -903,12 +991,12 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                           min="0"
                           value={transportCost}
                           onChange={(e) => setTransportCost(e.target.value)}
-                          className="w-full px-2.5 py-1.5 bg-white border border-sky-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                          className="w-full px-3 py-2 bg-white dark:bg-dm-elevated border border-sky-200 dark:border-sky-800 rounded-xl text-base font-semibold font-mono text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-sky-600"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-semibold text-sky-900 mb-1">
+                        <label htmlFor="transport-date-input" className="block text-xs font-semibold text-sky-900 dark:text-sky-200 mb-1">
                           Previsão de Entrega
                         </label>
                         <input
@@ -916,7 +1004,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                           type="date"
                           value={estimatedDeliveryDate}
                           onChange={(e) => setEstimatedDeliveryDate(e.target.value)}
-                          className="w-full px-2.5 py-1.5 bg-white border border-sky-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-600"
+                          className="w-full px-3 py-2 bg-white dark:bg-dm-elevated border border-sky-200 dark:border-sky-800 rounded-xl text-base text-slate-900 dark:text-dm-text focus:outline-none focus:ring-2 focus:ring-sky-600"
                         />
                       </div>
                     </div>

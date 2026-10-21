@@ -205,12 +205,12 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
               </p>
             </div>
 
-            {/* Botão "Adicionar" (sem ícone "+", só o texto) */}
+            {/* Botão "Adicionar" único (Bloco 4: cabeçalho único, 44-48px de altura) */}
             <button
               type="button"
               id="btn-add-company"
               onClick={handleOpenNewCompany}
-              className="dm-btn-primary inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0"
+              className="dm-btn-primary min-h-[44px] h-11 px-5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0 inline-flex items-center justify-center cursor-pointer"
             >
               <span>Adicionar</span>
             </button>
@@ -237,23 +237,13 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                 id="select-company-status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as 'all' | 'ativa' | 'desativada' | 'parada')}
-                className="px-2.5 py-1.5 bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-transparent rounded-lg text-xs text-slate-700 dark:text-dm-text font-medium focus:outline-none"
+                className="px-2.5 py-1.5 bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-transparent rounded-lg text-xs text-slate-700 dark:text-dm-text font-medium focus:outline-none cursor-pointer"
               >
                 <option value="all">Todos os Status ({companies.length})</option>
                 <option value="ativa">Ativas ({companies.filter((c) => c.status === 'ativa').length})</option>
                 <option value="desativada">Desativadas ({companies.filter((c) => c.status === 'desativada').length})</option>
                 <option value="parada">Paradas ({companies.filter((c) => c.status === 'parada').length})</option>
               </select>
-            </div>
-
-            <div className="pl-2 pr-1 py-1">
-              <button
-                type="button"
-                onClick={handleOpenNewCompany}
-                className="dm-btn-primary inline-flex items-center justify-center px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Adicionar
-              </button>
             </div>
           </div>
 
@@ -290,7 +280,7 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                         >
                           {/* Nome da Empresa & Logótipo */}
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
+                            <div style={{ width: '300px', height: '40px' }} className="flex items-center gap-3 w-[300px] h-[40px] min-w-0">
                               {comp.logo ? (
                                 <img
                                   src={comp.logo}
@@ -303,11 +293,14 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                                   {comp.name.substring(0, 2).toUpperCase()}
                                 </div>
                               )}
-                              <div>
-                                <span className="font-semibold text-slate-900 block line-clamp-1">
+                              <div className="min-w-0 flex-1">
+                                <span
+                                  className="font-semibold text-slate-900 block truncate"
+                                  title={comp.name}
+                                >
                                   {comp.name}
                                 </span>
-                                <span className="text-[10px] text-slate-400 block">
+                                <span className="text-[10px] text-slate-400 block truncate">
                                   Cadastrada em {new Date(comp.createdAt).toLocaleDateString('pt-PT')}
                                 </span>
                                 {comp.principalBankId && (() => {
@@ -447,9 +440,9 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
               type="button"
               id="btn-add-warehouse"
               onClick={handleOpenNewWarehouse}
-              className="dm-btn-primary inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0"
+              className="dm-btn-primary min-h-[44px] h-11 px-5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-semibold transition-all shadow-xs active:scale-[0.98] self-start sm:self-auto shrink-0 inline-flex items-center justify-center cursor-pointer"
             >
-              <span>Adicionar Armazém</span>
+              <span>Adicionar</span>
             </button>
           </div>
 
@@ -481,11 +474,13 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 max-w-[200px]">
                           {comp ? (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                              <span className="font-medium text-slate-800">{comp.name}</span>
+                              <span className="font-medium text-slate-800 truncate" title={comp.name}>
+                                {comp.name}
+                              </span>
                             </div>
                           ) : (
                             <span className="text-rose-500 text-[11px] font-medium">
@@ -592,32 +587,32 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
 
           {/* Duas Opções de Reset em Cards Claros e Separados */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Opção A — Zerar histórico */}
+            {/* Opção A — Zerar histórico (Bloco 3.3) */}
             <div
               id="card-reset-history"
-              className="bg-white border-2 border-amber-200/80 hover:border-amber-300 rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-all"
+              className="bg-white dark:bg-slate-900 border-2 border-amber-300 dark:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-all"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-[#FCD34D] flex items-center justify-center font-bold">
                     <RotateCcw className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-amber-100 text-amber-800 rounded-md">
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-[#FCD34D] border border-amber-200 dark:border-amber-800/60 rounded-md">
                     Opção A
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Zerar histórico</h3>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Zerar histórico</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                     Apaga todo o histórico transacional do sistema, mantendo o catálogo de produtos e entidades intactos.
                   </p>
                 </div>
 
                 <div className="space-y-2 pt-2 text-[11px]">
-                  <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100/80 text-amber-900 space-y-1">
+                  <div className="p-2.5 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-[#FCD34D] space-y-1">
                     <strong className="block font-semibold">O que é apagado:</strong>
-                    <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+                    <ul className="list-disc pl-4 space-y-0.5 text-amber-800 dark:text-amber-200">
                       <li>Movimentações de Estoque</li>
                       <li>Movimentações Bancárias (extratos)</li>
                       <li>Vendas e Transportes (Caixa)</li>
@@ -625,9 +620,9 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                     </ul>
                   </div>
 
-                  <div className="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100/80 text-emerald-900 space-y-1">
+                  <div className="p-2.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-[#6EE7B7] space-y-1">
                     <strong className="block font-semibold">O que permanece:</strong>
-                    <ul className="list-disc pl-4 space-y-0.5 text-emerald-800">
+                    <ul className="list-disc pl-4 space-y-0.5 text-emerald-800 dark:text-emerald-200">
                       <li>Produtos e Variações (estoque zero)</li>
                       <li>Empresas, Armazéns e Bancos (saldo zero)</li>
                       <li>Funcionários, Clientes, Fornecedores</li>
@@ -636,7 +631,7 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                 </div>
               </div>
 
-              <div className="pt-5 mt-4 border-t border-slate-100">
+              <div className="pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   id="btn-open-reset-history"
@@ -646,40 +641,56 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                     setResetActionType('history');
                     setIsResetModalOpen(true);
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100/90 text-amber-800 border border-amber-300 font-semibold text-xs rounded-xl transition-all shadow-xs active:scale-[0.98]"
+                  className={`w-full min-h-[44px] h-11 px-4 text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 ${
+                    !canResetData
+                      ? 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 opacity-75 cursor-not-allowed justify-between'
+                      : 'bg-amber-50 hover:bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-[#FCD34D] dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-700 cursor-pointer active:scale-[0.98]'
+                  }`}
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Zerar Histórico</span>
+                  <span className="inline-flex items-center gap-2">
+                    <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                    <span>Zerar Histórico</span>
+                  </span>
+                  {!canResetData && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                      Indisponível
+                    </span>
+                  )}
                 </button>
+                {!canResetData && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center">
+                    Histórico protegido contra eliminação nesta conta.
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Opção B — Zerar tudo */}
             <div
               id="card-reset-all"
-              className="bg-white border-2 border-rose-300 hover:border-rose-400 rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-all"
+              className="bg-white dark:bg-slate-900 border-2 border-rose-300 dark:border-rose-500/40 rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-all"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                  <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-[#FDA4AF] flex items-center justify-center font-bold">
                     <Trash2 className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-rose-100 text-rose-800 rounded-md">
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-[#FDA4AF] border border-rose-200 dark:border-rose-800/60 rounded-md">
                     Opção B • Extrema
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Zerar tudo</h3>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Zerar tudo</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                     Apaga absolutamente tudo, incluindo o catálogo e a configuração — deixa o sistema como se tivesse acabado de ser instalado.
                   </p>
                 </div>
 
                 <div className="space-y-2 pt-2 text-[11px]">
-                  <div className="p-2.5 bg-rose-50/80 rounded-xl border border-rose-200/80 text-rose-950 space-y-1">
+                  <div className="p-2.5 bg-rose-50/70 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-800/40 text-rose-950 dark:text-[#FDA4AF] space-y-1">
                     <strong className="block font-semibold">O que é apagado (TUDO):</strong>
-                    <ul className="list-disc pl-4 space-y-0.5 text-rose-900">
+                    <ul className="list-disc pl-4 space-y-0.5 text-rose-900 dark:text-rose-200">
                       <li>Todo o histórico transacional da Opção A</li>
                       <li>Todos os Produtos e Variações</li>
                       <li>Todas as Empresas, Armazéns e Bancos</li>
@@ -688,7 +699,7 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                     </ul>
                   </div>
 
-                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-slate-600">
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                     <p className="text-[11px] italic">
                       Útil para reiniciar testes durante o desenvolvimento ou redefinir a conta para uma instalação nova.
                     </p>
@@ -696,7 +707,7 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                 </div>
               </div>
 
-              <div className="pt-5 mt-4 border-t border-slate-100">
+              <div className="pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   id="btn-open-reset-all"
@@ -706,7 +717,7 @@ export const SettingsView: React.FC<{onCreateProduct: (category: string, subcate
                     setResetActionType('all');
                     setIsResetModalOpen(true);
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full min-h-[44px] h-11 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Zerar Tudo</span>

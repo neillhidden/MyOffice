@@ -113,7 +113,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleSaveLimits = (warehouseId: string) => {
-    updateStockLimits(product.id, warehouseId, newMinLimit, newMaxLimit, newLocation);
+    const min = Math.max(0, Number(newMinLimit) || 0);
+    const max = Math.max(0, Number(newMaxLimit) || 0);
+    updateStockLimits(product.id, warehouseId, min, max, newLocation);
     setEditingLimitWarehouseId(null);
   };
 
@@ -279,7 +281,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
               Preço de Custo
             </span>
-            <div className="text-base font-semibold text-slate-800 dark:text-slate-200 font-mono mt-0.5">
+            <div className="text-base font-semibold text-slate-800 dark:text-slate-200 tabular-nums mt-0.5">
               {formatKwanza(product.costPrice)}
             </div>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
@@ -291,7 +293,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
               Preço de Venda
             </span>
-            <div className="text-base font-semibold text-slate-800 dark:text-slate-200 font-mono mt-0.5">
+            <div className="text-base font-semibold text-slate-800 dark:text-slate-200 tabular-nums mt-0.5">
               {formatKwanza(product.salePrice)}
             </div>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
@@ -303,7 +305,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
               Margem Bruta
             </span>
-            <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
+            <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
               {profitMarginPercent.toFixed(1)}%
             </div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
@@ -596,8 +598,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           </label>
                           <input
                             type="number"
+                            min="0"
                             value={newMinLimit}
-                            onChange={(e) => setNewMinLimit(Number(e.target.value))}
+                            onChange={(e) => setNewMinLimit(Math.max(0, Number(e.target.value) || 0))}
                             className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded font-mono text-slate-900 dark:text-slate-100"
                           />
                         </div>
@@ -607,8 +610,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           </label>
                           <input
                             type="number"
+                            min="0"
                             value={newMaxLimit}
-                            onChange={(e) => setNewMaxLimit(Number(e.target.value))}
+                            onChange={(e) => setNewMaxLimit(Math.max(0, Number(e.target.value) || 0))}
                             className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded font-mono text-slate-900 dark:text-slate-100"
                           />
                         </div>
@@ -690,7 +694,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <div className="text-right flex flex-col items-end gap-1.5">
                       <div>
                         <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Preço Final:</span>
-                        <span className="font-semibold font-mono text-slate-800 dark:text-slate-200">
+                        <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
                           {formatKwanza(product.salePrice + v.additionalPrice)}
                         </span>
                         {v.additionalPrice > 0 && (

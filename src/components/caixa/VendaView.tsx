@@ -13,14 +13,18 @@ import {
   Printer,
   RotateCcw,
   AlertTriangle,
+  AlertCircle,
   ArrowUpRight,
   Receipt,
   Eye,
   X,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Sale, Transport } from '../../types/stock';
 import { formatCurrencyValue, formatDate, convertToKwanza } from '../../utils/formatters';
+import { formatShortRef, matchRefOrFull } from '../../utils/references';
 import { NewSaleModal } from './NewSaleModal';
 import { SaleReceiptModal } from './SaleReceiptModal';
 import { PositiveBadge } from '../common/PositiveBadge';
@@ -29,14 +33,25 @@ interface VendaViewProps {
   onGoToTransport?: (saleId?: string) => void;
   onGoToStockMovement?: (saleId: string) => void;
   onGoToFinancialEntry?: (saleId: string) => void;
+  onGoToDebt?: (debtIdOrSaleId: string) => void;
 }
 
 export const VendaView: React.FC<VendaViewProps> = ({
   onGoToTransport,
   onGoToStockMovement,
   onGoToFinancialEntry,
+  onGoToDebt,
 }) => {
-  const { sales, warehouses, companies, cancelSale, transports } = useStock();
+  const {
+    sales,
+    warehouses,
+    companies,
+    cancelSale,
+    transports,
+    debts,
+    bankMovements,
+    getDebtCalculations,
+  } = useStock();
 
   // Search & Filter state
   const [search, setSearch] = useState<string>('');
@@ -52,6 +67,55 @@ export const VendaView: React.FC<VendaViewProps> = ({
   const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
   const [cancelReason, setCancelReason] = useState<string>('');
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // 1.7 Detetar se existem vendas a prazo anteriores com lançamento bancário indevido
+  const legacyCreditSalesWithDirectBankCredit = useMemo(() => {
+    return sales.filter((s) => {
+      if (s.paymentMethod !== 'a_prazo') return false;
+      return bankMovements.some(
+        (bm) =>
+          bm.type === 'entrada' &&
+          !bm.debtPaymentId &&
+          (bm.category === 'Venda' || bm.category === 'Receita') &&
+          (bm.saleId === s.id || bm.reference === `Venda #${s.id}`) &&
+          !bm.isRemoved &&
+          !bm.reversalOfId
+      );
+    });
+  }, [sales, bankMovements]);
+
+  // 1.3 Estado da venda a prazo: "A prazo" → "Parcialmente paga" → "Paga"
+  const getSaleDisplayStatus = (
+    sale: Sale
+  ): { label: string; type: 'concluida' | 'cancelada' | 'a_prazo' | 'parcialmente_paga' | 'paga' } => {
+    if (sale.status === 'cancelada') {
+      return { label: 'Estornada', type: 'cancelada' };
+    }
+    if (sale.paymentMethod === 'a_prazo') {
+      const linkedDebt = debts.find(
+        (d) =>
+          (sale.debtId && d.id === sale.debtId) ||
+          d.saleId === sale.id ||
+          d.reference === `Venda #${sale.id}`
+      );
+      if (!linkedDebt) {
+        return { label: 'A prazo', type: 'a_prazo' };
+      }
+      const calcs = getDebtCalculations(linkedDebt);
+      if (calcs.status === 'anulada') {
+        return { label: 'Estornada', type: 'cancelada' };
+      }
+      if (calcs.status === 'quitada' || calcs.remainingAmount <= 0) {
+        return { label: 'Paga', type: 'paga' };
+      }
+      if (calcs.status === 'parcialmente_paga' || calcs.paidAmount > 0) {
+        return { label: 'Parcialmente paga', type: 'parcialmente_paga' };
+      }
+      return { label: 'A prazo', type: 'a_prazo' };
+    }
+    return { label: 'Concluída', type: 'concluida' };
+  };
 
   // Financial Metrics
   const metrics = useMemo(() => {
@@ -108,7 +172,20 @@ export const VendaView: React.FC<VendaViewProps> = ({
         // Desativada: histórico oculto de consultas operacionais
         if (company?.status === 'desativada') return false;
 
-        if (statusFilter !== 'todas' && sale.status !== statusFilter) return false;
+        if (statusFilter !== 'todas') {
+          const statusInfo = getSaleDisplayStatus(sale);
+          if (statusFilter === 'concluida') {
+            if (sale.status !== 'concluida') return false;
+          } else if (statusFilter === 'cancelada') {
+            if (sale.status !== 'cancelada') return false;
+          } else if (statusFilter === 'paga') {
+            if (statusInfo.type !== 'paga' && (sale.status !== 'concluida' || sale.paymentMethod === 'a_prazo')) return false;
+          } else if (statusFilter === 'parcialmente_paga') {
+            if (statusInfo.type !== 'parcialmente_paga') return false;
+          } else if (statusFilter === 'a_prazo') {
+            if (statusInfo.type !== 'a_prazo') return false;
+          }
+        }
         if (paymentFilter !== 'todos') {
           if (paymentFilter === 'tpa' || paymentFilter === 'multicaixa') {
             if (sale.paymentMethod !== 'tpa' && sale.paymentMethod !== 'multicaixa') return false;
@@ -118,7 +195,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
         }
         if (search.trim()) {
           const q = search.toLowerCase();
-          const matchId = sale.id.toLowerCase().includes(q);
+          const matchId = matchRefOrFull(sale.id, q, 'VND');
           const matchSeller = sale.seller.toLowerCase().includes(q);
           const matchClient = sale.clientName?.toLowerCase().includes(q) || false;
           const matchItem = sale.items.some((it) => it.productName.toLowerCase().includes(q));
@@ -127,7 +204,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sales, warehouses, companies, statusFilter, paymentFilter, search]);
+  }, [sales, warehouses, companies, statusFilter, paymentFilter, search, debts, bankMovements, getDebtCalculations]);
 
   const handleOpenReceipt = (sale: Sale) => {
     const tr = transports.find((t) => t.saleId === sale.id) || null;
@@ -190,17 +267,47 @@ export const VendaView: React.FC<VendaViewProps> = ({
           </p>
         </div>
 
-        {/* Highlighted 'Vender' button per user instructions */}
+        {/* Single primary creation action (Bloco 4: 'Nova venda' no cabeçalho, 44-48px, sem '+') */}
         <button
           type="button"
           id="btn-open-pos-sale"
           onClick={() => setIsNewSaleModalOpen(true)}
-          className="dm-btn-primary flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 dark:bg-dm-text dark:hover:bg-white dark:text-dm-page text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-[0.99] cursor-pointer"
+          className="dm-btn-primary min-h-[44px] h-11 inline-flex items-center justify-center gap-2 px-6 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer shrink-0"
         >
           <ShoppingCart className="w-4 h-4" />
-          <span>Vender (Nova Venda)</span>
+          <span>Nova venda</span>
         </button>
       </div>
+
+      {/* 1.7 Aviso de Vendas a Prazo Antigas com Crédito Bancário Indevido */}
+      {legacyCreditSalesWithDirectBankCredit.length > 0 && (
+        <div
+          id="banner-warning-credit-sales-with-bank-credit"
+          className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl text-xs text-amber-900 dark:text-amber-200 shadow-xs"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-sm">
+                Aviso: Vendas a prazo anteriores com crédito bancário indevido ({legacyCreditSalesWithDirectBankCredit.length})
+              </p>
+              <p className="text-[11px] leading-relaxed">
+                Foram detetadas as seguintes vendas a prazo registadas no histórico com crédito direto na conta bancária. Conforme a regra de auditoria, os movimentos originais foram preservados:
+              </p>
+              <ul className="list-disc list-inside space-y-0.5 font-mono text-[11px]">
+                {legacyCreditSalesWithDirectBankCredit.map((s) => (
+                  <li key={s.id}>
+                    Venda #{s.id} — Total: {formatCurrencyValue(s.total, 'Kz')} ({s.clientName || 'Cliente'}) • Data: {formatDate(s.date)}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                Pode utilizar a ação de Estorno para repor o estoque e anular a dívida/crédito, ou mantê-las como arquivo histórico.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -305,7 +412,10 @@ export const VendaView: React.FC<VendaViewProps> = ({
               className="bg-transparent border-0 text-xs text-slate-800 dark:text-dm-text font-semibold focus:outline-none cursor-pointer"
             >
               <option value="todas">Todos os Estados</option>
-              <option value="concluida">Apenas Concluídas</option>
+              <option value="concluida">Todas as Concluídas / Válidas</option>
+              <option value="paga">Pagas</option>
+              <option value="parcialmente_paga">Parcialmente pagas</option>
+              <option value="a_prazo">A prazo (Pendentes)</option>
               <option value="cancelada">Canceladas / Estornadas</option>
             </select>
           </div>
@@ -338,14 +448,6 @@ export const VendaView: React.FC<VendaViewProps> = ({
             />
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsNewSaleModalOpen(true)}
-          className="dm-btn-primary px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0"
-        >
-          Vender
-        </button>
       </div>
 
       {/* Sales Table */}
@@ -354,7 +456,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                <th className="py-2.5 px-4">Ref. Venda</th>
+                <th className="py-2.5 px-3 w-[150px] min-w-[120px] max-w-[160px]">Ref. Venda</th>
                 <th className="py-2.5 px-3">Data</th>
                 <th className="py-2.5 px-3">Cliente</th>
                 <th className="py-2.5 px-3">Armazém / Empresa</th>
@@ -364,7 +466,9 @@ export const VendaView: React.FC<VendaViewProps> = ({
                 <th className="py-2.5 px-3">Transporte</th>
                 <th className="py-2.5 px-4 text-right">Total</th>
                 <th className="py-2.5 px-3 text-center">Estado</th>
-                <th className="py-2.5 px-4 text-right">Ações</th>
+                <th className="py-2.5 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[110px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -382,9 +486,32 @@ export const VendaView: React.FC<VendaViewProps> = ({
                   const itemsCount = sale.items.reduce((acc, it) => acc + it.quantity, 0);
 
                   return (
-                    <tr {...detailRowProps(() => handleOpenReceipt(sale))} key={sale.id} className="cursor-pointer hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
-                        #{sale.id}
+                    <tr {...detailRowProps(() => handleOpenReceipt(sale))} key={sale.id} className="cursor-pointer hover:bg-slate-50/60 transition-colors group">
+                      {/* Ref. Venda: Curta 120-160px com cópia de ID completo (Item 2.4 e 2.7) */}
+                      <td className="py-3 px-3 w-[150px] min-w-[120px] max-w-[160px] whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-mono">
+                          <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                            {formatShortRef(sale.id, 'VND')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(sale.id);
+                              setCopiedId(sale.id);
+                              setTimeout(() => setCopiedId(null), 1500);
+                            }}
+                            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded cursor-pointer"
+                            title={`Copiar identificador completo (#${sale.id})`}
+                            aria-label="Copiar ID completo"
+                          >
+                            {copiedId === sale.id ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
                       </td>
 
                       <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
@@ -449,30 +576,58 @@ export const VendaView: React.FC<VendaViewProps> = ({
                         )}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                      {/* Total sempre visível (Item 2.4 & 8.2) */}
+                      <td className="py-3 px-4 text-right tabular-nums font-semibold text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
                         {formatCurrencyValue(sale.total, company?.currency || 'Kz')}
                       </td>
 
+                      {/* Estado sempre visível (Item 1.3 & 2.4) */}
                       <td className="py-3 px-3 text-center whitespace-nowrap">
-                        {isCompleted ? (
-                          <PositiveBadge label="Concluída" />
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                            <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                            Estornada
-                          </span>
-                        )}
+                        {(() => {
+                          const statusInfo = getSaleDisplayStatus(sale);
+                          if (statusInfo.type === 'cancelada') {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                                <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                                Estornada
+                              </span>
+                            );
+                          }
+                          if (statusInfo.type === 'paga') {
+                            return <PositiveBadge label="Paga" />;
+                          }
+                          if (statusInfo.type === 'parcialmente_paga') {
+                            return (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                Parcialmente paga
+                              </span>
+                            );
+                          }
+                          if (statusInfo.type === 'a_prazo') {
+                            return (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                A prazo
+                              </span>
+                            );
+                          }
+                          return <PositiveBadge label="Concluída" />;
+                        })()}
                       </td>
 
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Ações sempre visíveis à direita com ícones 44x44px (Item 2.4) */}
+                      <td
+                        className="py-2.5 px-4 text-right whitespace-nowrap sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[110px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => handleOpenReceipt(sale)}
-                            className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
                             title="Ver Recibo de Venda"
                           >
-                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
+                            <span className="sr-only">Abrir detalhes</span>
+                            <DetailsIcon aria-hidden="true" className="w-4 h-4" />
                           </button>
 
                           {isCompleted && (
@@ -485,10 +640,10 @@ export const VendaView: React.FC<VendaViewProps> = ({
                                 setCancelError(null);
                               }}
                               disabled={company?.status === 'parada'}
-                              className={`dm-icon-action p-1.5 rounded-lg transition-colors ${
+                              className={`dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg transition-colors ${
                                 company?.status === 'parada'
-                                  ? 'text-slate-300 cursor-not-allowed opacity-50'
-                                  : 'text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated'
+                                  ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-50'
+                                  : 'text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer'
                               }`}
                               title={
                                 company?.status === 'parada'
@@ -496,7 +651,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
                                   : 'Estornar venda (devolve ao estoque e estorna o banco)'
                               }
                             >
-                              <RotateCcw className="w-3.5 h-3.5" />
+                              <RotateCcw className="w-4 h-4" />
                             </button>
                           )}
                         </div>
@@ -617,6 +772,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
         onGoToTransport={onGoToTransport}
         onGoToStockMovement={onGoToStockMovement}
         onGoToFinancialEntry={onGoToFinancialEntry}
+        onGoToDebt={onGoToDebt}
       />
     </div>
   );

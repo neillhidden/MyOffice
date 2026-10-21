@@ -148,7 +148,7 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
                     <div
                       key={event.id}
                       onClick={() => onSelectEvent(event)}
-                      className={`group p-2.5 rounded-lg border text-xs transition-all cursor-pointer ${
+                      className={`group p-2.5 rounded-lg border transition-all cursor-pointer min-h-[44px] flex flex-col justify-between ${
                         isDone
                           ? 'bg-slate-50/80 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800/60 opacity-70'
                           : 'bg-white dark:bg-slate-800/90 border-slate-200/90 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-xs'
@@ -161,9 +161,10 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
                       {/* Top row: Checkbox, Agenda Pill, Time */}
                       <div className="flex items-center justify-between gap-1 mb-1.5">
                         <button
+                          type="button"
                           onClick={(e) => onToggleEventStatus(event.id, e)}
                           title={isDone ? 'Marcar pendente' : 'Marcar concluído'}
-                          className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                          className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                             isDone
                               ? 'bg-emerald-600 border-emerald-600 text-white'
                               : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:border-emerald-600'
@@ -173,7 +174,7 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
                         </button>
 
                         <span
-                          className="text-[10px] px-1.5 py-0.2 rounded-full font-medium truncate max-w-[110px]"
+                          className="text-[11px] px-2 py-0.5 rounded-full font-medium truncate max-w-[120px]"
                           style={{
                             backgroundColor: `${colorHex}15`,
                             color: colorHex,
@@ -183,16 +184,16 @@ export const CalendarWeekGrid: React.FC<CalendarWeekGridProps> = ({
                         </span>
 
                         {event.time && (
-                          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" />
+                          <span className="text-xs font-mono text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
+                            <Clock className="w-3 h-3" />
                             {event.time}
                           </span>
                         )}
                       </div>
 
-                      {/* Event Title */}
+                      {/* Event Title: 14px (text-sm) e até duas linhas */}
                       <h4
-                        className={`font-medium text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug ${
+                        className={`font-medium text-sm text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug break-words ${
                           isDone ? 'line-through text-slate-400 dark:text-slate-500' : ''
                         }`}
                       >

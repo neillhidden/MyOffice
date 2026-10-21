@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { StockProvider } from './context/StockContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WarehouseFilterProvider, useWarehouseFilters } from './context/WarehouseFilterContext';
@@ -12,6 +12,8 @@ import {
 } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { OutOfServiceView } from './components/layout/OutOfServiceView';
+import { ComingSoonView } from './components/common/ComingSoonView';
+import { Bot, Sparkles, LayoutDashboard } from 'lucide-react';
 import { WarehouseStockView } from './components/stock/WarehouseStockView';
 import { MovementsView } from './components/movements/MovementsView';
 import { ImportSimulatorView } from './components/analytics/ImportSimulatorView';
@@ -40,28 +42,101 @@ import { HomeProvider } from './context/HomeContext';
 import { HomeView } from './components/home/HomeView';
 import { HomeHeader } from './components/home/HomeHeader';
 import { OfficeMode, HomeSection } from './types/home';
+import {
+  NavigationState,
+  DEFAULT_NAVIGATION_STATE,
+  stateToHash,
+  hashToState,
+} from './utils/navigationRouter';
 
 function AppContent() {
-  const [mode, setMode] = useState<OfficeMode>(() => {
-    try { return localStorage.getItem('myoffice-mode') === 'home' ? 'home' : 'business'; }
-    catch { return 'business'; }
-  });
-  const [homeSection, setHomeSection] = useState<HomeSection>('Dashboard');
-  const changeMode = (next: OfficeMode) => {
-    setMode(next);
-    try { localStorage.setItem('myoffice-mode', next); } catch { /* Mode still works for this visit. */ }
-    setIsAddProductOpen(false);
-    setSelectedProductId(null);
-    setIsDraftsModalOpen(false);
-    setIsMovementModalOpen(false);
+  const getInitialNavState = (): NavigationState => {
+    let savedMode: OfficeMode = 'business';
+    try {
+      if (localStorage.getItem('myoffice-mode') === 'home') savedMode = 'home';
+    } catch {
+      // ignore
+    }
+    const fallbackState: NavigationState = {
+      ...DEFAULT_NAVIGATION_STATE,
+      mode: savedMode,
+    };
+    if (typeof window !== 'undefined' && window.location.hash) {
+      return hashToState(window.location.hash, fallbackState);
+    }
+    return fallbackState;
   };
-  // Navigation state
-  const [activeModule, setActiveModule] = useState<MainModule>('Estoque');
-  const [activeSubmodule, setActiveSubmodule] = useState<EstoqueSubmodule>('Armazém');
-  const [activeCaixaSubmodule, setActiveCaixaSubmodule] = useState<CaixaSubmodule>('Venda');
-  const [activeContactosSubmodule, setActiveContactosSubmodule] = useState<ContactosSubmodule>('Funcionários');
-  const [activeFinanceiroSubmodule, setActiveFinanceiroSubmodule] = useState<FinanceiroSubmodule>('Contas');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(()=>window.matchMedia('(max-width: 767px)').matches);
+
+  const [navState, setNavState] = useState<NavigationState>(getInitialNavState);
+
+  const mode = navState.mode;
+  const homeSection = navState.homeSection;
+  const activeModule = navState.module;
+  const activeSubmodule = navState.estoqueSub;
+  const activeCaixaSubmodule = navState.caixaSub;
+  const activeContactosSubmodule = navState.contactosSub;
+  const activeFinanceiroSubmodule = navState.financeiroSub;
+
+  const navigateTo = (patch: Partial<NavigationState>) => {
+    setNavState((prev) => {
+      const next: NavigationState = { ...prev, ...patch };
+      if (patch.mode && patch.mode !== prev.mode) {
+        try { localStorage.setItem('myoffice-mode', patch.mode); } catch { /* Mode still works for this visit. */ }
+        setIsAddProductOpen(false);
+        setSelectedProductId(null);
+        setIsDraftsModalOpen(false);
+        setIsMovementModalOpen(false);
+      }
+      const targetHash = stateToHash(next);
+      if (typeof window !== 'undefined' && window.location.hash !== targetHash) {
+        window.history.pushState(null, '', targetHash);
+      }
+      return next;
+    });
+  };
+
+  // Sync canonical hash on initial load if none provided
+  useEffect(() => {
+    const initialTargetHash = stateToHash(navState);
+    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/') {
+      window.history.replaceState(null, '', initialTargetHash);
+    }
+  }, []);
+
+  // Listen to browser Back/Forward (popstate & hashchange)
+  useEffect(() => {
+    const handlePopState = () => {
+      const currentHash = window.location.hash;
+      setNavState((prev) => {
+        const next = hashToState(currentHash, prev);
+        if (next.mode !== prev.mode) {
+          try { localStorage.setItem('myoffice-mode', next.mode); } catch { /* ignore */ }
+        }
+        return next;
+      });
+      setIsAddProductOpen(false);
+      setSelectedProductId(null);
+      setIsDraftsModalOpen(false);
+      setIsMovementModalOpen(false);
+      setIsMobileMenuOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
+
+  const changeMode = (next: OfficeMode) => {
+    navigateTo({ mode: next });
+  };
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+  );
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Search state passed to views (for non-Armazém modules)
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -97,6 +172,7 @@ function AppContent() {
   const navigationKey = mode === 'home' ? `home:${homeSection}` : `business:${activeModule}:${activeSubmodule}:${activeCaixaSubmodule}:${activeContactosSubmodule}:${activeFinanceiroSubmodule}`;
   useLayoutEffect(() => {
     document.querySelector<HTMLElement>('#app-root-shell main')?.scrollTo({ top: 0, left: 0 });
+    setIsMobileMenuOpen(false);
   }, [navigationKey]);
 
   const handleOpenNewProduct = (category?: string, subcategory?: string) => {
@@ -133,31 +209,35 @@ function AppContent() {
 
   const handleNavigateToModule = (module: string, submodule?: string) => {
     if (module === 'Estoque') {
-      setActiveModule('Estoque');
-      if (submodule) {
-        setActiveSubmodule(submodule as EstoqueSubmodule);
-      }
+      navigateTo({
+        mode: 'business',
+        module: 'Estoque',
+        ...(submodule ? { estoqueSub: submodule as EstoqueSubmodule } : {}),
+      });
     } else if (module === 'Caixa') {
-      setActiveModule('Caixa');
-      if (submodule) {
-        setActiveCaixaSubmodule(submodule as CaixaSubmodule);
-      }
+      navigateTo({
+        mode: 'business',
+        module: 'Caixa',
+        ...(submodule ? { caixaSub: submodule as CaixaSubmodule } : {}),
+      });
     } else if (module === 'Calendário') {
-      setActiveModule('Calendário');
+      navigateTo({ mode: 'business', module: 'Calendário' });
     } else if (module === 'Dashboard') {
-      setActiveModule('Dashboard');
+      navigateTo({ mode: 'business', module: 'Dashboard' });
     } else if (module === 'Financeiro' || module === 'Banco') {
-      setActiveModule('Financeiro');
-      if (submodule) {
-        setActiveFinanceiroSubmodule(submodule as FinanceiroSubmodule);
-      }
+      navigateTo({
+        mode: 'business',
+        module: 'Financeiro',
+        ...(submodule ? { financeiroSub: submodule as FinanceiroSubmodule } : {}),
+      });
     } else if (module === 'Definições') {
-      setActiveModule('Definições');
+      navigateTo({ mode: 'business', module: 'Definições' });
     } else if (module === 'Contactos' || module === 'Empregado') {
-      setActiveModule('Contactos');
-      if (submodule) {
-        setActiveContactosSubmodule(submodule as ContactosSubmodule);
-      }
+      navigateTo({
+        mode: 'business',
+        module: 'Contactos',
+        ...(submodule ? { contactosSub: submodule as ContactosSubmodule } : {}),
+      });
     }
     setSearchQuery('');
   };
@@ -172,69 +252,78 @@ function AppContent() {
         mode={mode}
         onModeChange={changeMode}
         homeSection={homeSection}
-        onSelectHomeSection={setHomeSection}
+        onSelectHomeSection={(sec) => navigateTo({ mode: 'home', homeSection: sec })}
         activeModule={activeModule}
         activeSubmodule={activeSubmodule}
         activeCaixaSubmodule={activeCaixaSubmodule}
         activeContactosSubmodule={activeContactosSubmodule}
         activeFinanceiroSubmodule={activeFinanceiroSubmodule}
         onSelectModule={(mod) => {
-          setActiveModule(mod);
+          navigateTo({ mode: 'business', module: mod });
           setSearchQuery('');
         }}
         onSelectSubmodule={(sub) => {
-          setActiveModule('Estoque');
-          setActiveSubmodule(sub);
+          navigateTo({ mode: 'business', module: 'Estoque', estoqueSub: sub });
           setSearchQuery('');
         }}
         onSelectCaixaSubmodule={(sub) => {
-          setActiveModule('Caixa');
-          setActiveCaixaSubmodule(sub);
+          navigateTo({ mode: 'business', module: 'Caixa', caixaSub: sub });
           setSearchQuery('');
         }}
         onSelectContactosSubmodule={(sub) => {
-          setActiveModule('Contactos');
-          setActiveContactosSubmodule(sub);
+          navigateTo({ mode: 'business', module: 'Contactos', contactosSub: sub });
           setSearchQuery('');
         }}
         onSelectFinanceiroSubmodule={(sub) => {
-          setActiveModule('Financeiro');
-          setActiveFinanceiroSubmodule(sub);
+          navigateTo({ mode: 'business', module: 'Financeiro', financeiroSub: sub });
           setSearchQuery('');
         }}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Header Bar */}
-        {mode === 'home' ? <HomeHeader section={homeSection}/> : <Header
-          currentModule={activeModule}
-          currentSubmodule={
-            activeModule === 'Estoque'
-              ? activeSubmodule
-              : activeModule === 'Caixa'
-              ? activeCaixaSubmodule
-              : activeModule === 'Contactos'
-              ? activeContactosSubmodule
-              : activeModule === 'Financeiro' || activeModule === 'Banco'
-              ? activeFinanceiroSubmodule
-              : ''
-          }
-          onOpenAddProduct={handleOpenNewProduct}
-          onOpenDrafts={() => setIsDraftsModalOpen(true)}
-          onSelectProduct={(id) => setSelectedProductId(id)}
-          searchQuery={currentSearchQuery}
-          onSearchChange={handleSearchChange}
-          onNavigateToModule={handleNavigateToModule}
-        />}
+        {mode === 'home' ? (
+          <HomeHeader
+            section={homeSection}
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          />
+        ) : (
+          <Header
+            currentModule={activeModule}
+            currentSubmodule={
+              activeModule === 'Estoque'
+                ? activeSubmodule
+                : activeModule === 'Caixa'
+                ? activeCaixaSubmodule
+                : activeModule === 'Contactos'
+                ? activeContactosSubmodule
+                : activeModule === 'Financeiro' || activeModule === 'Banco'
+                ? activeFinanceiroSubmodule
+                : ''
+            }
+            onOpenAddProduct={handleOpenNewProduct}
+            onOpenDrafts={() => setIsDraftsModalOpen(true)}
+            onSelectProduct={(id) => setSelectedProductId(id)}
+            searchQuery={currentSearchQuery}
+            onSearchChange={handleSearchChange}
+            onNavigateToModule={handleNavigateToModule}
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          />
+        )}
 
         {/* Dynamic Main Workspace */}
         {mode === 'home' ? (
           <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-20">
             <div className="w-full max-w-7xl mx-auto">
-              <HomeView section={homeSection} onNavigate={setHomeSection} />
+              <HomeView
+                section={homeSection}
+                onNavigate={(sec) => navigateTo({ mode: 'home', homeSection: sec })}
+              />
             </div>
           </main>
         ) : activeModule === 'Calendário' ? (
@@ -250,7 +339,7 @@ function AppContent() {
                 <FinanceiroView
                   activeSubmodule={activeFinanceiroSubmodule}
                   onSelectSubmodule={(sub) => {
-                    setActiveFinanceiroSubmodule(sub);
+                    navigateTo({ mode: 'business', module: 'Financeiro', financeiroSub: sub });
                     setSearchQuery('');
                   }}
                   externalSearchQuery={searchQuery}
@@ -262,19 +351,20 @@ function AppContent() {
                 activeCaixaSubmodule === 'Venda' ? (
                   <VendaView
                     onGoToTransport={(saleId) => {
-                      setActiveModule('Caixa');
-                      setActiveCaixaSubmodule('Transporte');
+                      navigateTo({ mode: 'business', module: 'Caixa', caixaSub: 'Transporte' });
                       setSearchQuery(saleId || '');
                     }}
                     onGoToStockMovement={(saleId) => {
-                      setActiveModule('Estoque');
-                      setActiveSubmodule('Movimentação');
+                      navigateTo({ mode: 'business', module: 'Estoque', estoqueSub: 'Movimentação' });
                       setSearchQuery(saleId);
                     }}
                     onGoToFinancialEntry={(saleId) => {
-                      setActiveModule('Financeiro');
-                      setActiveFinanceiroSubmodule('Lançamentos');
+                      navigateTo({ mode: 'business', module: 'Financeiro', financeiroSub: 'Lançamentos' });
                       setSearchQuery(saleId);
+                    }}
+                    onGoToDebt={(debtIdOrSaleId) => {
+                      navigateTo({ mode: 'business', module: 'Financeiro', financeiroSub: 'Dívidas' });
+                      setSearchQuery(debtIdOrSaleId);
                     }}
                   />
                 ) : (
@@ -291,14 +381,45 @@ function AppContent() {
                 ) : activeContactosSubmodule === 'Fornecedores' ? (
                   <FornecedoresView />
                 ) : (
-                  <AfiliadosView />
+                  <AfiliadosView
+                    onBack={() => {
+                      navigateTo({ mode: 'business', module: 'Contactos', contactosSub: 'Funcionários' });
+                    }}
+                  />
                 )
+              ) : activeModule === 'Agentes' ? (
+                <ComingSoonView
+                  id="agentes-view"
+                  moduleName="Agentes"
+                  badge="Em breve"
+                  title="Agentes Inteligentes & Automações"
+                  description="Assistentes virtuais e automações operacionais no MyOffice para suporte na gestão, alertas preditivos de stock e análise de desempenho comercial."
+                  icon={Bot}
+                  onBack={() => navigateTo({ mode: 'business', module: 'Dashboard' })}
+                  backLabel="Voltar para o Dashboard"
+                  highlights={[
+                    {
+                      title: 'Alertas Proativos',
+                      description: 'Notificações preditivas sobre produtos abaixo do stock mínimo e entregas pendentes.',
+                      icon: Sparkles,
+                    },
+                    {
+                      title: 'Apoio à Decisão',
+                      description: 'Sugestões automatizadas de reposição de armazém e rentabilidade comercial.',
+                      icon: Bot,
+                    },
+                    {
+                      title: 'Visão Integrada',
+                      description: 'Sínteses comparativas de vendas e balanço operacional em tempo real.',
+                      icon: LayoutDashboard,
+                    },
+                  ]}
+                />
               ) : activeModule !== 'Estoque' ? (
                 <OutOfServiceView
                   moduleName={activeModule}
                   onGoToEstoque={() => {
-                    setActiveModule('Estoque');
-                    setActiveSubmodule('Armazém');
+                    navigateTo({ mode: 'business', module: 'Estoque', estoqueSub: 'Armazém' });
                   }}
                 />
               ) : (

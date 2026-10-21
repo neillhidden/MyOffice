@@ -46,7 +46,15 @@ import { Client } from '../types/client';
 import { NotificationItem } from '../types/notification';
 import { createId } from '../utils/ids';
 import { createReversal, migrateFinancialAudit } from '../utils/financialAudit';
-import { validateSaleItem } from '../utils/saleValidation';
+import { validateSaleItem, validateCreditSaleClient } from '../utils/saleValidation';
+import { validateProductPrices } from '../utils/productValidation';
+import { normalizePhone } from '../utils/phoneValidation';
+import {
+  getCompanyStatus as getCompanyStatusUtil,
+  isCompanyActive as isCompanyActiveUtil,
+  isCompanyStopped as isCompanyStoppedUtil,
+  isCompanyDeactivated as isCompanyDeactivatedUtil,
+} from '../utils/companyState';
 import { USD_TO_KZ_RATE } from '../utils/formatters';
 import {
   INITIAL_PRODUCTS,
@@ -301,6 +309,7 @@ interface StockContextType {
     }[];
     paymentMethod: SalePaymentMethod;
     notes?: string;
+    dueDate?: string;
     requiresTransport: boolean;
     transportDetails?: {
       deliveryAddress: string;
@@ -366,8 +375,18 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       try {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasKianda = parsed.some((p) => p.id === 'prod-kianda-1');
-          return hasKianda ? parsed : [...parsed, ...KIANDA_PRODUCTS];
+          const cleaned = parsed.map((p) => {
+            if (p.mainImage && p.mainImage.includes('photo-1521572267360-ee0c2909d518')) {
+              return {
+                ...p,
+                mainImage: undefined,
+                gallery: (p.gallery || []).filter((img) => !img.includes('photo-1521572267360-ee0c2909d518')),
+              };
+            }
+            return p;
+          });
+          const hasKianda = cleaned.some((p) => p.id === 'prod-kianda-1');
+          return hasKianda ? cleaned : [...cleaned, ...KIANDA_PRODUCTS];
         }
       } catch {
         // fallback
@@ -451,10 +470,16 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       try {
         const parsed: Movement[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          if (isReset) return parsed;
-          const existingIds = new Set(parsed.map((m) => m.id));
+          const healed = parsed.map((m) => {
+            if (m.id === 'mov-17' && m.reason && m.reason.includes('Garrafas')) {
+              return { ...m, reason: 'Danos estruturais e carcaça amassada por queda de palete no transporte' };
+            }
+            return m;
+          });
+          if (isReset) return healed;
+          const existingIds = new Set(healed.map((m) => m.id));
           const missingSeeds = INITIAL_MOVEMENTS.filter((m) => !existingIds.has(m.id));
-          return missingSeeds.length > 0 ? [...parsed, ...missingSeeds] : parsed;
+          return missingSeeds.length > 0 ? [...healed, ...missingSeeds] : healed;
         }
       } catch {
         // fallback
@@ -465,7 +490,25 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [defectiveRecords, setDefectiveRecords] = useState<DefectiveRecord[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}defective`);
-    return saved ? JSON.parse(saved) : INITIAL_DEFECTIVE_RECORDS;
+    if (saved) {
+      try {
+        const parsed: DefectiveRecord[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((d) => {
+            if (d.id === 'def-1' && d.notes && d.notes.includes('Garrafas')) {
+              return {
+                ...d,
+                notes: 'Fritadeiras com carcaça amassada e resistências danificadas por queda de palete. Termo de descarte lavrado.',
+              };
+            }
+            return d;
+          });
+        }
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_DEFECTIVE_RECORDS;
   });
 
   const [categories, setCategories] = useState<string[]>(() => {
@@ -1047,22 +1090,22 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Status & Operational Helpers para Empresas e Armazéns
   const isCompanyActive = (companyId: string): boolean => {
     const comp = companies.find((c) => c.id === companyId);
-    return comp ? comp.status === 'ativa' : false;
+    return isCompanyActiveUtil(comp);
   };
 
   const isCompanyDisabled = (companyId: string): boolean => {
     const comp = companies.find((c) => c.id === companyId);
-    return comp ? comp.status === 'desativada' : false;
+    return isCompanyDeactivatedUtil(comp);
   };
 
   const isCompanyStopped = (companyId: string): boolean => {
     const comp = companies.find((c) => c.id === companyId);
-    return comp ? comp.status === 'parada' : false;
+    return isCompanyStoppedUtil(comp);
   };
 
   const getCompanyStatus = (companyId: string): CompanyStatus => {
     const comp = companies.find((c) => c.id === companyId);
-    return comp ? comp.status : 'ativa';
+    return getCompanyStatusUtil(comp);
   };
 
   const isWarehouseOperational = (warehouseId: string): boolean => {
@@ -1171,6 +1214,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     stockConfig?: StockConfigInput | StockConfigInput[],
     draftIdToRemove?: string
   ): Product => {
+    validateProductPrices(productData);
     const now = new Date().toISOString();
     const newProductId = createId('prod');
     const newProduct: Product = {
@@ -1226,6 +1270,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     productData: Partial<Product>,
     stockConfig?: StockConfigInput | StockConfigInput[]
   ): Product => {
+    validateProductPrices(productData);
     const now = new Date().toISOString();
     let updatedResult: Product | undefined;
 
@@ -1788,10 +1833,25 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addPurchaseSource = (
     sourceData: Omit<PurchaseSource, 'id' | 'totalPrice'>
   ): PurchaseSource => {
-    const calculatedTotal =
-      Number(sourceData.unitPrice) * Number(sourceData.quantity) +
-      Number(sourceData.shippingCost) +
-      Number(sourceData.otherCosts);
+    const unit = Number(sourceData.unitPrice) || 0;
+    const qty = Number(sourceData.quantity) || 0;
+    const ship = Number(sourceData.shippingCost) || 0;
+    const other = Number(sourceData.otherCosts) || 0;
+
+    if (!Number.isFinite(unit) || unit < 0) {
+      throw new Error('O preço unitário não pode ser negativo.');
+    }
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new Error('A quantidade deve ser superior a zero.');
+    }
+    if (!Number.isFinite(ship) || ship < 0) {
+      throw new Error('O frete não pode ser negativo.');
+    }
+    if (!Number.isFinite(other) || other < 0) {
+      throw new Error('Outros custos não podem ser negativos.');
+    }
+
+    const calculatedTotal = unit * qty + ship + other;
 
     const newSource: PurchaseSource = {
       ...sourceData,
@@ -1806,6 +1866,23 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     sourceId: string,
     updates: Partial<Omit<PurchaseSource, 'id' | 'listId'>>
   ): void => {
+    if (updates.unitPrice !== undefined) {
+      const u = Number(updates.unitPrice);
+      if (!Number.isFinite(u) || u < 0) throw new Error('O preço unitário não pode ser negativo.');
+    }
+    if (updates.quantity !== undefined) {
+      const q = Number(updates.quantity);
+      if (!Number.isFinite(q) || q <= 0) throw new Error('A quantidade deve ser superior a zero.');
+    }
+    if (updates.shippingCost !== undefined) {
+      const s = Number(updates.shippingCost);
+      if (!Number.isFinite(s) || s < 0) throw new Error('O frete não pode ser negativo.');
+    }
+    if (updates.otherCosts !== undefined) {
+      const o = Number(updates.otherCosts);
+      if (!Number.isFinite(o) || o < 0) throw new Error('Outros custos não podem ser negativos.');
+    }
+
     setPurchaseSources((prev) =>
       prev.map((s) => {
         if (s.id !== sourceId) return s;
@@ -2035,8 +2112,12 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (!debt) {
       return { paidAmount: 0, remainingAmount: 0, status: 'pendente', isOverdue: false };
     }
+    if (debt.isCancelled || debt.status === 'anulada') {
+      return { paidAmount: 0, remainingAmount: 0, status: 'anulada', isOverdue: false };
+    }
     const payments = debtPayments.filter((p) => {
       if (p.debtId !== debt.id) return false;
+      if (p.isReversed) return false;
       if (p.movementId) {
         const linkedMov = bankMovements.find((m) => m.id === p.movementId);
         if (linkedMov?.isRemoved || linkedMov?.isReversed) return false;
@@ -2288,6 +2369,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }[];
     paymentMethod: SalePaymentMethod;
     notes?: string;
+    dueDate?: string;
     requiresTransport: boolean;
     transportDetails?: {
       deliveryAddress: string;
@@ -2313,29 +2395,35 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Regra 2: Resolver e validar o Banco da Venda (ativo, mesma empresa, mesma moeda)
     const saleCurrency = targetComp.currency || 'Kz';
+    const isCreditSale = saleData.paymentMethod === 'a_prazo';
+
+    validateCreditSaleClient(saleData.paymentMethod, saleData.clientId, saleData.clientName);
+
     const candidateBankId = saleData.bankId || targetComp.principalBankId;
     const targetBank = candidateBankId ? banks.find((b) => b.id === candidateBankId) : undefined;
 
-    if (!targetBank) {
-      throw new Error('Selecione uma conta bancária válida para liquidar a venda.');
-    }
+    if (!isCreditSale) {
+      if (!targetBank) {
+        throw new Error('Selecione uma conta bancária válida para liquidar a venda.');
+      }
 
-    const isBankActive = targetBank.status === 'ativo' || targetBank.status === 'ativa';
-    if (!isBankActive) {
-      throw new Error(`A conta bancária "${targetBank.name}" está inativa e não pode receber vendas.`);
-    }
+      const isBankActive = targetBank.status === 'ativo' || targetBank.status === 'ativa';
+      if (!isBankActive) {
+        throw new Error(`A conta bancária "${targetBank.name}" está inativa e não pode receber vendas.`);
+      }
 
-    const bankCompany = getCompanyForBank(targetBank.id);
-    if (!bankCompany || bankCompany.id !== targetComp.id) {
-      throw new Error(
-        `A conta bancária "${targetBank.name}" não pertence à empresa "${targetComp.name}". Selecione uma conta ativa da mesma empresa.`
-      );
-    }
+      const bankCompany = getCompanyForBank(targetBank.id);
+      if (!bankCompany || bankCompany.id !== targetComp.id) {
+        throw new Error(
+          `A conta bancária "${targetBank.name}" não pertence à empresa "${targetComp.name}". Selecione uma conta ativa da mesma empresa.`
+        );
+      }
 
-    if ((targetBank.currency || 'Kz') !== saleCurrency) {
-      throw new Error(
-        `A moeda da conta bancária "${targetBank.name}" (${targetBank.currency}) não coincide com a moeda da venda (${saleCurrency}).`
-      );
+      if ((targetBank.currency || 'Kz') !== saleCurrency) {
+        throw new Error(
+          `A moeda da conta bancária "${targetBank.name}" (${targetBank.currency}) não coincide com a moeda da venda (${saleCurrency}).`
+        );
+      }
     }
 
     // Regra 4: Acumular itens repetidos (mesmo produto e variação) numa única linha
@@ -2432,22 +2520,57 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }));
     setMovements((prev) => [...newMovements, ...prev]);
 
-    // 3. Generate bank movement 'entrada' in the chosen & validated bank (including transport cost)
-    const bankMov: BankMovement = {
-      id: createId('bmov-sale'),
-      bankId: targetBank.id,
-      type: 'entrada',
-      category: 'Venda',
-      amount: totalSale,
-      date: now,
-      responsible: seller,
-      reason: `Receita da Venda #${saleId} (${saleItems.length} ${
-        saleItems.length === 1 ? 'item' : 'itens'
-      }${saleData.requiresTransport && transportCost > 0 ? ' + transporte' : ''})`,
-      reference: `Venda #${saleId}`,
-      saleId,
-    };
-    setBankMovements((prev) => [bankMov, ...prev]);
+    // 3. Financeiro:
+    // Se NÃO for venda a prazo, gera entrada bancária imediata no banco validado
+    // Se FOR venda a prazo, NÃO gera entrada bancária imediata; gera uma dívida a receber vinculada em Dívidas
+    let newDebt: Debt | undefined;
+    if (!isCreditSale) {
+      const bankMov: BankMovement = {
+        id: createId('bmov-sale'),
+        bankId: targetBank!.id,
+        type: 'entrada',
+        category: 'Venda',
+        amount: totalSale,
+        date: now,
+        responsible: seller,
+        reason: `Receita da Venda #${saleId} (${saleItems.length} ${
+          saleItems.length === 1 ? 'item' : 'itens'
+        }${saleData.requiresTransport && transportCost > 0 ? ' + transporte' : ''})`,
+        reference: `Venda #${saleId}`,
+        saleId,
+      };
+      setBankMovements((prev) => [bankMov, ...prev]);
+    } else {
+      const identifiedClient = saleData.clientId ? clients.find((c) => c.id === saleData.clientId) : undefined;
+      const finalClientName = identifiedClient?.name || saleData.clientName?.trim() || 'Cliente';
+      newDebt = {
+        id: createId('deb'),
+        type: 'a_receber',
+        counterpartyType: 'cliente',
+        counterpartyId: saleData.clientId || undefined,
+        counterpartyName: finalClientName,
+        companyId: targetComp.id,
+        totalAmount: totalSale,
+        initialAmount: totalSale,
+        currency: saleCurrency,
+        createdAt: now,
+        dueDate: saleData.dueDate || undefined,
+        saleId,
+        reference: `Venda #${saleId}`,
+        notes: `Venda a prazo #${saleId}${saleData.notes ? ` - ${saleData.notes}` : ''}`,
+      };
+      setDebts((prev) => [newDebt!, ...prev]);
+
+      addNotification({
+        type: 'outro',
+        title: 'Venda a Prazo Registada',
+        message: `Venda a prazo #${saleId} registada para o cliente "${finalClientName}" no valor de ${totalSale.toLocaleString('pt-AO')} ${saleCurrency}. Dívida a receber criada em Financeiro → Dívidas.`,
+        reference: {
+          type: 'outro',
+          id: newDebt.id,
+        },
+      });
+    }
 
     // 4. Handle Transport if requested
     let newTransport: Transport | undefined;
@@ -2469,23 +2592,27 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setTransports((prev) => [newTransport!, ...prev]);
     }
 
-    // 5. Record Sale with original bankId and transportCost
+    // 5. Record Sale with original bankId (if not credit) and debtId (if credit)
     const newSale: Sale = {
       id: saleId,
       date: now,
       seller,
       clientId: saleData.clientId,
-      clientName: saleData.clientName,
+      clientName: isCreditSale
+        ? (saleData.clientId ? clients.find((c) => c.id === saleData.clientId)?.name : undefined) || saleData.clientName?.trim() || 'Cliente'
+        : saleData.clientName,
       warehouseId: saleData.warehouseId,
-      bankId: targetBank.id,
+      bankId: isCreditSale ? undefined : targetBank?.id,
       items: saleItems,
       paymentMethod: saleData.paymentMethod,
       total: totalSale,
       transportCost: saleData.requiresTransport ? transportCost : undefined,
       status: 'concluida',
       notes: saleData.notes,
+      dueDate: saleData.dueDate,
       requiresTransport: saleData.requiresTransport,
       transportId,
+      debtId: newDebt?.id,
     };
 
     setSales((prev) => [newSale, ...prev]);
@@ -2511,25 +2638,112 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     if (!reason?.trim()) return { success: false, message: 'O motivo do cancelamento é obrigatório.' };
-    const originalSaleBankMov = bankMovements.find((bm) =>
-      bm.type === 'entrada' && !bm.reversalOfId &&
-      (bm.saleId === saleId || bm.reference === `Venda #${saleId}`)
-    );
-    if (!originalSaleBankMov) return { success: false, message: 'Venda sem lançamento financeiro original. Reconcilie o histórico antes de cancelar.' };
-    if (!banks.some((bank) => bank.id === originalSaleBankMov.bankId)) {
-      return { success: false, message: 'A conta bancária original não foi encontrada.' };
-    }
-    const bankCheck = isBankOperationBlocked(originalSaleBankMov.bankId);
-    if (bankCheck.blocked) return { success: false, message: bankCheck.message };
-    cancelledSaleIds.current.add(saleId);
-    if (!originalSaleBankMov.isReversed && !bankMovements.some((m) => m.reversalOfId === originalSaleBankMov.id)) {
-      try { reverseBankMovement(originalSaleBankMov.id, reason.trim()); }
-      catch (error) {
-        cancelledSaleIds.current.delete(saleId);
-        return { success: false, message: error instanceof Error ? error.message : 'Não foi possível estornar a venda.' };
-      }
-    }
+
     const now = new Date().toISOString();
+    const isCreditSale = sale.paymentMethod === 'a_prazo';
+    if (!isCreditSale) {
+      const originalSaleBankMov = bankMovements.find((bm) =>
+        bm.type === 'entrada' && !bm.reversalOfId &&
+        (bm.saleId === saleId || bm.reference === `Venda #${saleId}`)
+      );
+      if (!originalSaleBankMov) return { success: false, message: 'Venda sem lançamento financeiro original. Reconcilie o histórico antes de cancelar.' };
+      if (!banks.some((bank) => bank.id === originalSaleBankMov.bankId)) {
+        return { success: false, message: 'A conta bancária original não foi encontrada.' };
+      }
+      const bankCheck = isBankOperationBlocked(originalSaleBankMov.bankId);
+      if (bankCheck.blocked) return { success: false, message: bankCheck.message };
+      cancelledSaleIds.current.add(saleId);
+      if (!originalSaleBankMov.isReversed && !bankMovements.some((m) => m.reversalOfId === originalSaleBankMov.id)) {
+        try { reverseBankMovement(originalSaleBankMov.id, reason.trim()); }
+        catch (error) {
+          cancelledSaleIds.current.delete(saleId);
+          return { success: false, message: error instanceof Error ? error.message : 'Não foi possível estornar a venda.' };
+        }
+      }
+    } else {
+      // Venda a prazo: anular dívida e reverter todos os pagamentos já efetuados
+      const linkedDebt = debts.find(
+        (d) =>
+          (sale.debtId && d.id === sale.debtId) ||
+          d.saleId === saleId ||
+          d.reference === `Venda #${saleId}` ||
+          d.notes?.includes(saleId)
+      );
+
+      if (linkedDebt) {
+        // Obter pagamentos ativos desta dívida
+        const activePayments = debtPayments.filter(
+          (p) => p.debtId === linkedDebt.id && !p.isReversed
+        );
+
+        // Validar se alguma conta bancária dos pagamentos está bloqueada
+        for (const p of activePayments) {
+          const bankCheck = isBankOperationBlocked(p.bankId);
+          if (bankCheck.blocked) {
+            return {
+              success: false,
+              message: `Não foi possível estornar a venda: ${bankCheck.message}`,
+            };
+          }
+        }
+
+        // Anular a dívida vinculada sem apagá-la (imutabilidade e rastreabilidade total)
+        setDebts((prev) =>
+          prev.map((d) =>
+            d.id === linkedDebt.id
+              ? {
+                  ...d,
+                  isCancelled: true,
+                  status: 'anulada',
+                  cancelledAt: now,
+                  cancellationReason: reason.trim(),
+                }
+              : d
+          )
+        );
+
+        // Se já houve pagamentos, criar as saídas financeiras de reversão nas respetivas contas
+        if (activePayments.length > 0) {
+          const reversalBankMovs: BankMovement[] = activePayments.map((p) => ({
+            id: createId('bmov-debt-rev'),
+            bankId: p.bankId,
+            type: 'saida',
+            category: 'Estorno de Pagamento de Dívida',
+            amount: p.amount,
+            date: now,
+            responsible: 'Administrador',
+            reason: `Estorno de Venda a Prazo #${saleId}: Reversão de recebimento de dívida #${linkedDebt.id} (${p.amount.toLocaleString('pt-AO')} Kz). Motivo: ${reason.trim()}`,
+            reference: `Estorno #${saleId}`,
+            saleId,
+            debtId: linkedDebt.id,
+            debtPaymentId: p.id,
+            reversalOfId: p.movementId,
+            isReversal: true,
+          }));
+
+          // Adicionar as saídas financeiras de reversão e marcar movimentações originais como revertidas
+          setBankMovements((prev) => {
+            const activeMovIds = new Set(
+              activePayments.map((p) => p.movementId).filter(Boolean)
+            );
+            const updated = prev.map((m) =>
+              activeMovIds.has(m.id) ? { ...m, isReversed: true } : m
+            );
+            return [...reversalBankMovs, ...updated];
+          });
+
+          // Marcar pagamentos como revertidos
+          setDebtPayments((prev) =>
+            prev.map((p) =>
+              p.debtId === linkedDebt.id
+                ? { ...p, isReversed: true, reversedAt: now }
+                : p
+            )
+          );
+        }
+      }
+      cancelledSaleIds.current.add(saleId);
+    }
 
     // 1. Regra 3: Repor em estoque SÓ as saídas que ainda estão ativas (evitar devolução dupla)
     const saleOutMovements = movements.filter(

@@ -7,14 +7,19 @@ import {
   RotateCcw,
   Wrench,
   X,
+  Eye as DetailsIcon,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import {
   DefectReason,
   DefectDecision,
+  DefectiveRecord,
 } from '../../types/stock';
 import { formatKwanza, formatDateTime } from '../../utils/formatters';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { ProductThumbnail } from '../common/ProductThumbnail';
 
 export const DefectiveView: React.FC = () => {
   const {
@@ -30,6 +35,7 @@ export const DefectiveView: React.FC = () => {
   } = useStock();
 
   const [showModal, setShowModal] = useState(false);
+  const [selectedDetailItem, setSelectedDetailItem] = useState<DefectiveRecord | null>(null);
   const [filterDecision, setFilterDecision] = useState<string>('all');
   const [filterReason, setFilterReason] = useState<string>('all');
 
@@ -121,7 +127,7 @@ export const DefectiveView: React.FC = () => {
       totalQty += d.quantity;
       const p = products.find((prod) => prod.id === d.productId);
       if (p) {
-        totalLossKz += d.quantity * p.costPrice;
+        totalLossKz += d.quantity * Math.max(0, p.costPrice || 0);
       }
       if (d.status === 'pendente') pendingCount++;
       if (d.decision === 'descartar') discardedCount++;
@@ -249,7 +255,7 @@ export const DefectiveView: React.FC = () => {
           <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Valor de Perda (Custo)
           </span>
-          <div className="text-lg font-bold font-mono text-rose-600 dark:text-rose-400 mt-1 truncate">
+          <div className="text-lg font-bold tabular-nums text-rose-600 dark:text-rose-400 mt-1 truncate">
             {formatKwanza(metrics.totalLossKz)}
           </div>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
@@ -328,10 +334,9 @@ export const DefectiveView: React.FC = () => {
           type="button"
           id="btn-register-defective"
           onClick={() => setShowModal(true)}
-          className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors ml-auto cursor-pointer"
+          className="dm-btn-primary inline-flex items-center px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors ml-auto cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>+ Registar Defeituoso</span>
+          <span>Registar Defeituoso</span>
         </button>
       </div>
 
@@ -342,19 +347,22 @@ export const DefectiveView: React.FC = () => {
             <thead>
               <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                 <th className="py-3 px-4">Data Registo</th>
-                <th className="py-3 px-4">Produto Avariado</th>
+                <th className="py-3 px-4 w-[280px] min-w-[240px]">Produto Avariado</th>
                 <th className="py-3 px-4 text-right">Qtd</th>
                 <th className="py-3 px-4">Armazém Origem</th>
                 <th className="py-3 px-4">Motivo do Defeito</th>
-                <th className="py-3 px-4 text-center">Decisão / Destino</th>
+                <th className="py-3 px-4 text-center">Decisão</th>
                 <th className="py-3 px-4 text-center">Estado</th>
-                <th className="py-3 px-4">Responsável & Notas</th>
+                <th className="py-3 px-4 max-w-xs">Responsável & Notas</th>
+                <th className="py-3 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[70px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhum produto defeituoso registado com os filtros selecionados.
                   </td>
                 </tr>
@@ -366,22 +374,28 @@ export const DefectiveView: React.FC = () => {
                   const isParada = comp?.status === 'parada';
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr
+                      key={item.id}
+                      onClick={() => setSelectedDetailItem(item)}
+                      className="cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors group"
+                    >
                       <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                         {formatDateTime(item.date)}
                       </td>
 
-                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100">
-                        <div className="flex items-center gap-2.5">
-                          {product?.mainImage && (
-                            <img
-                              src={product.mainImage}
-                              alt=""
-                              className="w-7 h-7 rounded object-cover border border-slate-200 dark:border-slate-700"
-                            />
-                          )}
-                          <div>
-                            <span>{product?.name || 'Produto'}</span>
+                      {/* Produto com pelo menos 240px e Thumbnail 48x48 */}
+                      <td className="py-3 px-4 w-[280px] min-w-[240px]">
+                        <div className="flex items-center gap-3">
+                          <ProductThumbnail
+                            src={product?.mainImage}
+                            alt={product?.name || 'Produto'}
+                            category={product?.category}
+                            size="md"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 block truncate">
+                              {product?.name || 'Produto'}
+                            </span>
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
                               SKU: {product?.sku}
                             </span>
@@ -389,7 +403,7 @@ export const DefectiveView: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                      <td className="py-3 px-4 text-right tabular-nums font-semibold text-rose-600 dark:text-rose-400 whitespace-nowrap">
                         -{item.quantity} {product?.unitOfMeasure}
                       </td>
 
@@ -411,33 +425,29 @@ export const DefectiveView: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {getDecisionBadge(item.decision)}
-
-                          {/* Inline change decision */}
-                          <select
-                            value={item.decision}
-                            disabled={isParada}
-                            onChange={(e) =>
-                              updateDefectiveResolution(
-                                item.id,
-                                e.target.value as DefectDecision,
-                                item.status
-                              )
-                            }
-                            className="text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-300 font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                            title={isParada ? 'Operação bloqueada: Empresa Parada' : 'Atualizar decisão'}
-                          >
-                            <option value="descartar">Descarte</option>
-                            <option value="reparar">Reparo</option>
-                            <option value="devolver_fornecedor">Devolução</option>
-                            <option value="vender_com_desconto">Desconto</option>
-                          </select>
-                        </div>
+                      {/* Decisão aparece UMA só vez (Item 2.3: controlo de 44px) */}
+                      <td className="py-3 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={item.decision}
+                          disabled={isParada}
+                          onChange={(e) =>
+                            updateDefectiveResolution(
+                              item.id,
+                              e.target.value as DefectDecision,
+                              item.status
+                            )
+                          }
+                          className="min-h-[44px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-700 dark:text-slate-200 font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={isParada ? 'Operação bloqueada: Empresa Parada' : 'Alterar decisão'}
+                        >
+                          <option value="descartar">Descarte</option>
+                          <option value="reparar">Reparo</option>
+                          <option value="devolver_fornecedor">Devolução</option>
+                          <option value="vender_com_desconto">Desconto</option>
+                        </select>
                       </td>
 
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <td className="py-3 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           disabled={isParada}
@@ -464,15 +474,35 @@ export const DefectiveView: React.FC = () => {
                         </button>
                       </td>
 
+                      {/* Nota resumida em duas linhas (Item 2.3) */}
                       <td className="py-3 px-4 max-w-xs">
                         <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
                           Por: {item.responsible}
                         </span>
                         {item.notes && (
-                          <span className="text-[11px] text-slate-700 dark:text-slate-300 italic line-clamp-1">
+                          <span className="text-[11px] text-slate-700 dark:text-slate-300 italic line-clamp-2 mt-0.5 block" title={item.notes}>
                             "{item.notes}"
                           </span>
                         )}
+                      </td>
+
+                      {/* Ações fixas à direita com ícone 44x44px (Item 2.3) */}
+                      <td
+                        className="py-2.5 px-4 text-right whitespace-nowrap sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] min-w-[70px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            id={`btn-detail-defective-${item.id}`}
+                            onClick={() => setSelectedDetailItem(item)}
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
+                            title="Ver detalhes do registo de avaria"
+                          >
+                            <span className="sr-only">Abrir detalhes</span>
+                            <DetailsIcon aria-hidden="true" className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -482,6 +512,168 @@ export const DefectiveView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* MODAL: Detalhes do Defeituoso (Item 2.3) */}
+      {selectedDetailItem && (() => {
+        const product = products.find((p) => p.id === selectedDetailItem.productId);
+        const warehouse = warehouses.find((w) => w.id === selectedDetailItem.warehouseId);
+        const comp = companies.find((c) => c.id === warehouse?.companyId);
+        const isParada = comp?.status === 'parada';
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-xs p-4 overflow-y-auto">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden my-6">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center">
+                    <AlertOctagon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      Detalhes do Item Defeituoso
+                    </h3>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                      Ref: {selectedDetailItem.id}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  id="btn-close-defective-detail"
+                  onClick={() => setSelectedDetailItem(null)}
+                  aria-label="Fechar"
+                  title="Fechar"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 text-xs">
+                {/* Produto */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex items-center gap-3 border border-slate-200/80 dark:border-slate-700">
+                  <ProductThumbnail
+                    src={product?.mainImage}
+                    alt={product?.name || 'Produto'}
+                    category={product?.category}
+                    size="md"
+                  />
+                  <div>
+                    <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                      {product?.name || 'Produto não encontrado'}
+                    </h4>
+                    <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                      SKU: {product?.sku}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Métricas e Localização */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Armazém & Empresa</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100 block mt-0.5">
+                      {warehouse?.name || 'Armazém Geral'}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {comp?.name || 'Empresa'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Quantidade & Data</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400 font-mono text-sm block mt-0.5">
+                      -{selectedDetailItem.quantity} {product?.unitOfMeasure}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                      {formatDateTime(selectedDetailItem.date)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Motivo e Responsável */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Motivo do Defeito</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200 block mt-0.5">
+                      {getDefectReasonLabel(selectedDetailItem.reason)}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 block">Responsável</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200 block mt-0.5">
+                      {selectedDetailItem.responsible}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notas Completas (Item 2.3: completa no detalhe) */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 block mb-1">
+                    Observações e Notas Completas
+                  </span>
+                  <p className="text-slate-700 dark:text-slate-300 italic whitespace-pre-wrap leading-relaxed">
+                    {selectedDetailItem.notes ? `"${selectedDetailItem.notes}"` : 'Sem observações registadas.'}
+                  </p>
+                </div>
+
+                {/* Gestão de Decisão e Estado */}
+                <div className="p-3 bg-slate-100/70 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 block">Decisão Operacional</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">Destino logístico do item avariado</span>
+                    </div>
+                    <select
+                      value={selectedDetailItem.decision}
+                      disabled={isParada}
+                      onChange={(e) => {
+                        const newDec = e.target.value as DefectDecision;
+                        updateDefectiveResolution(selectedDetailItem.id, newDec, selectedDetailItem.status);
+                        setSelectedDetailItem({ ...selectedDetailItem, decision: newDec });
+                      }}
+                      className="min-h-[44px] text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 font-medium cursor-pointer"
+                    >
+                      <option value="descartar">Descarte</option>
+                      <option value="reparar">Reparo</option>
+                      <option value="devolver_fornecedor">Devolução ao Fornecedor</option>
+                      <option value="vender_com_desconto">Venda com Desconto</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700">
+                    <div>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 block">Estado da Resolução</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">Marcar como concluído após tratativa</span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isParada}
+                      onClick={() => {
+                        if (isParada) return;
+                        const newStatus = selectedDetailItem.status === 'pendente' ? 'resolvido' : 'pendente';
+                        updateDefectiveResolution(selectedDetailItem.id, selectedDetailItem.decision, newStatus);
+                        setSelectedDetailItem({ ...selectedDetailItem, status: newStatus });
+                      }}
+                      className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      {selectedDetailItem.status === 'resolvido' ? (
+                        <PositiveBadge label="Resolvido" />
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                          Pendente
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL: Registar Defeituoso */}
       {showModal && (

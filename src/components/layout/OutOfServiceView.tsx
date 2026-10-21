@@ -32,7 +32,7 @@ export const OutOfServiceView: React.FC<OutOfServiceViewProps> = ({
         </div>
         <p className="text-xs text-slate-600 leading-normal">
           O módulo Estoque está 100% funcional com os submódulos: Armazém,
-          Movimentação, Análise de produtos, Lista de compras e Defeituoso.
+          Movimentação, Simulador de importação e rentabilidade, Lista de compras e Defeituoso.
         </p>
       </div>
 

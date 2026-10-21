@@ -21,6 +21,7 @@ import { useStock } from '../../context/StockContext';
 import { Client } from '../../types/client';
 import { ClientModal } from './ClientModal';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { isValidPhone } from '../../utils/phoneValidation';
 
 export const ClientesView: React.FC = () => {
   const { clients, sales, deleteClient } = useStock();
@@ -326,7 +327,9 @@ export const ClientesView: React.FC = () => {
                 <th className="py-2.5 px-3">Endereço / Destino</th>
                 <th className="py-2.5 px-3 text-right">Total Compras</th>
                 <th className="py-2.5 px-3 text-center">Estado</th>
-                <th className="py-2.5 px-4 text-right">Ações</th>
+                <th className="py-2.5 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[130px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -338,7 +341,12 @@ export const ClientesView: React.FC = () => {
                 </tr>
               ) : (
                 filteredClients.map((client) => {
-                  const cleanPhone = client.phone?.replace(/\D/g, '') || '';
+                  const isPhoneValid = !client.phone || isValidPhone(client.phone);
+                  const isWhatsappValid = !client.whatsapp || isValidPhone(client.whatsapp);
+                  const validPhoneForWa = (client.whatsapp && isValidPhone(client.whatsapp))
+                    ? client.whatsapp
+                    : (client.phone && isValidPhone(client.phone) ? client.phone : null);
+                  const cleanPhone = validPhoneForWa?.replace(/\D/g, '') || '';
                   const metrics = clientMetrics.get(client.id) || { count: 0, totalKz: 0 };
 
                   return (
@@ -400,8 +408,18 @@ export const ClientesView: React.FC = () => {
                         <div className="space-y-0.5">
                           {client.phone && (
                             <div className="flex items-center gap-1.5">
-                              <Phone className="w-3 h-3 text-slate-400" />
+                              <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                               <span className="font-mono text-slate-700 dark:text-slate-300">{client.phone}</span>
+                              {!isPhoneValid && (
+                                <span
+                                  id={`invalid-phone-${client.id}`}
+                                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 ml-1"
+                                  title="Número de telefone inválido no cadastro antigo"
+                                >
+                                  <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                                  Inválido
+                                </span>
+                              )}
                               {cleanPhone && (
                                 <a
                                   href={`https://wa.me/${cleanPhone}`}
@@ -415,9 +433,25 @@ export const ClientesView: React.FC = () => {
                               )}
                             </div>
                           )}
+                          {client.whatsapp && client.whatsapp !== client.phone && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                              <span className="text-[10px] uppercase font-semibold text-emerald-600 dark:text-emerald-400">WA:</span>
+                              <span className="font-mono">{client.whatsapp}</span>
+                              {!isWhatsappValid && (
+                                <span
+                                  id={`invalid-wa-${client.id}`}
+                                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 ml-1"
+                                  title="WhatsApp com formato inválido no cadastro antigo"
+                                >
+                                  <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                                  Inválido
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {client.email && (
                             <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                              <Mail className="w-3 h-3 text-slate-400" />
+                              <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                               <span>{client.email}</span>
                             </div>
                           )}
@@ -463,15 +497,21 @@ export const ClientesView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Action buttons */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Action buttons (Item 2.8: estilo secundário uniforme, 44x44px, sticky right) */}
+                      <td
+                        className="py-2 px-4 text-right whitespace-nowrap sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[130px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            id={`btn-detail-client-${client.id}`}
                             onClick={() => handleOpenEdit(client)}
-                            className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
+                            title="Ver detalhes do cliente"
                           >
-                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
+                            <span className="sr-only">Abrir detalhes</span>
+                            <DetailsIcon aria-hidden="true" className="w-4 h-4" />
                           </button>
 
                           <button
@@ -479,9 +519,10 @@ export const ClientesView: React.FC = () => {
                             id={`btn-edit-client-${client.id}`}
                             onClick={() => handleOpenEdit(client)}
                             title="Editar cliente"
-                            className="dm-icon-action p-1.5 text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <span className="sr-only">Editar</span>
+                            <Pencil className="w-4 h-4" />
                           </button>
 
                           <button
@@ -489,9 +530,10 @@ export const ClientesView: React.FC = () => {
                             id={`btn-delete-client-${client.id}`}
                             onClick={() => setClientToDelete(client)}
                             title="Eliminar cliente"
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="sr-only">Eliminar</span>
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

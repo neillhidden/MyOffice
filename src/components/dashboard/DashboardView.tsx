@@ -13,6 +13,7 @@ import { DashboardPeriod, computeDashboardData, computeTopProducts,
 import { DashboardMetricCard } from './DashboardMetricCard';
 import { DashboardChart } from './DashboardChart';
 import { TopProductsList } from './TopProductsList';
+import { EmptyState } from '../common/EmptyState';
 
 export const DashboardView: React.FC = () => {
   const today = useToday();
@@ -298,6 +299,52 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
+      {/* Se não houver vendas no período, as pendências operacionais sobem para antes dos indicadores vazios */}
+      {!metrics.currentCount && (
+        <section
+          id="dashboard-operational-summary"
+          className="rounded-xl border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-surface p-4 space-y-3"
+        >
+          <div>
+            <h2 className="text-sm font-semibold">Acompanhamento operacional</h2>
+            <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
+              Situação atual das empresas selecionadas ·{' '}
+              {new Date(`${today}T12:00:00`).toLocaleDateString('pt-PT')}
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                Produtos abaixo do mínimo por armazém
+              </p>
+              <p className="text-xl font-semibold mt-1">{lowStock}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                Entregas por concluir
+              </p>
+              <p className="text-xl font-semibold mt-1">{pendingDeliveries}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                Empresas visíveis neste âmbito
+              </p>
+              <p className="text-xl font-semibold mt-1">
+                {
+                  visibleCompanies.filter(
+                    (c) =>
+                      selectedCompanyId === 'todas' || c.id === selectedCompanyId,
+                  ).length
+                }
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-dm-muted">
+            Não há vendas concluídas no período e moeda selecionados. Podes mudar os filtros para consultar o histórico.
+          </p>
+        </section>
+      )}
+
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
         {/* Card 1: Total Vendido */}
@@ -335,60 +382,80 @@ export const DashboardView: React.FC = () => {
         />
       </div>
 
-      <section
-        id="dashboard-operational-summary"
-        className="rounded-xl border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-surface p-4 space-y-3"
-      >
-        <div>
-          <h2 className="text-sm font-semibold">Acompanhamento operacional</h2>
-          <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
-            Situação atual das empresas selecionadas ·{' '}
-            {new Date(`${today}T12:00:00`).toLocaleDateString('pt-PT')}
-          </p>
-        </div>
-        <div className="grid sm:grid-cols-3 gap-4">
+      {/* Se houver vendas no período, o acompanhamento operacional fica na posição padrão */}
+      {!!metrics.currentCount && (
+        <section
+          id="dashboard-operational-summary"
+          className="rounded-xl border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-surface p-4 space-y-3"
+        >
           <div>
-            <p className="text-xs text-slate-500 dark:text-dm-muted">
-              Produtos abaixo do mínimo por armazém
-            </p>
-            <p className="text-xl font-semibold mt-1">{lowStock}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-dm-muted">
-              Entregas por concluir
-            </p>
-            <p className="text-xl font-semibold mt-1">{pendingDeliveries}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-dm-muted">
-              Empresas visíveis neste âmbito
-            </p>
-            <p className="text-xl font-semibold mt-1">
-              {
-                visibleCompanies.filter(
-                  (c) =>
-                    selectedCompanyId === 'todas' || c.id === selectedCompanyId,
-                ).length
-              }
+            <h2 className="text-sm font-semibold">Acompanhamento operacional</h2>
+            <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
+              Situação atual das empresas selecionadas ·{' '}
+              {new Date(`${today}T12:00:00`).toLocaleDateString('pt-PT')}
             </p>
           </div>
-        </div>
-        {!metrics.currentCount && (
-          <p className="text-xs text-slate-500 dark:text-dm-muted">
-            Não há vendas concluídas no período e moeda selecionados. Podes
-            mudar os filtros para consultar o histórico.
-          </p>
-        )}
-      </section>
-      {/* Main Chart Section: Comparison of Periods */}
-      <DashboardChart
-        id="dashboard-main-chart"
-        data={chartData}
-        period={selectedPeriod}
-        currency={metrics.currency}
-        currentRangeLabel={currentPeriodRangeDescription}
-        previousRangeLabel={previousPeriodRangeDescription}
-      />
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                Produtos abaixo do mínimo por armazém
+              </p>
+              <p className="text-xl font-semibold mt-1">{lowStock}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                Entregas por concluir
+              </p>
+              <p className="text-xl font-semibold mt-1">{pendingDeliveries}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                Empresas visíveis neste âmbito
+              </p>
+              <p className="text-xl font-semibold mt-1">
+                {
+                  visibleCompanies.filter(
+                    (c) =>
+                      selectedCompanyId === 'todas' || c.id === selectedCompanyId,
+                  ).length
+                }
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Main Chart Section: Comparison of Periods OR Empty State block (160–200 px) */}
+      {!metrics.currentCount ? (
+        <EmptyState
+          id="dashboard-main-chart"
+          minHeight="min-h-[160px] max-h-[200px]"
+          title="Sem vendas neste período"
+          description="Não foram registadas vendas no período e moeda selecionados. Alterna o período ou filtra por outra empresa para consultar os dados."
+          action={{
+            label: 'Alterar período',
+            id: 'btn-dashboard-change-period',
+            onClick: () => {
+              const next: DashboardPeriod =
+                selectedPeriod === 'semana'
+                  ? 'mes'
+                  : selectedPeriod === 'mes'
+                    ? 'ano'
+                    : 'semana';
+              setSelectedPeriod(next);
+            },
+          }}
+        />
+      ) : (
+        <DashboardChart
+          id="dashboard-main-chart"
+          data={chartData}
+          period={selectedPeriod}
+          currency={metrics.currency}
+          currentRangeLabel={currentPeriodRangeDescription}
+          previousRangeLabel={previousPeriodRangeDescription}
+        />
+      )}
 
       {/* Bottom Section: Top Products */}
       <TopProductsList

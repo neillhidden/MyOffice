@@ -335,7 +335,7 @@ export type FinancialMovement = BankMovement;
 // ==========================================
 
 export type DebtType = 'a_pagar' | 'a_receber';
-export type DebtStatus = 'pendente' | 'parcialmente_paga' | 'quitada';
+export type DebtStatus = 'pendente' | 'parcialmente_paga' | 'quitada' | 'anulada';
 export type CounterpartyType = 'cliente' | 'fornecedor' | 'funcionario' | 'outro';
 
 export interface DebtPayment {
@@ -348,6 +348,8 @@ export interface DebtPayment {
   notes?: string;
   createdAt: string; // ISO
   movementId?: string; // ID da movimentação financeira gerada
+  isReversed?: boolean; // Pagamento estornado aquando do estorno da venda/dívida
+  reversedAt?: string; // ISO
 }
 
 export interface DebtIncrement {
@@ -374,6 +376,12 @@ export interface Debt {
   createdAt: string; // ISO
   dueDate?: string; // Data de vencimento opcional
   notes?: string;
+  saleId?: string; // ID da venda vinculada
+  reference?: string; // Referência textual (e.g. "Venda #VND-1001")
+  isCancelled?: boolean; // Dívida anulada aquando do estorno de venda
+  cancelledAt?: string; // ISO
+  cancellationReason?: string; // Motivo da anulação
+  status?: DebtStatus;
   increments?: DebtIncrement[]; // Histórico rastreável de incrementos/acréscimos
 }
 
@@ -411,8 +419,10 @@ export interface Sale {
   transportCost?: number; // Custo do transporte incluído na venda
   status: SaleStatus;
   notes?: string;
+  dueDate?: string; // Data de vencimento opcional para vendas a prazo
   requiresTransport: boolean;
   transportId?: string;
+  debtId?: string; // Dívida vinculada gerada para vendas a prazo
 }
 
 export type TransportStatus = 'pendente' | 'em_transito' | 'entregue' | 'cancelado';

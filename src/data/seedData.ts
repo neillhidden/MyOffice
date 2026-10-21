@@ -325,11 +325,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     createdBy: 'Esperança Ndala',
     createdAt: '2026-07-15T09:00:00.000Z',
     updatedAt: '2026-08-30T15:00:00.000Z',
-    mainImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
-    ],
+    mainImage: undefined,
+    gallery: [],
     unitOfMeasure: 'unidade',
     costPrice: 4500,
     salePrice: 8500,
@@ -673,7 +670,7 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     quantity: 3,
     date: '2026-08-15T10:30:00.000Z',
     responsible: 'Mateus Gaspar',
-    reason: 'Garrafas rompidas por amassamento na palete',
+    reason: 'Danos estruturais e carcaça amassada por queda de palete no transporte',
     reference: 'DEF-2026-001',
   },
   {
@@ -850,7 +847,7 @@ export const INITIAL_DEFECTIVE_RECORDS: DefectiveRecord[] = [
     decision: 'descartar',
     status: 'resolvido',
     movementId: 'mov-17',
-    notes: 'Garrafas com vazamento inutilizadas. Termo de descarte lavrado.',
+    notes: 'Fritadeiras com carcaça amassada e resistências danificadas por queda de palete. Termo de descarte lavrado.',
     resolvedAt: '2026-08-16T14:00:00.000Z',
   },
   {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Truck, Phone, Mail, MapPin, Globe, AlignLeft } from 'lucide-react';
+import { X, Truck, Phone, Mail, MapPin, Globe, AlignLeft, AlertTriangle } from 'lucide-react';
 import { Supplier } from '../../types/stock';
 import { useStock } from '../../context/StockContext';
+import { validatePhoneField } from '../../utils/phoneValidation';
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
   const [status, setStatus] = useState<'ativo' | 'inativo'>('ativo');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
 
   // Collect all known platforms from existing suppliers
   const knownPlatforms = React.useMemo(() => {
@@ -86,6 +88,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         setNotes('');
       }
       setError(null);
+      setContactError(null);
     }
   }, [isOpen, supplierToEdit, knownPlatforms]);
 
@@ -97,10 +100,16 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       setError('O nome do fornecedor é obrigatório.');
       return;
     }
-    if (!contact.trim()) {
-      setError('O contacto (telefone / WhatsApp) é obrigatório.');
+
+    const phoneValidation = validatePhoneField(contact, true);
+    if (!phoneValidation.isValid) {
+      setContactError(phoneValidation.error || 'Contacto de telefone inválido.');
+      setError(phoneValidation.error || 'Contacto de telefone inválido.');
+      const el = document.getElementById('sup-contact');
+      el?.focus();
       return;
     }
+    setContactError(null);
 
     const finalPlatform = isCustomPlatform
       ? customPlatform.trim()
@@ -112,7 +121,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       if (supplierToEdit) {
         updateSupplier(supplierToEdit.id, {
           name: name.trim(),
-          contact: contact.trim(),
+          contact: phoneValidation.normalized,
           email: email.trim() || undefined,
           address: address.trim() || undefined,
           platform: finalPlatform || undefined,
@@ -122,7 +131,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       } else {
         addSupplier({
           name: name.trim(),
-          contact: contact.trim(),
+          contact: phoneValidation.normalized,
           email: email.trim() || undefined,
           address: address.trim() || undefined,
           platform: finalPlatform || undefined,
@@ -210,11 +219,24 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
                   type="text"
                   required
                   value={contact}
-                  onChange={(e) => setContact(e.target.value)}
+                  onChange={(e) => {
+                    setContact(e.target.value);
+                    if (contactError) setContactError(null);
+                  }}
                   placeholder="+86 138 0000 0000"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+                  className={`w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 ${
+                    contactError
+                      ? 'border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900 dark:focus:ring-slate-400'
+                  }`}
                 />
               </div>
+              {contactError && (
+                <p id="error-sup-contact" role="alert" className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 animate-in fade-in duration-150">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span>{contactError}</span>
+                </p>
+              )}
             </div>
 
             {/* Email */}

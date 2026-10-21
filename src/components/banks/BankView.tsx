@@ -16,6 +16,8 @@ import {
   CreditCard,
   Wallet,
   ShieldCheck,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Bank } from '../../types/stock';
@@ -24,6 +26,7 @@ import { BankModal } from './BankModal';
 import { BankMovementModal } from './BankMovementModal';
 import { BankLedgerModal } from './BankLedgerModal';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { abbreviateIban, abbreviateAccountNumber } from '../../utils/references';
 
 export const BankView: React.FC = () => {
   const {
@@ -52,6 +55,7 @@ export const BankView: React.FC = () => {
 
   const [ledgerBank, setLedgerBank] = useState<Bank | null>(null);
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
+  const [copiedFieldId, setCopiedFieldId] = useState<string | null>(null);
 
   // Consolidated KPIs
   const metrics = useMemo(() => {
@@ -272,17 +276,17 @@ export const BankView: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs / View Mode Navigation */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-        <div className="flex gap-4">
+      {/* Secondary internal navigation (Item 2.10) */}
+      <div className="flex items-center justify-between">
+        <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs">
           <button
             type="button"
             id="tab-bancos-contas"
             onClick={() => setActiveTab('contas')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               activeTab === 'contas'
-                ? 'border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs font-semibold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             Contas & Saldos ({filteredBanks.length})
@@ -291,10 +295,10 @@ export const BankView: React.FC = () => {
             type="button"
             id="tab-bancos-historico"
             onClick={() => setActiveTab('historico')}
-            className={`pb-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               activeTab === 'historico'
-                ? 'border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xs font-semibold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             Extrato Geral Consolidado ({bankMovements.length})
@@ -302,9 +306,9 @@ export const BankView: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab 1: Bank Accounts Cards */}
+      {/* Tab 1: Bank Accounts Cards - 24px entre grupos (Item 2.10) */}
       {activeTab === 'contas' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Unified Filter Capsule Bar */}
           <div className="dm-filter-capsule flex flex-col sm:flex-row items-center justify-between gap-2 bg-white dark:bg-dm-surface p-1.5 rounded-2xl border border-slate-200 dark:border-dm-border">
             <div className="flex flex-wrap items-center divide-x divide-slate-200/80 dark:divide-dm-border flex-1 w-full">
@@ -425,20 +429,62 @@ export const BankView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Account Details */}
-                    <div className="mt-3.5 space-y-1 bg-slate-50/70 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/80 text-[11px]">
+                    {/* Account Details: IBAN e número de conta abreviados com botão copiar (Item 2.10) */}
+                    <div className="mt-3.5 space-y-1.5 bg-slate-50/70 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/80 text-[11px]">
                       {bank.accountNumber && (
-                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                        <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                           <span className="text-slate-400 dark:text-slate-500">Nº Conta:</span>
-                          <span className="font-mono">{bank.accountNumber}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono" title={bank.accountNumber}>
+                              {abbreviateAccountNumber(bank.accountNumber)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(bank.accountNumber!);
+                                setCopiedFieldId(`${bank.id}-acc`);
+                                setTimeout(() => setCopiedFieldId(null), 1500);
+                              }}
+                              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded cursor-pointer"
+                              title={`Copiar Nº de Conta completo (${bank.accountNumber})`}
+                              aria-label="Copiar número de conta"
+                            >
+                              {copiedFieldId === `${bank.id}-acc` ? (
+                                <Check className="w-3 h-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       )}
                       {bank.iban && (
-                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                        <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                           <span className="text-slate-400 dark:text-slate-500">IBAN:</span>
-                          <span className="font-mono truncate max-w-[180px]" title={bank.iban}>
-                            {bank.iban}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono" title={bank.iban}>
+                              {abbreviateIban(bank.iban)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(bank.iban!);
+                                setCopiedFieldId(`${bank.id}-iban`);
+                                setTimeout(() => setCopiedFieldId(null), 1500);
+                              }}
+                              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded cursor-pointer"
+                              title={`Copiar IBAN completo (${bank.iban})`}
+                              aria-label="Copiar IBAN"
+                            >
+                              {copiedFieldId === `${bank.id}-iban` ? (
+                                <Check className="w-3 h-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       )}
                       {linkedCompany && (

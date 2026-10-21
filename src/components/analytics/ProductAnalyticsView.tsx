@@ -150,7 +150,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
         );
 
         const currentStock = getCurrentStock(p.id);
-        const capitalTiedUp = currentStock * p.costPrice;
+        const capitalTiedUp = Math.max(0, currentStock) * Math.max(0, p.costPrice || 0);
 
         return {
           product: p,
@@ -171,7 +171,7 @@ export const ProductAnalyticsView: React.FC<ProductAnalyticsViewProps> = ({
       .map((p) => {
         const info = getProductStockInfo(p.id);
         const deficit = Math.max(0, info.minLimit - info.currentStock);
-        const estimatedRestockCost = deficit * p.costPrice;
+        const estimatedRestockCost = deficit * Math.max(0, p.costPrice || 0);
 
         return {
           product: p,

@@ -12,12 +12,18 @@ import {
   Layers,
   FileSpreadsheet,
   X,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
+  Eye as DetailsIcon,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { BankMovement, BankMovementType, FinancialCategory } from '../../types/stock';
 import { formatCurrencyValue, formatDate } from '../../utils/formatters';
 import { LancamentoModal } from './LancamentoModal';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { formatShortRef, matchRefOrFull } from '../../utils/references';
 
 export const FINANCIAL_CATEGORIES: FinancialCategory[] = [
   'Venda',
@@ -83,6 +89,8 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
   const [movementToRemove, setMovementToRemove] = useState<BankMovement | null>(null);
   const [removalReason, setRemovalReason] = useState<string>('');
   const [removalError, setRemovalError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Operational banks: strictly exclude banks of disabled companies
   const operationalBanks = useMemo(() => {
@@ -150,12 +158,14 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
         if (search.trim()) {
           const q = search.toLowerCase();
           const matchReason = mov.reason.toLowerCase().includes(q);
-          const matchRef = mov.reference?.toLowerCase().includes(q);
+          const matchId = matchRefOrFull(mov.id, q, 'LAN');
+          const matchRef = mov.reference ? matchRefOrFull(mov.reference, q, 'DOC') : false;
+          const matchReversalOf = mov.reversalOfId ? matchRefOrFull(mov.reversalOfId, q, 'LAN') : false;
           const matchResp = mov.responsible.toLowerCase().includes(q);
           const bank = banks.find((b) => b.id === mov.bankId);
           const matchBank = bank?.name.toLowerCase().includes(q);
           const matchCat = (mov.category || '').toLowerCase().includes(q);
-          return matchReason || matchRef || matchResp || matchBank || matchCat;
+          return matchReason || matchId || matchRef || matchReversalOf || matchResp || matchBank || matchCat;
         }
 
         return true;
@@ -367,17 +377,15 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 font-medium uppercase text-[10px] tracking-wider">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Data</th>
-                  <th className="py-3 px-4">Conta</th>
-                  <th className="py-3 px-4">Tipo</th>
-                  <th className="py-3 px-4">Categoria</th>
-                  <th className="py-3 px-4 text-right">Valor</th>
-                  <th className="py-3 px-4">Responsável</th>
-                  <th className="py-3 px-4">Motivo / Observação</th>
-                  <th className="py-3 px-4 text-right">Ações</th>
+                  <th className="py-3 px-4 min-w-[320px]">Registo / Descrição</th>
+                  <th className="py-3 px-3 text-center min-w-[120px]">Tipo & Estado</th>
+                  <th className="py-3 px-4 text-right min-w-[140px]">Valor</th>
+                  <th className="py-3 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[110px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -386,103 +394,200 @@ export const LancamentosView: React.FC<LancamentosViewProps> = ({
                   const currency = bank?.currency || 'Kz';
                   const isEntrada = mov.type === 'entrada';
                   const isSaida = mov.type === 'saida';
+                  const isExpanded = expandedId === mov.id;
 
                   return (
-                    <tr
-                      key={mov.id}
-                      className={`hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors ${
-                        mov.isReversed ? 'bg-slate-50/40 dark:bg-slate-850/40 opacity-75' : ''
-                      }`}
-                    >
-                      {/* Data */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                        {formatDate(mov.date)}
-                      </td>
-
-                      {/* Conta */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="font-medium text-slate-800 dark:text-slate-200 block">
-                          {bank?.name || 'Conta Financeira'}
-                        </span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase">
-                          {currency}
-                        </span>
-                      </td>
-
-                      {/* Tipo Badge */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {isEntrada && <PositiveBadge label="Entrada" />}
-                        {isSaida && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60">
-                            Saída
-                          </span>
-                        )}
-                        {!isEntrada && !isSaida && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            Ajuste
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Categoria */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {mov.category || 'Outro'}
-                        </span>
-                      </td>
-
-                      {/* Valor */}
-                      <td
-                        className={`py-3 px-4 whitespace-nowrap text-right font-mono font-semibold ${
-                          isEntrada
-                            ? 'text-emerald-700 dark:text-emerald-400'
-                            : isSaida
-                            ? 'text-slate-800 dark:text-slate-200'
-                            : 'text-blue-700 dark:text-blue-400'
+                    <React.Fragment key={mov.id}>
+                      <tr
+                        onClick={() => setExpandedId(isExpanded ? null : mov.id)}
+                        className={`hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group ${
+                          mov.isReversed ? 'bg-slate-50/40 dark:bg-slate-850/40 opacity-75' : ''
                         }`}
                       >
-                        {isEntrada ? '+' : isSaida ? '-' : ''}
-                        {formatCurrencyValue(mov.amount, currency)}
-                      </td>
-
-                      {/* Responsável */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
-                        {mov.responsible || 'Administrador'}
-                      </td>
-
-                      {/* Motivo / Observação */}
-                      <td className="py-3 px-4 min-w-[220px]">
-                        <p className="text-slate-700 dark:text-slate-300 leading-snug line-clamp-2">
-                          {mov.reason}
-                        </p>
-                        {mov.reversalOfId && <p className="text-[10px] text-slate-500 dark:text-dm-muted">Estorno de {mov.reversalOfId}</p>}
-                        {mov.reference && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 block">
-                            Ref: {mov.reference}
-                          </span>
-                        )}
-                        {mov.isReversed && (
-                          <div className="mt-1 p-1.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900 rounded text-[10px] text-rose-700 dark:text-rose-300">
-                            <span className="font-semibold">Estornado:</span> {mov.reversalReason} (por {mov.reversedBy || 'Administrador'})
+                        {/* Linha 1: Descrição (14px) + Ref (12-13px). Linha 2: Conta • Categoria • Data • Responsável (Item 2.9) */}
+                        <td className="py-3 px-4 min-w-[320px]">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm line-clamp-1">
+                              {mov.reason}
+                            </span>
+                            <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                              {formatShortRef(mov.reference || mov.id, 'LAN')}
+                            </span>
                           </div>
-                        )}
-                      </td>
+                          <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="font-medium text-slate-700 dark:text-slate-300">
+                              {bank?.name || 'Conta Financeira'}
+                            </span>
+                            <span>•</span>
+                            <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 font-medium">
+                              {mov.category || 'Outro'}
+                            </span>
+                            <span>•</span>
+                            <span>{formatDate(mov.date)}</span>
+                            <span>•</span>
+                            <span>por {mov.responsible || 'Administrador'}</span>
+                          </div>
+                        </td>
 
-                      {/* Ações */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right">
-                        {!mov.isReversed && !mov.reversalOfId ? (
-                          <button
-                            type="button"
-                            onClick={() => { setMovementToRemove(mov); setRemovalReason(''); setRemovalError(null); }}
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg cursor-pointer"
-                            title="Estornar com justificativa"
-                            aria-label={`Estornar lançamento de ${formatCurrencyValue(mov.amount, currency)}`}
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                          </button>
-                        ) : <span className="text-[10px] text-slate-500 dark:text-dm-muted">{mov.reversalOfId ? 'Estorno' : 'Estornado'}</span>}
-                      </td>
-                    </tr>
+                        {/* Tipo & Estado */}
+                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                          <div className="flex flex-col items-center gap-1">
+                            {isEntrada && <PositiveBadge label="Entrada" />}
+                            {isSaida && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60">
+                                Saída
+                              </span>
+                            )}
+                            {!isEntrada && !isSaida && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                Ajuste
+                              </span>
+                            )}
+                            {mov.isReversed && (
+                              <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
+                                Estornado
+                              </span>
+                            )}
+                            {mov.reversalOfId && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                Estorno
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Valor (Sempre visível à direita) */}
+                        <td
+                          className={`py-3 px-4 whitespace-nowrap text-right font-mono font-bold text-sm ${
+                            isEntrada
+                              ? 'text-emerald-700 dark:text-emerald-400'
+                              : isSaida
+                              ? 'text-slate-800 dark:text-slate-200'
+                              : 'text-blue-700 dark:text-blue-400'
+                          }`}
+                        >
+                          {isEntrada ? '+' : isSaida ? '-' : ''}
+                          {formatCurrencyValue(mov.amount, currency)}
+                        </td>
+
+                        {/* Ações (Sticky right com botões 44x44px) */}
+                        <td
+                          className="py-2.5 px-4 whitespace-nowrap text-right sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[110px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId(isExpanded ? null : mov.id)}
+                              className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
+                              title={isExpanded ? 'Ocultar detalhes' : 'Ver detalhes completos'}
+                            >
+                              <span className="sr-only">Abrir detalhes</span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <DetailsIcon aria-hidden="true" className="w-4 h-4" />
+                              )}
+                            </button>
+
+                            {!mov.isReversed && !mov.reversalOfId && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMovementToRemove(mov);
+                                  setRemovalReason('');
+                                  setRemovalError(null);
+                                }}
+                                className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg cursor-pointer transition-colors"
+                                title="Estornar com justificativa"
+                                aria-label={`Estornar lançamento de ${formatCurrencyValue(mov.amount, currency)}`}
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Detalhe Expansível: motivos, referências completas e avisos de estorno (Item 2.9) */}
+                      {isExpanded && (
+                        <tr className="bg-slate-50/70 dark:bg-slate-850/60 border-b border-slate-200 dark:border-slate-800">
+                          <td colSpan={4} className="py-3.5 px-6 text-xs">
+                            <div className="space-y-2.5">
+                              <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200/70 dark:border-slate-700/70">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-slate-700 dark:text-slate-200">ID Completo:</span>
+                                  <span className="font-mono text-xs text-slate-600 dark:text-slate-300">#{mov.id}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(mov.id);
+                                      setCopiedId(mov.id);
+                                      setTimeout(() => setCopiedId(null), 1500);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded cursor-pointer"
+                                    title="Copiar ID completo"
+                                    aria-label="Copiar ID completo"
+                                  >
+                                    {copiedId === mov.id ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                                {mov.reference && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-700 dark:text-slate-200">Referência Vinculada:</span>
+                                    <span className="font-mono text-xs text-slate-600 dark:text-slate-300">#{mov.reference}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(mov.reference!);
+                                        setCopiedId(mov.reference!);
+                                        setTimeout(() => setCopiedId(null), 1500);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded cursor-pointer"
+                                      title="Copiar referência completa"
+                                      aria-label="Copiar referência completa"
+                                    >
+                                      {copiedId === mov.reference ? (
+                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                      ) : (
+                                        <Copy className="w-3.5 h-3.5" />
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="font-semibold text-slate-700 dark:text-slate-200">Motivo / Descrição Completa:</span>
+                                <p className="mt-0.5 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{mov.reason}</p>
+                              </div>
+
+                              {mov.reversalOfId && (
+                                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900 rounded-lg text-amber-800 dark:text-amber-300 text-xs">
+                                  <strong>Aviso Contabilístico:</strong> Este lançamento é um estorno vinculado ao registo <code>#{mov.reversalOfId}</code>.
+                                </div>
+                              )}
+
+                              {mov.isReversed && (
+                                <div className="p-2.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-lg text-rose-700 dark:text-rose-300 text-xs">
+                                  <div className="font-semibold flex items-center gap-1.5">
+                                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                    Lançamento Estornado
+                                  </div>
+                                  <p className="mt-1">
+                                    <span className="font-medium">Motivo do Estorno:</span> {mov.reversalReason || 'Justificativa não informada'} • por {mov.reversedBy || 'Administrador'}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

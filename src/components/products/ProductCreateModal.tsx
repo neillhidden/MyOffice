@@ -31,6 +31,7 @@ import {
   Check,
   Warehouse,
   MapPin,
+  Coins,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { useWarehouseFilters } from '../../context/WarehouseFilterContext';
@@ -43,6 +44,7 @@ import {
 } from '../../types/stock';
 import { generateSKU, formatKwanza } from '../../utils/formatters';
 import { ColorPickerInput } from './ColorPickerInput';
+import { validatePhoneField } from '../../utils/phoneValidation';
 
 interface ProductCreateModalProps {
   initialCategory?: string;
@@ -221,6 +223,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const [newSupplierContact, setNewSupplierContact] = useState('');
   const [newSupplierAddress, setNewSupplierAddress] = useState('');
   const [newSupplierNotes, setNewSupplierNotes] = useState('');
+  const [newSupplierContactError, setNewSupplierContactError] = useState<string | null>(null);
 
   const [showMarginWarningModal, setShowMarginWarningModal] = useState(false);
   const [priceWarningDetails, setPriceWarningDetails] = useState<{
@@ -236,6 +239,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
   const [createdProductResult, setCreatedProductResult] = useState<Product | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveDraftFeedback, setSaveDraftFeedback] = useState(false);
   const [activeDraftId, setActiveDraftId] = useState<string | undefined>(draftToResume?.id);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -751,6 +755,37 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
   // Header Save Action (icon only in header)
   const handleSaveFromHeader = () => {
+    // Validação estrita de preços para não permitir negativos, NaN ou Infinito (Item 2.1 e 2.2)
+    const numCost = costPrice === '' ? 0 : Number(costPrice);
+    const numSale = salePrice === '' ? 0 : Number(salePrice);
+    if (!Number.isFinite(numCost) || numCost < 0) {
+      setFieldErrors((prev) => ({ ...prev, costPrice: 'O preço de custo não pode ser negativo.' }));
+      setValidationError('O preço de custo não pode ser negativo.');
+      setCurrentStep(1);
+      const el = document.getElementById('input-cost-price');
+      el?.focus();
+      return;
+    }
+    if (!Number.isFinite(numSale) || numSale < 0) {
+      setFieldErrors((prev) => ({ ...prev, salePrice: 'O preço de venda não pode ser negativo.' }));
+      setValidationError('O preço de venda não pode ser negativo.');
+      setCurrentStep(1);
+      const el = document.getElementById('input-sale-price');
+      el?.focus();
+      return;
+    }
+    for (let i = 0; i < variations.length; i++) {
+      const v = variations[i];
+      const addP = v.additionalPrice === '' || v.additionalPrice === undefined ? 0 : Number(v.additionalPrice);
+      if (!Number.isFinite(addP) || addP < 0) {
+        setValidationError(`O acréscimo de preço da variação #${i + 1} não pode ser negativo.`);
+        setCurrentStep(2);
+        const el = document.getElementById(`input-var-price-${i}`);
+        el?.focus();
+        return;
+      }
+    }
+
     const selectedConfigsArray = Object.keys(warehouseConfigs).map(
       (id) => warehouseConfigs[id]
     );
@@ -1015,11 +1050,56 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     }
   };
 
-  // Price validation rules per condition:
+  // Price validation rules per condition & non-negativity:
+  // - Rejeita negativos, NaN, Infinity em custo, venda e variações (Item 2.1 e 2.2)
   // - Novo: alert if salePrice < costPrice
   // - Novo-Usado: value can be lower or higher than cost without alert
   // - Usado: alert if salePrice > costPrice (inverse)
   const checkPriceValidation = (targetStep: number): boolean => {
+    // 1. Validação de Não-Negativo e Valores Numéricos Válidos (Item 2.1 e 2.2)
+    if (costPrice !== '') {
+      const numCost = Number(costPrice);
+      if (!Number.isFinite(numCost) || numCost < 0) {
+        setFieldErrors((prev) => ({ ...prev, costPrice: 'O preço de custo não pode ser negativo.' }));
+        setValidationError('O preço de custo não pode ser negativo.');
+        setCurrentStep(1);
+        const el = document.getElementById('input-cost-price');
+        el?.focus();
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+    }
+
+    if (salePrice !== '') {
+      const numSale = Number(salePrice);
+      if (!Number.isFinite(numSale) || numSale < 0) {
+        setFieldErrors((prev) => ({ ...prev, salePrice: 'O preço de venda não pode ser negativo.' }));
+        setValidationError('O preço de venda não pode ser negativo.');
+        setCurrentStep(1);
+        const el = document.getElementById('input-sale-price');
+        el?.focus();
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+    }
+
+    // Se estiver a tentar avançar para o passo 3, validar também as variações do passo 2
+    if (targetStep === 3) {
+      for (let i = 0; i < variations.length; i++) {
+        const v = variations[i];
+        if (v.additionalPrice !== '' && v.additionalPrice !== undefined) {
+          const addP = Number(v.additionalPrice);
+          if (!Number.isFinite(addP) || addP < 0) {
+            setValidationError(`O acréscimo de preço da variação #${i + 1} não pode ser negativo.`);
+            setCurrentStep(2);
+            const el = document.getElementById(`input-var-price-${i}`);
+            el?.focus();
+            return false;
+          }
+        }
+      }
+    }
+
     const cost = Number(costPrice) || 0;
     const sale = Number(salePrice) || 0;
 
@@ -1046,21 +1126,43 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     return true;
   };
 
-  // Step 1 Validation & Next
+  // Step 1 Validation & Next (Bloco 5.2: erro de campo obrigatório e foco no primeiro campo inválido)
   const handleProceedFromStep1 = () => {
     setValidationError(null);
+    const errors: Record<string, string> = {};
+    let firstInvalid: HTMLElement | null = null;
+
     if (!name.trim()) {
-      setValidationError('O nome do produto é obrigatório.');
-      return;
-    }
-    if (!category.trim()) {
-      setValidationError('A categoria é obrigatória.');
-      return;
+      errors.name = 'O nome do produto é obrigatório.';
+      if (!firstInvalid) firstInvalid = document.getElementById('input-product-name');
     }
     if (!condition) {
-      setValidationError('O estado do artigo é obrigatório.');
+      errors.condition = 'O estado do artigo é obrigatório.';
+      if (!firstInvalid) firstInvalid = document.getElementById('select-product-condition');
+    }
+    if (!category.trim()) {
+      errors.category = 'A categoria é obrigatória.';
+      if (!firstInvalid) firstInvalid = document.getElementById('select-product-category');
+    }
+
+    // Validação de Preços Não Negativos
+    if (costPrice !== '' && (!Number.isFinite(Number(costPrice)) || Number(costPrice) < 0)) {
+      errors.costPrice = 'O preço de custo não pode ser negativo.';
+      if (!firstInvalid) firstInvalid = document.getElementById('input-cost-price');
+    }
+    if (salePrice !== '' && (!Number.isFinite(Number(salePrice)) || Number(salePrice) < 0)) {
+      errors.salePrice = 'O preço de venda não pode ser negativo.';
+      if (!firstInvalid) firstInvalid = document.getElementById('input-sale-price');
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setValidationError(Object.values(errors)[0]);
+      firstInvalid?.focus();
+      firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    setFieldErrors({});
 
     // Validação de SKU duplicado na empresa (Bloqueio Obrigatório)
     if (sku.trim()) {
@@ -1068,6 +1170,9 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
       if (existingSku) {
         setValidationError('Já existe um produto cadastrado com este SKU.');
         setSkuError('Já existe um produto cadastrado com este SKU.');
+        const skuEl = document.getElementById('input-product-sku');
+        skuEl?.focus();
+        skuEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
     } else {
@@ -1146,6 +1251,13 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
     setValidationError(null);
     for (let i = 0; i < variations.length; i++) {
       const v = variations[i];
+      if (v.additionalPrice !== '' && v.additionalPrice !== undefined) {
+        const addP = Number(v.additionalPrice);
+        if (!Number.isFinite(addP) || addP < 0) {
+          setValidationError(`O acréscimo de preço da variação #${i + 1} não pode ser negativo.`);
+          return;
+        }
+      }
       if (!v.color.trim() && !v.size.trim()) {
         setValidationError(
           `Na variação #${i + 1}, selecione pelo menos a cor ou informe o tamanho/especificação.`
@@ -1160,6 +1272,29 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   const handleFinalSubmit = (bypassDuplicateNameCheck: boolean = false) => {
     setValidationError(null);
     setWarehouseBlockError(null);
+
+    // Validação central de preços antes de submeter
+    const numCost = Number(costPrice) || 0;
+    const numSale = Number(salePrice) || 0;
+    if (!Number.isFinite(numCost) || numCost < 0) {
+      setValidationError('O preço de custo não pode ser negativo.');
+      setCurrentStep(1);
+      return;
+    }
+    if (!Number.isFinite(numSale) || numSale < 0) {
+      setValidationError('O preço de venda não pode ser negativo.');
+      setCurrentStep(1);
+      return;
+    }
+    for (let i = 0; i < variations.length; i++) {
+      const v = variations[i];
+      const addP = Number(v.additionalPrice) || 0;
+      if (!Number.isFinite(addP) || addP < 0) {
+        setValidationError(`O acréscimo de preço da variação #${i + 1} não pode ser negativo.`);
+        setCurrentStep(2);
+        return;
+      }
+    }
 
     // Validação de armazéns selecionados
     const selectedConfigsArray = Object.keys(warehouseConfigs).map(
@@ -1300,18 +1435,28 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   // Salvar direto quando em modo edição de artigo existente (disponível nas etapas 1 e 2 ao lado do Avançar)
   const handleQuickSaveWhenEditing = () => {
     setValidationError(null);
+    const errors: Record<string, string> = {};
+    let firstInvalid: HTMLElement | null = null;
     if (!name.trim()) {
-      setValidationError('O nome do produto é obrigatório.');
-      return;
-    }
-    if (!category.trim()) {
-      setValidationError('A categoria é obrigatória.');
-      return;
+      errors.name = 'O nome do produto é obrigatório.';
+      if (!firstInvalid) firstInvalid = document.getElementById('input-product-name');
     }
     if (!condition) {
-      setValidationError('O estado do artigo é obrigatório.');
+      errors.condition = 'O estado do artigo é obrigatório.';
+      if (!firstInvalid) firstInvalid = document.getElementById('select-product-condition');
+    }
+    if (!category.trim()) {
+      errors.category = 'A categoria é obrigatória.';
+      if (!firstInvalid) firstInvalid = document.getElementById('select-product-category');
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setValidationError(Object.values(errors)[0]);
+      firstInvalid?.focus();
+      firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    setFieldErrors({});
 
     if (currentStep === 1) {
       if (!checkPriceValidation(currentStep)) {
@@ -1390,9 +1535,19 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
   // Add inline Supplier
   const handleCreateNewSupplier = () => {
     if (newSupplierName.trim()) {
+      let finalContact = newSupplierContact.trim();
+      if (finalContact) {
+        const phoneVal = validatePhoneField(finalContact, false);
+        if (!phoneVal.isValid) {
+          setNewSupplierContactError(phoneVal.error || 'Contacto de telefone inválido.');
+          return;
+        }
+        finalContact = phoneVal.normalized;
+      }
+      setNewSupplierContactError(null);
       const created = addSupplier({
         name: newSupplierName.trim(),
-        contact: newSupplierContact.trim(),
+        contact: finalContact,
         address: newSupplierAddress.trim(),
         notes: newSupplierNotes.trim(),
       });
@@ -1579,11 +1734,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   }`}
                   onClick={() => {
                     if (name.trim() && category.trim()) {
-                      if (currentStep === 1) {
-                        if (checkPriceValidation(2)) setCurrentStep(2);
-                      } else {
-                        setCurrentStep(2);
-                      }
+                      if (checkPriceValidation(2)) setCurrentStep(2);
                     } else {
                       setValidationError('Preencha o nome e a categoria do produto antes de prosseguir.');
                     }
@@ -1620,11 +1771,7 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                   }`}
                   onClick={() => {
                     if (name.trim() && category.trim()) {
-                      if (currentStep === 1) {
-                        if (checkPriceValidation(3)) setCurrentStep(3);
-                      } else {
-                        setCurrentStep(3);
-                      }
+                      if (checkPriceValidation(3)) setCurrentStep(3);
                     } else {
                       setValidationError('Preencha o nome e a categoria do produto antes de prosseguir.');
                     }
@@ -1660,331 +1807,462 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
           {/* Modal Scrollable Body */}
           <div className="p-6 flex-1 overflow-y-auto min-h-0">
             {/* ========================================================================= */}
-            {/* STEP 1: DADOS BÁSICOS, ESTADO, PREÇOS E CATEGORIA                         */}
+            {/* STEP 1: DADOS BÁSICOS, ESTADO, PREÇOS E CATEGORIA (Bloco 5.1 & 5.2)        */}
             {/* ========================================================================= */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                {/* Nome do Produto & Estado */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <label htmlFor="input-product-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Nome do Produto <span className="text-rose-500">*</span>
-                      </label>
-                      {currentCompany && (
-                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                          Empresa: {currentCompany.name}
-                        </span>
+                {/* 1. SECÇÃO: IDENTIFICAÇÃO */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <FileEdit className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Identificação
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Nome do Produto */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="input-product-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Nome do Produto <span className="text-rose-500">*</span>
+                        </label>
+                        {currentCompany && (
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                            Empresa: {currentCompany.name}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        id="input-product-name"
+                        aria-label="Nome do Produto"
+                        value={name}
+                        onChange={(e) => {
+                          handleNameChange(e.target.value);
+                          if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }));
+                        }}
+                        placeholder="Ex: Comando Sem Fios DualSense PS5 / Fritadeira Air Fryer 4.5L"
+                        className={`w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
+                          fieldErrors.name
+                            ? 'border-rose-500 ring-2 ring-rose-500/20 text-rose-900 dark:text-rose-100'
+                            : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500'
+                        }`}
+                      />
+                      {/* Bloco 5.2: Mensagem de erro logo abaixo do campo (8px = mt-2) */}
+                      {fieldErrors.name && (
+                        <p id="error-product-name" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-150">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
+                          <span>{fieldErrors.name}</span>
+                        </p>
+                      )}
+                      {nameDuplicateCandidate && (
+                        <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/90 rounded-lg flex items-center justify-between gap-2 animate-in fade-in duration-150">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span className="text-[11px] text-amber-800 dark:text-amber-300 truncate">
+                              Já existe um produto chamado <strong className="font-semibold text-slate-900 dark:text-slate-100">'{nameDuplicateCandidate.name}'</strong> nesta empresa.
+                            </span>
+                          </div>
+                          {onViewProduct && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onClose();
+                                onViewProduct(nameDuplicateCandidate.id);
+                              }}
+                              className="text-[11px] font-semibold text-amber-900 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-200 underline shrink-0 cursor-pointer"
+                            >
+                              Ver produto existente
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      id="input-product-name"
-                      aria-label="Nome do Produto"
-                      value={name}
-                      onChange={(e) => handleNameChange(e.target.value)}
-                      placeholder="Ex: Comando Sem Fios DualSense PS5 / Fritadeira Air Fryer 4.5L"
-                      className="w-full px-3.5 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                    />
-                    {nameDuplicateCandidate && (
-                      <div className="mt-1.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/90 rounded-lg flex items-center justify-between gap-2 animate-in fade-in duration-150">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span className="text-[11px] text-amber-800 dark:text-amber-300 truncate">
-                            Já existe um produto chamado <strong className="font-semibold text-slate-900 dark:text-slate-100">'{nameDuplicateCandidate.name}'</strong> nesta empresa.
-                          </span>
+
+                    {/* Estado do Artigo */}
+                    <div>
+                      <label htmlFor="select-product-condition" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Estado do Artigo <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        id="select-product-condition"
+                        aria-label="Estado do Artigo"
+                        value={condition}
+                        onChange={(e) => {
+                          handleConditionChange(e.target.value as ProductCondition);
+                          if (fieldErrors.condition) setFieldErrors((prev) => ({ ...prev, condition: '' }));
+                        }}
+                        className={`w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                          fieldErrors.condition
+                            ? 'border-rose-500 ring-2 ring-rose-500/20'
+                            : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500'
+                        }`}
+                      >
+                        <option value="novo">Novo (de fábrica / lacrado)</option>
+                        <option value="novo_usado">Novo-Usado (caixa aberta / demo)</option>
+                        <option value="usado">Usado (em bom estado)</option>
+                        <option value="troca">Troca (recebido para retoma)</option>
+                      </select>
+                      {fieldErrors.condition && (
+                        <p id="error-product-condition" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-150">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
+                          <span>{fieldErrors.condition}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Código SKU */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="input-product-sku" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Código SKU <span className="text-slate-400 dark:text-slate-500 font-normal">(Identificador Único)</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleAutoGenerateSku}
+                          className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3" /> Gerar automático
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        id="input-product-sku"
+                        aria-label="Código SKU"
+                        value={sku}
+                        onChange={(e) => handleSkuChange(e.target.value)}
+                        placeholder="Ex: GAME-PS5-001"
+                        className={`w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-slate-800 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 ${
+                          skuDuplicateCandidate || skuError
+                            ? 'border-rose-400 ring-2 ring-rose-500/15 bg-rose-50/20 dark:bg-rose-950/20'
+                            : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10'
+                        }`}
+                      />
+                      {(skuDuplicateCandidate || skuError) && (
+                        <div className="mt-2 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium animate-in fade-in duration-150">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                          <span>Já existe um produto registado com este SKU.</span>
                         </div>
-                        {onViewProduct && (
+                      )}
+                    </div>
+
+                    {/* Código de Barras EAN-13 */}
+                    <div>
+                      <label htmlFor="input-product-barcode" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Código de Barras EAN-13 <span className="text-slate-400 dark:text-slate-500 font-normal">(Opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="input-product-barcode"
+                        aria-label="Código de Barras EAN-13"
+                        value={barcode}
+                        onChange={(e) => setBarcode(e.target.value)}
+                        placeholder="Ex: 5601234567890"
+                        className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 2. SECÇÃO: CLASSIFICAÇÃO */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <Layers className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Classificação
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Categoria */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="select-product-category" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Categoria <span className="text-rose-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewCategoryModal(true)}
+                          className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
+                        >
+                          + Nova
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <select
+                          id="select-product-category"
+                          aria-label="Categoria do Produto"
+                          value={category}
+                          onChange={(e) => {
+                            setCategory(e.target.value);
+                            setSubcategory('');
+                            if (fieldErrors.category) setFieldErrors((prev) => ({ ...prev, category: '' }));
+                          }}
+                          className={`w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100 ${
+                            fieldErrors.category
+                              ? 'border-rose-500 ring-2 ring-rose-500/20'
+                              : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500'
+                          }`}
+                        >
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {fieldErrors.category ? (
+                        <p id="error-product-category" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-150">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
+                          <span>{fieldErrors.category}</span>
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 mt-1.5">
+                          {renderCategoryIcon(category)}
+                          <span>Taxonomia do catálogo</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Subcategoria */}
+                    <div>
+                      <label htmlFor="select-product-subcategory" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Subcategoria
+                      </label>
+                      <select
+                        id="select-product-subcategory"
+                        aria-label="Subcategoria do Produto"
+                        value={subcategory}
+                        onChange={(e) => setSubcategory(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-elevated text-slate-800 dark:text-slate-100"
+                      >
+                        <option value="">Sem subcategoria</option>
+                        {Array.from(new Set([...categoryChildren(subcategories, category), ...(subcategory ? [subcategory] : [])])).map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Marca */}
+                    <div>
+                      <label htmlFor="input-product-brand" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Marca
+                      </label>
+                      <input
+                        type="text"
+                        id="input-product-brand"
+                        aria-label="Marca"
+                        value={brand}
+                        onChange={(e) => setBrand(e.target.value)}
+                        placeholder="Ex: Sony, Philips, Apple, Nike, Purina"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                      />
+                    </div>
+
+                    {/* Unidade de Medida (Bloco 5.1: não fica isolada, pareia com Marca na grelha de 2 colunas) */}
+                    <div>
+                      <label htmlFor="select-unit-of-measure" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Unidade de Medida
+                      </label>
+                      <select
+                        id="select-unit-of-measure"
+                        aria-label="Unidade de Medida"
+                        value={unitOfMeasure}
+                        onChange={(e) => setUnitOfMeasure(e.target.value as UnitOfMeasure)}
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                      >
+                        <option value="unidade">Unidade (un)</option>
+                        <option value="caixa">Caixa (cx)</option>
+                        <option value="par">Par</option>
+                        <option value="pacote">Pacote (pct)</option>
+                        <option value="kg">Quilograma (kg)</option>
+                        <option value="litro">Litro (L)</option>
+                        <option value="metro">Metro (m)</option>
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                {/* 3. SECÇÃO: PREÇOS E FORNECEDOR */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <Coins className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Preços
+                    </h3>
+                  </div>
+
+                  <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 rounded-xl space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* Preço de Custo */}
+                      <div>
+                        <label htmlFor="input-cost-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Preço de Custo (Kz)
+                        </label>
+                        <input
+                          type="number"
+                          id="input-cost-price"
+                          aria-label="Preço de Custo em Kwanzas"
+                          min="0"
+                          step="100"
+                          value={costPrice}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const val = raw === '' ? '' : Number(raw);
+                            setCostPrice(val);
+                            if (val !== '' && (!Number.isFinite(val) || val < 0)) {
+                              setFieldErrors((prev) => ({ ...prev, costPrice: 'O preço de custo não pode ser negativo.' }));
+                            } else {
+                              setFieldErrors((prev) => ({ ...prev, costPrice: '' }));
+                            }
+                          }}
+                          placeholder="0.00"
+                          className={`w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 ${
+                            fieldErrors.costPrice
+                              ? 'border-rose-500 ring-2 ring-rose-500/20'
+                              : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10'
+                          }`}
+                        />
+                        {fieldErrors.costPrice && (
+                          <p id="error-cost-price" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-150">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{fieldErrors.costPrice}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Preço de Venda */}
+                      <div>
+                        <label htmlFor="input-sale-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Preço de Venda (Kz)
+                        </label>
+                        <input
+                          type="number"
+                          id="input-sale-price"
+                          aria-label="Preço de Venda em Kwanzas"
+                          min="0"
+                          step="100"
+                          value={salePrice}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const val = raw === '' ? '' : Number(raw);
+                            setSalePrice(val);
+                            if (val !== '' && (!Number.isFinite(val) || val < 0)) {
+                              setFieldErrors((prev) => ({ ...prev, salePrice: 'O preço de venda não pode ser negativo.' }));
+                            } else {
+                              setFieldErrors((prev) => ({ ...prev, salePrice: '' }));
+                            }
+                          }}
+                          placeholder="0.00"
+                          className={`w-full px-3 py-2 text-xs font-mono font-semibold bg-white dark:bg-slate-900 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-900 dark:text-slate-100 ${
+                            fieldErrors.salePrice
+                              ? 'border-rose-500 ring-2 ring-rose-500/20'
+                              : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10'
+                          }`}
+                        />
+                        {fieldErrors.salePrice && (
+                          <p id="error-sale-price" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-150">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{fieldErrors.salePrice}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Fornecedor */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label htmlFor="select-supplier" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            Fornecedor
+                          </label>
                           <button
                             type="button"
-                            onClick={() => {
-                              onClose();
-                              onViewProduct(nameDuplicateCandidate.id);
-                            }}
-                            className="text-[11px] font-semibold text-amber-900 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-200 underline shrink-0 cursor-pointer"
+                            onClick={() => setShowNewSupplierModal(true)}
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
                           >
-                            Ver produto existente
+                            + Novo
                           </button>
+                        </div>
+                        <select
+                          id="select-supplier"
+                          aria-label="Fornecedor do Produto"
+                          value={supplierId}
+                          onChange={(e) => setSupplierId(e.target.value)}
+                          className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                        >
+                          {suppliers.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Resumo da Margem Calculada */}
+                      <div className="flex flex-col justify-end">
+                        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between text-xs">
+                          <span className="text-slate-500 dark:text-slate-400 font-medium">Margem Bruta Estimada:</span>
+                          {Number(costPrice) > 0 && Number(salePrice) > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
+                                {formatKwanza(Number(salePrice) - Number(costPrice))}
+                              </span>
+                              <span
+                                className={`font-semibold px-2 py-0.5 rounded text-[11px] ${
+                                  Number(salePrice) >= Number(costPrice)
+                                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                                    : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
+                                }`}
+                              >
+                                {Math.round(
+                                  ((Number(salePrice) - Number(costPrice)) / Number(costPrice)) * 100
+                                )}
+                                %
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Alertas de Margem por Estado */}
+                    {Number(costPrice) > 0 && Number(salePrice) > 0 && (
+                      <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                        {condition === 'novo' && Number(salePrice) < Number(costPrice) && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px]">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                            <span>Alerta (Novo): O preço de venda é inferior ao preço de custo.</span>
+                          </div>
+                        )}
+
+                        {condition === 'usado' && Number(salePrice) > Number(costPrice) && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px]">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <span>Aviso (Usado): O preço de venda é superior ao preço de custo.</span>
+                          </div>
+                        )}
+
+                        {condition === 'novo_usado' && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[11px]">
+                            <Info className="w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
+                            <span>Novo-Usado: Preço livre (pode ser inferior ou superior ao custo).</span>
+                          </div>
                         )}
                       </div>
                     )}
                   </div>
+                </section>
 
-                  {/* NOVO CAMPO OBRIGATÓRIO: Estado do Artigo */}
-                  <div>
-                    <label htmlFor="select-product-condition" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Estado do Artigo <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      id="select-product-condition"
-                      aria-label="Estado do Artigo"
-                      value={condition}
-                      onChange={(e) => handleConditionChange(e.target.value as ProductCondition)}
-                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                    >
-                      <option value="novo">Novo (de fábrica / lacrado)</option>
-                      <option value="novo_usado">Novo-Usado (caixa aberta / demo)</option>
-                      <option value="usado">Usado (em bom estado)</option>
-                      <option value="troca">Troca (recebido para retoma)</option>
-                    </select>
+                {/* 4. SECÇÃO: IMAGENS */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Imagens
+                    </h3>
                   </div>
-                </div>
-
-                {/* Categoria & Marca */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Categoria com as 5 principais */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label htmlFor="select-product-category" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Categoria <span className="text-rose-500">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowNewCategoryModal(true)}
-                        className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
-                      >
-                        + Nova
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <select
-                        id="select-product-category"
-                        aria-label="Categoria do Produto"
-                        value={category}
-                        onChange={(e) => {setCategory(e.target.value);setSubcategory('');}}
-                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                      {renderCategoryIcon(category)}
-                      <span>Taxonomia do catálogo</span>
-                    </div>
-                  </div>
-
-                  <div><label htmlFor="select-product-subcategory" className="block text-xs font-semibold mb-1">Subcategoria</label><select id="select-product-subcategory" aria-label="Subcategoria do Produto" value={subcategory} onChange={e => setSubcategory(e.target.value)} className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-elevated"><option value="">Sem subcategoria</option>{Array.from(new Set([...categoryChildren(subcategories, category), ...(subcategory ? [subcategory] : [])])).map(c => <option key={c}>{c}</option>)}</select></div>
-                  {/* Marca */}
-                  <div>
-                    <label htmlFor="input-product-brand" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Marca
-                    </label>
-                    <input
-                      type="text"
-                      id="input-product-brand"
-                      aria-label="Marca"
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                      placeholder="Ex: Sony, Philips, Apple, Nike, Purina"
-                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                    />
-                  </div>
-
-                  {/* Unidade de Medida */}
-                  <div>
-                    <label htmlFor="select-unit-of-measure" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Unidade de Medida
-                    </label>
-                    <select
-                      id="select-unit-of-measure"
-                      aria-label="Unidade de Medida"
-                      value={unitOfMeasure}
-                      onChange={(e) => setUnitOfMeasure(e.target.value as UnitOfMeasure)}
-                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-400 dark:focus:border-slate-500 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                    >
-                      <option value="unidade">Unidade (un)</option>
-                      <option value="caixa">Caixa (cx)</option>
-                      <option value="par">Par</option>
-                      <option value="pacote">Pacote (pct)</option>
-                      <option value="kg">Quilograma (kg)</option>
-                      <option value="litro">Litro (L)</option>
-                      <option value="metro">Metro (m)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* SKU e Código de Barras */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label htmlFor="input-product-sku" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Código SKU <span className="text-slate-400 dark:text-slate-500 font-normal">(Identificador Único)</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={handleAutoGenerateSku}
-                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" /> Gerar automático
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      id="input-product-sku"
-                      aria-label="Código SKU"
-                      value={sku}
-                      onChange={(e) => handleSkuChange(e.target.value)}
-                      placeholder="Ex: GAME-PS5-001"
-                      className={`w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-slate-800 border rounded-lg focus:outline-hidden focus:ring-2 text-slate-800 dark:text-slate-100 ${
-                        skuDuplicateCandidate || skuError
-                          ? 'border-rose-400 ring-2 ring-rose-500/15 bg-rose-50/20 dark:bg-rose-950/20'
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900/10 dark:focus:ring-slate-100/10'
-                      }`}
-                    />
-                    {(skuDuplicateCandidate || skuError) && (
-                      <div className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium animate-in fade-in duration-150">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
-                        <span>Já existe um produto registado com este SKU.</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label htmlFor="input-product-barcode" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Código de Barras EAN-13 <span className="text-slate-400 dark:text-slate-500 font-normal">(Opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="input-product-barcode"
-                      aria-label="Código de Barras EAN-13"
-                      value={barcode}
-                      onChange={(e) => setBarcode(e.target.value)}
-                      placeholder="Ex: 5601234567890"
-                      className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                </div>
-
-                {/* Preços e Fornecedor */}
-                <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 rounded-xl space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Preço de Custo */}
-                    <div>
-                      <label htmlFor="input-cost-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Preço de Custo (Kz)
-                      </label>
-                      <input
-                        type="number"
-                        id="input-cost-price"
-                        aria-label="Preço de Custo em Kwanzas"
-                        min="0"
-                        step="100"
-                        value={costPrice}
-                        onChange={(e) =>
-                          setCostPrice(e.target.value === '' ? '' : Number(e.target.value))
-                        }
-                        placeholder="0.00"
-                        className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100"
-                      />
-                    </div>
-
-                    {/* Preço de Venda */}
-                    <div>
-                      <label htmlFor="input-sale-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Preço de Venda (Kz)
-                      </label>
-                      <input
-                        type="number"
-                        id="input-sale-price"
-                        aria-label="Preço de Venda em Kwanzas"
-                        min="0"
-                        step="100"
-                        value={salePrice}
-                        onChange={(e) =>
-                          setSalePrice(e.target.value === '' ? '' : Number(e.target.value))
-                        }
-                        placeholder="0.00"
-                        className="w-full px-3 py-2 text-xs font-mono font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-900 dark:text-slate-100"
-                      />
-                    </div>
-
-                    {/* Fornecedor */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label htmlFor="select-supplier" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          Fornecedor
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowNewSupplierModal(true)}
-                          className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
-                        >
-                          + Novo
-                        </button>
-                      </div>
-                      <select
-                        id="select-supplier"
-                        aria-label="Fornecedor do Produto"
-                        value={supplierId}
-                        onChange={(e) => setSupplierId(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 text-slate-800 dark:text-slate-100 [&>option]:bg-white dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                      >
-                        {suppliers.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Margem Calculada & Alertas por Estado */}
-                  {Number(costPrice) > 0 && Number(salePrice) > 0 && (
-                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">Margem Bruta Estimada:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-medium text-slate-700 dark:text-slate-200">
-                            {formatKwanza(Number(salePrice) - Number(costPrice))}
-                          </span>
-                          <span
-                            className={`font-semibold px-2 py-0.5 rounded text-[11px] ${
-                              Number(salePrice) >= Number(costPrice)
-                                ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                                : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
-                            }`}
-                          >
-                            {Math.round(
-                              ((Number(salePrice) - Number(costPrice)) / Number(costPrice)) * 100
-                            )}
-                            %
-                          </span>
-                        </div>
-                      </div>
-
-                      {condition === 'novo' && Number(salePrice) < Number(costPrice) && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px]">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
-                          <span>Alerta (Novo): O preço de venda é inferior ao preço de custo.</span>
-                        </div>
-                      )}
-
-                      {condition === 'usado' && Number(salePrice) > Number(costPrice) && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px]">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                          <span>Aviso (Usado): O preço de venda é superior ao preço de custo.</span>
-                        </div>
-                      )}
-
-                      {condition === 'novo_usado' && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[11px]">
-                          <Info className="w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
-                          <span>Novo-Usado: Preço livre (pode ser inferior ou superior ao custo).</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Imagens (Principal e Galeria com Presets das 5 Categorias) */}
-                <div className="space-y-3">
-                  <label htmlFor="input-main-image-url" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Imagem do Produto
-                  </label>
 
                   <div className="flex items-start gap-4">
                     <div className="w-20 h-20 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 shadow-2xs">
@@ -2032,10 +2310,10 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </section>
 
-                {/* Descrição */}
-                <div>
+                {/* Descrição Detalhada */}
+                <div className="pt-2">
                   <label htmlFor="textarea-description" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Descrição Detalhada & Especificações
                   </label>
@@ -2189,25 +2467,37 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
 
                           {/* Acréscimo Preço (Kz) */}
                           <div className="sm:col-span-1">
-                            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            <label htmlFor={`input-var-price-${index}`} className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                               + Preço (Kz)
                             </label>
                             <input
                               type="number"
+                              id={`input-var-price-${index}`}
                               aria-label={`Acréscimo de preço da variação ${index + 1}`}
                               min="0"
                               step="500"
-                              value={v.additionalPrice || ''}
-                              onChange={(e) =>
+                              value={v.additionalPrice === undefined || v.additionalPrice === '' ? '' : v.additionalPrice}
+                              onChange={(e) => {
+                                const raw = e.target.value;
                                 handleUpdateVariation(
                                   index,
                                   'additionalPrice',
-                                  Number(e.target.value) || 0
-                                )
-                              }
+                                  raw === '' ? '' : Number(raw)
+                                );
+                              }}
                               placeholder="0"
-                              className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
+                              className={`w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border ${
+                                v.additionalPrice !== undefined && v.additionalPrice !== '' && Number(v.additionalPrice) < 0
+                                  ? 'border-rose-500 ring-2 ring-rose-500/20'
+                                  : 'border-slate-200 dark:border-slate-700'
+                              } rounded-lg text-slate-800 dark:text-slate-100`}
                             />
+                            {v.additionalPrice !== undefined && v.additionalPrice !== '' && Number(v.additionalPrice) < 0 && (
+                              <p id={`error-var-price-${index}`} role="alert" className="mt-1 text-[10px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3 shrink-0" />
+                                <span>Não pode ser negativo.</span>
+                              </p>
+                            )}
                           </div>
 
                           {/* NOVO CAMPO: Quantidade por Variação */}
@@ -2958,14 +3248,30 @@ export const ProductCreateModal: React.FC<ProductCreateModalProps> = ({
                 className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 autoFocus
               />
-              <input
-                type="text"
-                aria-label="Contacto do Fornecedor"
-                value={newSupplierContact}
-                onChange={(e) => setNewSupplierContact(e.target.value)}
-                placeholder="Contacto (Telefone / Email)"
-                className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-              />
+              <div>
+                <input
+                  type="text"
+                  id="inline-sup-contact"
+                  aria-label="Contacto do Fornecedor"
+                  value={newSupplierContact}
+                  onChange={(e) => {
+                    setNewSupplierContact(e.target.value);
+                    if (newSupplierContactError) setNewSupplierContactError(null);
+                  }}
+                  placeholder="Contacto (Telefone / WhatsApp)"
+                  className={`w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border rounded-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
+                    newSupplierContactError
+                      ? 'border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700'
+                  }`}
+                />
+                {newSupplierContactError && (
+                  <p id="error-inline-sup-contact" role="alert" className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 animate-in fade-in duration-150">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    <span>{newSupplierContactError}</span>
+                  </p>
+                )}
+              </div>
               <input
                 type="text"
                 aria-label="Localização ou Província do Fornecedor"

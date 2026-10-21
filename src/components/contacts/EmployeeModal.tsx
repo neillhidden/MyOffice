@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Building2, Phone, Briefcase, Calendar as CalendarIcon, MapPin, Shield } from 'lucide-react';
+import { X, User, Building2, Phone, Briefcase, Calendar as CalendarIcon, MapPin, Shield, AlertTriangle } from 'lucide-react';
 import { Employee } from '../../types/employee';
 import { useStock } from '../../context/StockContext';
+import { validatePhoneField } from '../../utils/phoneValidation';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -25,9 +26,11 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [status, setStatus] = useState<'ativo' | 'inativo'>('ativo');
   const [accessPermissions] = useState<'basico' | 'gerente' | 'administrador'>('basico');
   const [error, setError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setPhoneError(null);
       if (employeeToEdit) {
         setName(employeeToEdit.name || '');
         setCompanyId(employeeToEdit.companyId || (companies[0]?.id ?? ''));
@@ -61,17 +64,23 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       setError('A associação a uma empresa é obrigatória.');
       return;
     }
-    if (!phone.trim()) {
-      setError('O contacto (telefone / WhatsApp) é obrigatório.');
+
+    const phoneValidation = validatePhoneField(phone, true);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error || 'Contacto de telefone inválido.');
+      setError(phoneValidation.error || 'Contacto de telefone inválido.');
+      const el = document.getElementById('emp-phone');
+      el?.focus();
       return;
     }
+    setPhoneError(null);
 
     try {
       if (employeeToEdit) {
         updateEmployee(employeeToEdit.id, {
           name: name.trim(),
           companyId,
-          phone: phone.trim(),
+          phone: phoneValidation.normalized,
           role: role.trim() || undefined,
           birthDate: birthDate || undefined,
           address: address.trim() || undefined,
@@ -82,7 +91,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         addEmployee({
           name: name.trim(),
           companyId,
-          phone: phone.trim(),
+          phone: phoneValidation.normalized,
           role: role.trim() || undefined,
           birthDate: birthDate || undefined,
           address: address.trim() || undefined,
@@ -198,11 +207,24 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   type="text"
                   required
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (phoneError) setPhoneError(null);
+                  }}
                   placeholder="Ex.: +244 923 111 222"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+                  className={`w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 ${
+                    phoneError
+                      ? 'border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900 dark:focus:ring-slate-400'
+                  }`}
                 />
               </div>
+              {phoneError && (
+                <p id="error-emp-phone" role="alert" className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 animate-in fade-in duration-150">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span>{phoneError}</span>
+                </p>
+              )}
             </div>
 
             {/* Cargo / Função */}

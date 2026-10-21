@@ -74,13 +74,13 @@ export const CalendarSidebarAgendas: React.FC<CalendarSidebarAgendasProps> = ({
           </span>
         </div>
 
-        {/* User Directive: Botão 'Adicionar' (sem ícone '+') para nova agenda */}
+        {/* Bloco 4: Rótulo específico 'Nova agenda' com 44-48px de altura, sem '+' */}
         <button
           id="calendar-add-agenda-btn"
           onClick={onOpenCreateAgenda}
-          className="dm-btn-primary px-2.5 py-1 bg-white dark:bg-dm-text border border-slate-200 dark:border-transparent hover:bg-slate-100/80 dark:hover:bg-white text-slate-800 dark:text-dm-page rounded-md text-xs font-semibold transition-colors shadow-2xs"
+          className="dm-btn-primary min-h-[44px] h-11 px-3.5 inline-flex items-center justify-center bg-white dark:bg-dm-text border border-slate-200 dark:border-transparent hover:bg-slate-100/80 dark:hover:bg-white text-slate-800 dark:text-dm-page rounded-xl text-xs font-semibold transition-colors shadow-2xs cursor-pointer shrink-0"
         >
-          Adicionar
+          Nova agenda
         </button>
       </div>
 

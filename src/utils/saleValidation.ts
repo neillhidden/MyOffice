@@ -22,3 +22,29 @@ export function validateSaleItem(
     throw new Error('O subtotal do item excede o limite permitido.');
   }
 }
+
+export function validateCreditSaleClient(
+  paymentMethod: string,
+  clientId?: string,
+  clientName?: string,
+): void {
+  if (paymentMethod === 'a_prazo') {
+    const trimmed = clientName?.trim().toLowerCase();
+    const isGenericConsumer =
+      !trimmed ||
+      trimmed === 'consumidor final' ||
+      trimmed === 'consumidor final (não registado)' ||
+      trimmed.includes('consumidor final');
+
+    if (!clientId) {
+      if (isGenericConsumer) {
+        throw new Error('Vendas a prazo exigem um cliente identificado. Não é permitido Consumidor final.');
+      }
+    } else {
+      if (trimmed && isGenericConsumer) {
+        throw new Error('Vendas a prazo exigem um cliente identificado. Não é permitido Consumidor final.');
+      }
+    }
+  }
+}
+

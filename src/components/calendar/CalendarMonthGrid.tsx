@@ -186,40 +186,41 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
                         e.stopPropagation();
                         onSelectEvent(event);
                       }}
-                      className={`group/item flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] leading-tight border transition-all cursor-pointer ${
+                      className={`group/item flex items-center gap-2 px-2 py-1.5 rounded-md text-sm leading-snug border transition-all cursor-pointer min-h-[32px] sm:min-h-[36px] my-0.5 relative touch-manipulation ${
                         isDone
                           ? 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-slate-200/50 dark:border-slate-800/60'
                           : 'bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 shadow-2xs hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                       style={{
-                        borderLeftWidth: '3px',
+                        borderLeftWidth: '3.5px',
                         borderLeftColor: colorHex,
                       }}
                     >
-                      {/* Checkbox toggle status */}
+                      {/* Checkbox toggle status com área de clique expandida */}
                       <button
+                        type="button"
                         onClick={(e) => onToggleEventStatus(event.id, e)}
                         title={isDone ? 'Marcar como pendente' : 'Marcar como concluído'}
-                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors cursor-pointer min-w-[20px] min-h-[20px] ${
                           isDone
                             ? 'bg-emerald-600 border-emerald-600 text-white'
                             : 'border-slate-300 dark:border-slate-600 group-hover/item:border-slate-400 dark:group-hover/item:border-slate-500 bg-white dark:bg-slate-900 hover:border-emerald-600'
                         }`}
                       >
-                        {isDone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        {isDone && <Check className="w-3 h-3 stroke-[3]" />}
                       </button>
 
                       {/* Origin icon badge if automatic */}
                       {event.originRef?.type === 'empregado' && (
-                        <Users className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                        <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       )}
                       {event.originRef?.type === 'transporte' && (
-                        <Truck className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                        <Truck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                       )}
 
-                      {/* Event Title */}
+                      {/* Event Title: 14px (text-sm) e até duas linhas */}
                       <span
-                        className={`truncate flex-1 font-medium ${
+                        className={`line-clamp-2 flex-1 font-medium text-sm leading-snug break-words ${
                           isDone ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'
                         }`}
                       >
@@ -228,7 +229,7 @@ export const CalendarMonthGrid: React.FC<CalendarMonthGridProps> = ({
 
                       {/* Time if available */}
                       {event.time && (
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 font-mono hidden sm:inline">
+                        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0 font-mono hidden sm:inline">
                           {event.time}
                         </span>
                       )}

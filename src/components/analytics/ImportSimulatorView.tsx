@@ -184,6 +184,19 @@ export const ImportSimulatorView: React.FC = () => {
   };
 
   const handleSaveCurrentSimulation = () => {
+    if (
+      (currentSim.unitPriceUsd !== null && (!Number.isFinite(currentSim.unitPriceUsd) || currentSim.unitPriceUsd < 0)) ||
+      (currentSim.desiredQuantity !== null && (!Number.isFinite(currentSim.desiredQuantity) || currentSim.desiredQuantity <= 0)) ||
+      (currentSim.freightRatePerKgKz !== null && (!Number.isFinite(currentSim.freightRatePerKgKz) || currentSim.freightRatePerKgKz < 0)) ||
+      (currentSim.fixedFreightCostKz !== null && (!Number.isFinite(currentSim.fixedFreightCostKz) || currentSim.fixedFreightCostKz < 0)) ||
+      (currentSim.simulatedSalePriceKz !== null && (!Number.isFinite(currentSim.simulatedSalePriceKz) || currentSim.simulatedSalePriceKz < 0)) ||
+      (currentSim.availableBudgetKz !== null && (!Number.isFinite(currentSim.availableBudgetKz) || currentSim.availableBudgetKz < 0))
+    ) {
+      setSaveFeedback('Corrija os valores negativos ou inválidos antes de guardar a simulação.');
+      setTimeout(() => setSaveFeedback(null), 3000);
+      return;
+    }
+
     const nameToSave = currentSim.productName.trim() || 'Produto sem nome';
     const updatedSim: ImportSimulation = normalizeSimulation({
       ...currentSim,
@@ -366,13 +379,13 @@ export const ImportSimulatorView: React.FC = () => {
           </div>
         </div>
 
-        {/* Botões de Ação na extremidade direita da cápsula */}
-        <div className="flex flex-wrap items-center gap-2 xl:ml-auto pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100 dark:border-dm-border">
+        {/* Botões de Ação na extremidade direita da cápsula (Bloco 5.4: alinhados à direita numa só linha com Guardar simulação principal, empilha em telemóvel com 12px) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-2.5 w-full xl:w-auto xl:ml-auto pt-3 xl:pt-0 border-t xl:border-t-0 border-slate-100 dark:border-dm-border">
           <button
             type="button"
             id="btn-sim-blank"
             onClick={handleCreateBlank}
-            className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-medium text-slate-700 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text bg-slate-100 dark:bg-dm-page rounded-xl border border-transparent dark:border-dm-border transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[38px] h-11 sm:h-9.5 px-3.5 text-xs font-medium text-slate-700 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text bg-slate-100 dark:bg-dm-page rounded-xl border border-transparent dark:border-dm-border transition-colors cursor-pointer"
             title="Criar simulação limpa sem valores assumidos"
           >
             <FilePlus2 className="w-3.5 h-3.5 shrink-0" />
@@ -383,7 +396,7 @@ export const ImportSimulatorView: React.FC = () => {
             type="button"
             id="btn-sim-duplicate"
             onClick={() => handleDuplicateSimulation(currentSim)}
-            className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-medium text-slate-700 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text bg-slate-100 dark:bg-dm-page rounded-xl border border-transparent dark:border-dm-border transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[38px] h-11 sm:h-9.5 px-3.5 text-xs font-medium text-slate-700 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text bg-slate-100 dark:bg-dm-page rounded-xl border border-transparent dark:border-dm-border transition-colors cursor-pointer"
             title="Duplicar simulação atual e alterar apenas um parâmetro"
           >
             <Copy className="w-3.5 h-3.5 shrink-0" />
@@ -394,10 +407,10 @@ export const ImportSimulatorView: React.FC = () => {
             type="button"
             id="btn-sim-save"
             onClick={handleSaveCurrentSimulation}
-            className="dm-btn-primary inline-flex items-center justify-center gap-1.5 h-9 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer ml-auto sm:ml-0"
+            className="dm-btn-primary min-h-[44px] sm:min-h-[38px] h-11 sm:h-9.5 inline-flex items-center justify-center gap-2 px-5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
-            <Save className="w-3.5 h-3.5 shrink-0" />
-            <span>Guardar Simulação</span>
+            <Save className="w-4 h-4 shrink-0" />
+            <span>Guardar simulação</span>
           </button>
         </div>
       </div>
@@ -779,14 +792,19 @@ export const ImportSimulatorView: React.FC = () => {
                       step="0.01"
                       placeholder="Não informado"
                       value={currentSim.unitPriceUsd ?? ''}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const val = raw === '' ? null : Number(raw);
                         handleUpdateSim((prev) => ({
                           ...prev,
-                          unitPriceUsd:
-                            e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
-                        }))
-                      }
-                      className="flex-1 h-10 px-3 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-lg font-mono tabular-nums font-bold text-slate-900 dark:text-dm-text focus:outline-none"
+                          unitPriceUsd: val,
+                        }));
+                      }}
+                      className={`flex-1 h-10 px-3 bg-white dark:bg-dm-surface border rounded-lg font-mono tabular-nums font-bold text-slate-900 dark:text-dm-text focus:outline-none ${
+                        currentSim.unitPriceUsd !== null && (!Number.isFinite(currentSim.unitPriceUsd) || currentSim.unitPriceUsd < 0)
+                          ? 'border-rose-500 ring-2 ring-rose-500/20'
+                          : 'border-slate-200 dark:border-dm-border'
+                      }`}
                     />
                     <select
                       aria-label="Moeda do preço unitário"
@@ -806,6 +824,12 @@ export const ImportSimulatorView: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                  {currentSim.unitPriceUsd !== null && (!Number.isFinite(currentSim.unitPriceUsd) || currentSim.unitPriceUsd < 0) && (
+                    <p id="error-sim-price-usd" role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>O preço unitário não pode ser negativo.</span>
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-dm-muted pt-1">
                     <span>
                       {purchaseCurr === baseCurr
@@ -864,17 +888,26 @@ export const ImportSimulatorView: React.FC = () => {
                     step={1}
                     placeholder="Não informado"
                     value={currentSim.desiredQuantity ?? ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const val = raw === '' ? null : Number(raw);
                       handleUpdateSim((prev) => ({
                         ...prev,
-                        desiredQuantity:
-                          e.target.value === ''
-                            ? null
-                            : Math.max(1, Math.round(Number(e.target.value))),
-                      }))
-                    }
-                    className="w-full h-10 px-3 bg-slate-50 dark:bg-dm-page border border-slate-200 dark:border-dm-border rounded-lg font-mono tabular-nums font-semibold text-slate-900 dark:text-dm-text focus:outline-none"
+                        desiredQuantity: val,
+                      }));
+                    }}
+                    className={`w-full h-10 px-3 bg-slate-50 dark:bg-dm-page border rounded-lg font-mono tabular-nums font-semibold text-slate-900 dark:text-dm-text focus:outline-none ${
+                      currentSim.desiredQuantity !== null && (!Number.isFinite(currentSim.desiredQuantity) || currentSim.desiredQuantity <= 0)
+                        ? 'border-rose-500 ring-2 ring-rose-500/20'
+                        : 'border-slate-200 dark:border-dm-border'
+                    }`}
                   />
+                  {currentSim.desiredQuantity !== null && (!Number.isFinite(currentSim.desiredQuantity) || currentSim.desiredQuantity <= 0) && (
+                    <p id="error-sim-quantity" role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>A quantidade deve ser superior a zero.</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-4">
@@ -1101,14 +1134,19 @@ export const ImportSimulatorView: React.FC = () => {
                         step="any"
                         placeholder="Não informado"
                         value={currentSim.freightRatePerKgKz ?? ''}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const val = raw === '' ? null : Number(raw);
                           handleUpdateSim((prev) => ({
                             ...prev,
-                            freightRatePerKgKz:
-                              e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
-                          }))
-                        }
-                        className="flex-1 h-10 px-3 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-lg font-mono tabular-nums font-bold text-slate-900 dark:text-dm-text focus:outline-none"
+                            freightRatePerKgKz: val,
+                          }));
+                        }}
+                        className={`flex-1 h-10 px-3 bg-white dark:bg-dm-surface border rounded-lg font-mono tabular-nums font-bold text-slate-900 dark:text-dm-text focus:outline-none ${
+                          currentSim.freightRatePerKgKz !== null && (!Number.isFinite(currentSim.freightRatePerKgKz) || currentSim.freightRatePerKgKz < 0)
+                            ? 'border-rose-500 ring-2 ring-rose-500/20'
+                            : 'border-slate-200 dark:border-dm-border'
+                        }`}
                       />
                       <select
                         id="select-freight-currency"
@@ -1132,6 +1170,12 @@ export const ImportSimulatorView: React.FC = () => {
                         / kg
                       </span>
                     </div>
+                    {currentSim.freightRatePerKgKz !== null && (!Number.isFinite(currentSim.freightRatePerKgKz) || currentSim.freightRatePerKgKz < 0) && (
+                      <p id="error-sim-freight-rate" role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>A taxa de frete não pode ser negativa.</span>
+                      </p>
+                    )}
                   </>
                 ) : (
                   <>
@@ -1162,14 +1206,19 @@ export const ImportSimulatorView: React.FC = () => {
                         step="any"
                         placeholder="Não informado"
                         value={currentSim.fixedFreightCostKz ?? ''}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const val = raw === '' ? null : Number(raw);
                           handleUpdateSim((prev) => ({
                             ...prev,
-                            fixedFreightCostKz:
-                              e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
-                          }))
-                        }
-                        className="flex-1 h-10 px-3 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-lg font-mono tabular-nums font-bold text-slate-900 dark:text-dm-text focus:outline-none"
+                            fixedFreightCostKz: val,
+                          }));
+                        }}
+                        className={`flex-1 h-10 px-3 bg-white dark:bg-dm-surface border rounded-lg font-mono tabular-nums font-bold text-slate-900 dark:text-dm-text focus:outline-none ${
+                          currentSim.fixedFreightCostKz !== null && (!Number.isFinite(currentSim.fixedFreightCostKz) || currentSim.fixedFreightCostKz < 0)
+                            ? 'border-rose-500 ring-2 ring-rose-500/20'
+                            : 'border-slate-200 dark:border-dm-border'
+                        }`}
                       />
                       <select
                         id="select-freight-currency"
@@ -1190,6 +1239,12 @@ export const ImportSimulatorView: React.FC = () => {
                         ))}
                       </select>
                     </div>
+                    {currentSim.fixedFreightCostKz !== null && (!Number.isFinite(currentSim.fixedFreightCostKz) || currentSim.fixedFreightCostKz < 0) && (
+                      <p id="error-sim-fixed-freight" role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>O frete fixo não pode ser negativo.</span>
+                      </p>
+                    )}
                   </>
                 )}
 
@@ -2009,15 +2064,26 @@ export const ImportSimulatorView: React.FC = () => {
                     step={5000}
                     placeholder="Ex: 200000"
                     value={currentSim.availableBudgetKz ?? ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const val = raw === '' ? null : Number(raw);
                       handleUpdateSim((prev) => ({
                         ...prev,
-                        availableBudgetKz:
-                          e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
-                      }))
-                    }
-                    className="w-full h-10 px-3 bg-slate-50 dark:bg-dm-page border border-slate-200 dark:border-dm-border rounded-lg font-mono tabular-nums font-bold text-sm text-slate-900 dark:text-dm-text focus:outline-none"
+                        availableBudgetKz: val,
+                      }));
+                    }}
+                    className={`w-full h-10 px-3 bg-slate-50 dark:bg-dm-page border rounded-lg font-mono tabular-nums font-bold text-sm text-slate-900 dark:text-dm-text focus:outline-none ${
+                      currentSim.availableBudgetKz !== null && (!Number.isFinite(currentSim.availableBudgetKz) || currentSim.availableBudgetKz < 0)
+                        ? 'border-rose-500 ring-2 ring-rose-500/20'
+                        : 'border-slate-200 dark:border-dm-border'
+                    }`}
                   />
+                  {currentSim.availableBudgetKz !== null && (!Number.isFinite(currentSim.availableBudgetKz) || currentSim.availableBudgetKz < 0) && (
+                    <p id="error-sim-budget-kz" role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>O orçamento não pode ser negativo.</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
@@ -2223,15 +2289,26 @@ export const ImportSimulatorView: React.FC = () => {
                         step={500}
                         placeholder="Ex: 25000"
                         value={currentSim.simulatedSalePriceKz ?? ''}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const val = raw === '' ? null : Number(raw);
                           handleUpdateSim((prev) => ({
                             ...prev,
-                            simulatedSalePriceKz:
-                              e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
-                          }))
-                        }
-                        className="w-full h-10 px-3 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-lg font-mono tabular-nums font-bold text-sm text-slate-900 dark:text-dm-text focus:outline-none"
+                            simulatedSalePriceKz: val,
+                          }));
+                        }}
+                        className={`w-full h-10 px-3 bg-white dark:bg-dm-surface border rounded-lg font-mono tabular-nums font-bold text-sm text-slate-900 dark:text-dm-text focus:outline-none ${
+                          currentSim.simulatedSalePriceKz !== null && (!Number.isFinite(currentSim.simulatedSalePriceKz) || currentSim.simulatedSalePriceKz < 0)
+                            ? 'border-rose-500 ring-2 ring-rose-500/20'
+                            : 'border-slate-200 dark:border-dm-border'
+                        }`}
                       />
+                      {currentSim.simulatedSalePriceKz !== null && (!Number.isFinite(currentSim.simulatedSalePriceKz) || currentSim.simulatedSalePriceKz < 0) && (
+                        <p id="error-sim-sale-price-kz" role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>O preço de venda não pode ser negativo.</span>
+                        </p>
+                      )}
                     </div>
                     <div className="sm:text-right shrink-0">
                       <span className="text-xs text-slate-500 dark:text-dm-muted block">

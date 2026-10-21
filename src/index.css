@@ -21,6 +21,28 @@
   --dm-text-muted: #8B8B93;
   --dm-btn-primary-bg: #F5F5F5;
   --dm-btn-primary-text: #0D0D0F;
+
+  /* Bloco 3.1: Tokens Semânticos de Estado (Modo Claro - contraste >= 4.5:1) */
+  --sem-info: #075985;
+  --sem-success: #166534;
+  --sem-warning: #92400E;
+  --sem-error: #B91C1C;
+  --sem-info-bg: #F0F9FF;
+  --sem-success-bg: #F0FDF4;
+  --sem-warning-bg: #FFFBEB;
+  --sem-error-bg: #FEF2F2;
+}
+
+.dark {
+  /* Bloco 3.1: Tokens Semânticos de Estado (Modo Escuro - contraste >= 4.5:1) */
+  --sem-info: #7DD3FC;
+  --sem-success: #6EE7B7;
+  --sem-warning: #FCD34D;
+  --sem-error: #FDA4AF;
+  --sem-info-bg: rgba(125, 211, 252, 0.12);
+  --sem-success-bg: rgba(110, 231, 183, 0.12);
+  --sem-warning-bg: rgba(252, 211, 77, 0.12);
+  --sem-error-bg: rgba(253, 164, 175, 0.12);
 }
 
 @theme {
@@ -30,6 +52,10 @@
   --color-dm-border: var(--dm-border);
   --color-dm-text: var(--dm-text-primary);
   --color-dm-muted: var(--dm-text-muted);
+  --color-sem-info: var(--sem-info);
+  --color-sem-success: var(--sem-success);
+  --color-sem-warning: var(--sem-warning);
+  --color-sem-error: var(--sem-error);
 }
 
 /* ==========================================================================
@@ -237,6 +263,31 @@
 
 .dark .dm-icon-action:hover:not(:disabled) svg {
   color: var(--dm-text-primary) !important;
+}
+
+/* 9. Superfícies de aviso e erro em modo escuro (Bloco 3.3) */
+.dark .dm-warning-surface {
+  background-color: var(--sem-warning-bg) !important;
+  border-color: rgba(252, 211, 77, 0.3) !important;
+  color: var(--sem-warning) !important;
+}
+
+.dark .dm-warning-surface strong,
+.dark .dm-warning-surface p,
+.dark .dm-warning-surface li {
+  color: var(--sem-warning) !important;
+}
+
+.dark .dm-danger-surface {
+  background-color: var(--sem-error-bg) !important;
+  border-color: rgba(253, 164, 175, 0.3) !important;
+  color: var(--sem-error) !important;
+}
+
+.dark .dm-danger-surface strong,
+.dark .dm-danger-surface p,
+.dark .dm-danger-surface li {
+  color: var(--sem-error) !important;
 }
 
 /* Keep the application frame in the viewport; only workspace/menu containers scroll. */

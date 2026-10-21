@@ -229,13 +229,13 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           </button>
         </div>
 
-        {/* User Directive: Botão 'Adicionar' (sem ícone '+') */}
+        {/* Bloco 4: Rótulo específico 'Novo compromisso' com 44-48px de altura, sem '+' */}
         <button
           id="calendar-add-event-btn"
           onClick={onOpenCreateEvent}
-          className="dm-btn-primary px-3.5 py-1.5 bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page rounded-lg text-xs font-semibold hover:bg-slate-800 dark:hover:bg-white transition-colors shadow-xs"
+          className="dm-btn-primary min-h-[44px] h-11 px-4 inline-flex items-center justify-center bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page rounded-xl text-xs font-semibold hover:bg-slate-800 dark:hover:bg-white transition-colors shadow-xs cursor-pointer shrink-0"
         >
-          Adicionar
+          Novo compromisso
         </button>
       </div>
     </div>

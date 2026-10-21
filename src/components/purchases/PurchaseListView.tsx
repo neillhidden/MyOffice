@@ -20,6 +20,7 @@ import {
   Edit3,
   Check,
   AlertCircle,
+  ChevronRight,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import {
@@ -271,6 +272,18 @@ export const PurchaseListView: React.FC = () => {
   const [newAvailability, setNewAvailability] = useState<SourceAvailability>('em_estoque');
   const [newSourceNotes, setNewSourceNotes] = useState('');
   const [newSourceAccounted, setNewSourceAccounted] = useState(true);
+  const [newSourceErrors, setNewSourceErrors] = useState<{
+    unitPrice?: string;
+    quantity?: string;
+    shippingCost?: string;
+    otherCosts?: string;
+  }>({});
+  const [editSourceErrors, setEditSourceErrors] = useState<{
+    unitPrice?: string;
+    quantity?: string;
+    shippingCost?: string;
+    otherCosts?: string;
+  }>({});
 
   // Collapsed states for Source cards in list_detail
   const [expandedSourceIds, setExpandedSourceIds] = useState<Record<string, boolean>>({});
@@ -392,10 +405,31 @@ export const PurchaseListView: React.FC = () => {
     }
   };
 
-  // Handle Create Source
+  // Handle Create Source (Validações do Item 2.3 e 2.4: preço >= 0, frete >= 0, outros >= 0, quantidade > 0)
   const handleSaveSource = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedListId) return;
+
+    const errors: { unitPrice?: string; quantity?: string; shippingCost?: string; otherCosts?: string } = {};
+
+    if (newUnitPrice !== '' && (!Number.isFinite(Number(newUnitPrice)) || Number(newUnitPrice) < 0)) {
+      errors.unitPrice = 'O preço unitário não pode ser negativo.';
+    }
+    if (newQuantity === '' || !Number.isFinite(Number(newQuantity)) || Number(newQuantity) <= 0) {
+      errors.quantity = 'A quantidade deve ser superior a zero.';
+    }
+    if (newShippingCost !== '' && (!Number.isFinite(Number(newShippingCost)) || Number(newShippingCost) < 0)) {
+      errors.shippingCost = 'O frete não pode ser negativo.';
+    }
+    if (newOtherCosts !== '' && (!Number.isFinite(Number(newOtherCosts)) || Number(newOtherCosts) < 0)) {
+      errors.otherCosts = 'Outros custos não podem ser negativos.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setNewSourceErrors(errors);
+      return;
+    }
+    setNewSourceErrors({});
 
     const unit = Number(newUnitPrice) || 0;
     const qty = Number(newQuantity) || 1;
@@ -426,6 +460,7 @@ export const PurchaseListView: React.FC = () => {
     setNewUnitPrice('');
     setNewStoreLink('');
     setNewSourceNotes('');
+    setNewSourceErrors({});
     setShowNewSourceModal(false);
   };
 
@@ -525,6 +560,27 @@ export const PurchaseListView: React.FC = () => {
     e.preventDefault();
     if (!editingSource) return;
 
+    const errors: { unitPrice?: string; quantity?: string; shippingCost?: string; otherCosts?: string } = {};
+
+    if (editUnitPrice !== '' && (!Number.isFinite(Number(editUnitPrice)) || Number(editUnitPrice) < 0)) {
+      errors.unitPrice = 'O preço unitário não pode ser negativo.';
+    }
+    if (editQuantity === '' || !Number.isFinite(Number(editQuantity)) || Number(editQuantity) <= 0) {
+      errors.quantity = 'A quantidade deve ser superior a zero.';
+    }
+    if (editShippingCost !== '' && (!Number.isFinite(Number(editShippingCost)) || Number(editShippingCost) < 0)) {
+      errors.shippingCost = 'O frete não pode ser negativo.';
+    }
+    if (editOtherCosts !== '' && (!Number.isFinite(Number(editOtherCosts)) || Number(editOtherCosts) < 0)) {
+      errors.otherCosts = 'Outros custos não podem ser negativos.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setEditSourceErrors(errors);
+      return;
+    }
+    setEditSourceErrors({});
+
     const unit = Number(editUnitPrice) || 0;
     const qty = Number(editQuantity) || 1;
     const ship = Number(editShippingCost) || 0;
@@ -550,6 +606,7 @@ export const PurchaseListView: React.FC = () => {
       isAccounted: editSourceAccounted,
     });
 
+    setEditSourceErrors({});
     setEditingSource(null);
   };
 
@@ -666,7 +723,7 @@ export const PurchaseListView: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-500 dark:text-slate-400">Selecionado p/ Compra:</span>
                         <span className="font-bold font-mono text-emerald-700 dark:text-emerald-400">
@@ -679,6 +736,19 @@ export const PurchaseListView: React.FC = () => {
                           {formatKwanza(totals.totalGroupResearchedKz)}
                         </span>
                       </div>
+
+                      {/* Bloco 4: Ação clara 'Abrir grupo' com alvo de 44px */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenGroupDetail(group.id);
+                        }}
+                        className="dm-btn-primary w-full min-h-[44px] h-11 mt-2 inline-flex items-center justify-center gap-2 px-4 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                      >
+                        <span>Abrir grupo</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -1506,10 +1576,22 @@ export const PurchaseListView: React.FC = () => {
                     type="number"
                     step="any"
                     value={newUnitPrice}
-                    onChange={(e) => setNewUnitPrice(e.target.value ? Number(e.target.value) : '')}
+                    onChange={(e) => {
+                      setNewUnitPrice(e.target.value !== '' ? Number(e.target.value) : '');
+                      if (newSourceErrors.unitPrice) setNewSourceErrors((prev) => ({ ...prev, unitPrice: undefined }));
+                    }}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono"
+                    className={`w-full px-2.5 py-1.5 border ${
+                      newSourceErrors.unitPrice
+                        ? 'border-rose-500 ring-1 ring-rose-500/20'
+                        : 'border-slate-300 dark:border-slate-700'
+                    } bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono`}
                   />
+                  {newSourceErrors.unitPrice && (
+                    <p id="error-new-source-price" role="alert" className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 font-medium">
+                      {newSourceErrors.unitPrice}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1520,10 +1602,22 @@ export const PurchaseListView: React.FC = () => {
                     id="input-new-source-qty"
                     type="number"
                     value={newQuantity}
-                    onChange={(e) => setNewQuantity(e.target.value ? Number(e.target.value) : '')}
+                    onChange={(e) => {
+                      setNewQuantity(e.target.value !== '' ? Number(e.target.value) : '');
+                      if (newSourceErrors.quantity) setNewSourceErrors((prev) => ({ ...prev, quantity: undefined }));
+                    }}
                     placeholder="100"
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono"
+                    className={`w-full px-2.5 py-1.5 border ${
+                      newSourceErrors.quantity
+                        ? 'border-rose-500 ring-1 ring-rose-500/20'
+                        : 'border-slate-300 dark:border-slate-700'
+                    } bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono`}
                   />
+                  {newSourceErrors.quantity && (
+                    <p id="error-new-source-qty" role="alert" className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 font-medium">
+                      {newSourceErrors.quantity}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1535,10 +1629,22 @@ export const PurchaseListView: React.FC = () => {
                     type="number"
                     step="any"
                     value={newShippingCost}
-                    onChange={(e) => setNewShippingCost(e.target.value ? Number(e.target.value) : '')}
+                    onChange={(e) => {
+                      setNewShippingCost(e.target.value !== '' ? Number(e.target.value) : '');
+                      if (newSourceErrors.shippingCost) setNewSourceErrors((prev) => ({ ...prev, shippingCost: undefined }));
+                    }}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono"
+                    className={`w-full px-2.5 py-1.5 border ${
+                      newSourceErrors.shippingCost
+                        ? 'border-rose-500 ring-1 ring-rose-500/20'
+                        : 'border-slate-300 dark:border-slate-700'
+                    } bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono`}
                   />
+                  {newSourceErrors.shippingCost && (
+                    <p id="error-new-source-shipping" role="alert" className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 font-medium">
+                      {newSourceErrors.shippingCost}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1550,10 +1656,22 @@ export const PurchaseListView: React.FC = () => {
                     type="number"
                     step="any"
                     value={newOtherCosts}
-                    onChange={(e) => setNewOtherCosts(e.target.value ? Number(e.target.value) : '')}
+                    onChange={(e) => {
+                      setNewOtherCosts(e.target.value !== '' ? Number(e.target.value) : '');
+                      if (newSourceErrors.otherCosts) setNewSourceErrors((prev) => ({ ...prev, otherCosts: undefined }));
+                    }}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono"
+                    className={`w-full px-2.5 py-1.5 border ${
+                      newSourceErrors.otherCosts
+                        ? 'border-rose-500 ring-1 ring-rose-500/20'
+                        : 'border-slate-300 dark:border-slate-700'
+                    } bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md font-mono`}
                   />
+                  {newSourceErrors.otherCosts && (
+                    <p id="error-new-source-other" role="alert" className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 font-medium">
+                      {newSourceErrors.otherCosts}
+                    </p>
+                  )}
                 </div>
               </div>
 

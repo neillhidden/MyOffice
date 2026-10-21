@@ -21,13 +21,36 @@ import { useStock } from '../../context/StockContext';
 import { Supplier } from '../../types/stock';
 import { SupplierModal } from './SupplierModal';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { isValidPhone } from '../../utils/phoneValidation';
+import {
+  getCompanyStatus,
+  getCompanyStatusTooltip,
+  CompanyStatus,
+} from '../../utils/companyState';
 
-export const FornecedoresView: React.FC = () => {
+export interface LinkedCompanySummary {
+  id: string;
+  name: string;
+  status: CompanyStatus;
+  tooltip: string;
+}
+
+interface FornecedoresViewProps {
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
+}
+
+export const FornecedoresView: React.FC<FornecedoresViewProps> = ({
+  externalSearchQuery,
+  onExternalSearchChange,
+}) => {
   const { suppliers, products, companies, warehouses, stockConfigs, deleteSupplier } = useStock();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('todas');
   const [selectedStatus, setSelectedStatus] = useState<'todos' | 'ativo' | 'inativo'>('todos');
+
+  const effectiveSearchTerm = externalSearchQuery !== undefined ? externalSearchQuery : searchTerm;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,22 +80,20 @@ export const FornecedoresView: React.FC = () => {
     return map;
   }, [products]);
 
-  // Supplier entity mapping to detect linked companies or orphaned links
+  // Supplier entity mapping to detect linked companies and their individual status
   const supplierEntitiesMap = useMemo(() => {
     const map = new Map<
       string,
       {
-        companyNames: string[];
+        linkedCompanies: LinkedCompanySummary[];
         hasOrphaned: boolean;
-        inactiveCompany: boolean;
       }
     >();
 
     suppliers.forEach((s) => {
       const linkedProds = products.filter((p) => p.supplierId === s.id);
-      const companyNamesSet = new Set<string>();
+      const foundCompsMap = new Map<string, { id: string; name: string; status: CompanyStatus }>();
       let hasOrphaned = false;
-      let inactiveCompany = false;
 
       linkedProds.forEach((p) => {
         const whIds = stockConfigs.filter((sc) => sc.productId === p.id).map((sc) => sc.warehouseId);
@@ -84,11 +105,12 @@ export const FornecedoresView: React.FC = () => {
             if (wh) {
               const comp = companies.find((c) => c.id === wh.companyId);
               if (comp) {
-                if (comp.status !== 'desativada' && comp.id !== 'comp-kianda') {
-                  companyNamesSet.add(comp.name);
-                } else {
-                  inactiveCompany = true;
-                }
+                const status = getCompanyStatus(comp);
+                foundCompsMap.set(comp.id, {
+                  id: comp.id,
+                  name: comp.name,
+                  status,
+                });
               } else {
                 hasOrphaned = true;
               }
@@ -99,10 +121,24 @@ export const FornecedoresView: React.FC = () => {
         }
       });
 
+      const allFound = Array.from(foundCompsMap.values());
+      const operationalComps = allFound.filter((c) => c.status !== 'desativada');
+      const deactivatedComps = allFound.filter((c) => c.status === 'desativada');
+
+      // Se existirem empresas operacionais (ativas ou paradas), mostramos essas empresas com o seu status real
+      // Caso contrário, se apenas existirem artigos em empresas desativadas, apresentamos com o selo de Desativada
+      const targetComps = operationalComps.length > 0 ? operationalComps : deactivatedComps;
+
+      const linkedCompanies: LinkedCompanySummary[] = targetComps.map((c) => ({
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        tooltip: getCompanyStatusTooltip(c.name, c.status),
+      }));
+
       map.set(s.id, {
-        companyNames: Array.from(companyNamesSet),
+        linkedCompanies,
         hasOrphaned,
-        inactiveCompany,
       });
     });
 
@@ -127,8 +163,8 @@ export const FornecedoresView: React.FC = () => {
       const status = s.status || 'ativo';
       if (selectedStatus !== 'todos' && status !== selectedStatus) return false;
 
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase();
+      if (effectiveSearchTerm.trim()) {
+        const q = effectiveSearchTerm.toLowerCase();
         const matchName = s.name.toLowerCase().includes(q);
         const matchContact = s.contact.toLowerCase().includes(q);
         const matchEmail = s.email?.toLowerCase().includes(q) || false;
@@ -138,7 +174,7 @@ export const FornecedoresView: React.FC = () => {
       }
       return true;
     });
-  }, [suppliers, selectedPlatform, selectedStatus, searchTerm]);
+  }, [suppliers, selectedPlatform, selectedStatus, effectiveSearchTerm]);
 
   const handleOpenAdd = () => {
     setSupplierToEdit(null);
@@ -310,8 +346,11 @@ export const FornecedoresView: React.FC = () => {
             <input
               id="input-search-suppliers"
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={effectiveSearchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                onExternalSearchChange?.(e.target.value);
+              }}
               placeholder="Pesquisar por fornecedor, plataforma ou telefone..."
               className="w-full bg-transparent border-0 text-xs text-slate-900 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
             />
@@ -333,13 +372,15 @@ export const FornecedoresView: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                <th className="py-2.5 px-4">Fornecedor</th>
-                <th className="py-2.5 px-3">Plataforma / Canal</th>
-                <th className="py-2.5 px-3">Contacto</th>
-                <th className="py-2.5 px-3">Localização / Origem</th>
-                <th className="py-2.5 px-3 text-center">Artigos Vinculados</th>
-                <th className="py-2.5 px-3 text-center">Estado</th>
-                <th className="py-2.5 px-4 text-right">Ações</th>
+                <th className="py-2.5 px-4 min-w-[200px]">Fornecedor</th>
+                <th className="py-2.5 px-3 min-w-[130px]">Plataforma / Canal</th>
+                <th className="py-2.5 px-3 min-w-[160px]">Contacto</th>
+                <th className="py-2.5 px-3 min-w-[140px]">Localização / Origem</th>
+                <th className="py-2.5 px-3 text-center min-w-[120px]">Artigos Vinculados</th>
+                <th className="py-2.5 px-3 text-center min-w-[90px]">Estado</th>
+                <th className="py-2.5 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[120px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -351,15 +392,16 @@ export const FornecedoresView: React.FC = () => {
                 </tr>
               ) : (
                 filteredSuppliers.map((supplier) => {
-                  const cleanPhone = supplier.contact.replace(/\D/g, '');
+                  const isContactValid = !supplier.contact || isValidPhone(supplier.contact);
+                  const cleanPhone = (isContactValid && supplier.contact) ? supplier.contact.replace(/\D/g, '') : '';
                   const linkedCount = productCountBySupplier.get(supplier.id) || 0;
                   const isInactive = supplier.status === 'inativo';
                   const entityInfo = supplierEntitiesMap.get(supplier.id);
 
                   return (
-                    <tr {...detailRowProps(() => handleOpenEdit(supplier))} key={supplier.id} className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr {...detailRowProps(() => handleOpenEdit(supplier))} key={supplier.id} className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group">
                       {/* Name & Avatar */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap min-w-[200px]">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center font-bold text-xs shrink-0">
                             {supplier.name.charAt(0).toUpperCase()}
@@ -378,7 +420,7 @@ export const FornecedoresView: React.FC = () => {
                       </td>
 
                       {/* Plataforma */}
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3 whitespace-nowrap min-w-[130px]">
                         {supplier.platform ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                             <Globe className="w-3 h-3" />
@@ -389,12 +431,22 @@ export const FornecedoresView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Contacto */}
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      {/* Contacto: telefone e email em duas linhas (Item 2.6) */}
+                      <td className="py-3 px-3 whitespace-nowrap min-w-[160px]">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <Phone className="w-3 h-3 text-slate-400" />
+                            <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                             <span className="font-mono text-slate-700 dark:text-slate-300">{supplier.contact}</span>
+                            {!isContactValid && (
+                              <span
+                                id={`invalid-contact-${supplier.id}`}
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 ml-1"
+                                title="Contacto de telefone inválido no cadastro antigo"
+                              >
+                                <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                                Inválido
+                              </span>
+                            )}
                             {cleanPhone && (
                               <a
                                 href={`https://wa.me/${cleanPhone}`}
@@ -410,16 +462,16 @@ export const FornecedoresView: React.FC = () => {
                           {supplier.email && (
                             <div className="flex items-center gap-1 text-[11px] text-slate-400">
                               <Mail className="w-3 h-3 text-slate-400" />
-                              <span>{supplier.email}</span>
+                              <span className="truncate max-w-[150px]">{supplier.email}</span>
                             </div>
                           )}
                         </div>
                       </td>
 
-                      {/* Endereço / Localização */}
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400 max-w-xs truncate" title={supplier.address}>
+                      {/* Localização resumida (Item 2.6) */}
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400 min-w-[140px] max-w-[180px] truncate" title={supplier.address}>
                         {supplier.address ? (
-                          <span className="flex items-center gap-1 truncate">
+                          <span className="flex items-center gap-1 truncate text-xs">
                             <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                             {supplier.address}
                           </span>
@@ -428,8 +480,8 @@ export const FornecedoresView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Artigos Vinculados & Entidade */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                      {/* Artigos Vinculados & Entidade (Item 2.6) */}
+                      <td className="py-3 px-3 text-center whitespace-nowrap min-w-[120px]">
                         <div className="flex flex-col items-center gap-1">
                           {linkedCount > 0 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
@@ -441,18 +493,45 @@ export const FornecedoresView: React.FC = () => {
                           )}
 
                           {/* Company / Entity info */}
-                          {entityInfo && entityInfo.companyNames.length > 0 ? (
-                            <span
-                              className={`inline-flex items-center gap-1 text-[10px] ${
-                                entityInfo.inactiveCompany
-                                  ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-slate-500 dark:text-slate-400'
-                              }`}
-                              title={entityInfo.inactiveCompany ? 'Empresa com artigos está desativada' : undefined}
-                            >
-                              <Building2 className="w-2.5 h-2.5" />
-                              {entityInfo.companyNames.join(', ')}
-                            </span>
+                          {entityInfo && entityInfo.linkedCompanies.length > 0 ? (
+                            <div className="flex flex-col items-center gap-1 max-w-[200px]">
+                              {entityInfo.linkedCompanies.map((c) => {
+                                const isStopped = c.status === 'parada';
+                                const isDeactivated = c.status === 'desativada';
+                                return (
+                                  <span
+                                    key={c.id}
+                                    className={`inline-flex items-center gap-1 text-[10px] ${
+                                      isStopped
+                                        ? 'text-amber-700 dark:text-amber-400 font-medium'
+                                        : isDeactivated
+                                        ? 'text-slate-400 dark:text-slate-500'
+                                        : 'text-slate-600 dark:text-slate-400'
+                                    }`}
+                                    title={c.tooltip}
+                                  >
+                                    <Building2 className="w-2.5 h-2.5 shrink-0" />
+                                    <span className="truncate max-w-[140px]">{c.name}</span>
+                                    {isStopped && (
+                                      <span
+                                        className="text-[9px] px-1 py-0.2 rounded font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                        title="Empresa parada: operações em pausa"
+                                      >
+                                        Parada
+                                      </span>
+                                    )}
+                                    {isDeactivated && (
+                                      <span
+                                        className="text-[9px] px-1 py-0.2 rounded font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                                        title="Empresa desativada: fora de serviço"
+                                      >
+                                        Desativada
+                                      </span>
+                                    )}
+                                  </span>
+                                );
+                              })}
+                            </div>
                           ) : entityInfo && entityInfo.hasOrphaned ? (
                             <span className="text-[10px] text-rose-500 dark:text-rose-400">
                               Vínculo sem empresa
@@ -462,7 +541,7 @@ export const FornecedoresView: React.FC = () => {
                       </td>
 
                       {/* Estado */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                      <td className="py-3 px-3 text-center whitespace-nowrap min-w-[90px]">
                         {!isInactive ? (
                           <PositiveBadge label="Ativo" />
                         ) : (
@@ -472,15 +551,21 @@ export const FornecedoresView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Action buttons */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Action buttons (44x44px icon buttons, sticky right) */}
+                      <td
+                        className="py-2.5 px-4 text-right whitespace-nowrap sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[120px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            id={`btn-detail-supplier-${supplier.id}`}
                             onClick={() => handleOpenEdit(supplier)}
-                            className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
+                            title="Ver detalhes do fornecedor"
                           >
-                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
+                            <span className="sr-only">Abrir detalhes</span>
+                            <DetailsIcon aria-hidden="true" className="w-4 h-4" />
                           </button>
 
                           <button
@@ -488,9 +573,9 @@ export const FornecedoresView: React.FC = () => {
                             id={`btn-edit-supplier-${supplier.id}`}
                             onClick={() => handleOpenEdit(supplier)}
                             title="Editar fornecedor"
-                            className="dm-icon-action p-1.5 text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-4 h-4" />
                           </button>
 
                           <button
@@ -498,9 +583,9 @@ export const FornecedoresView: React.FC = () => {
                             id={`btn-delete-supplier-${supplier.id}`}
                             onClick={() => setSupplierToDelete(supplier)}
                             title="Eliminar fornecedor"
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

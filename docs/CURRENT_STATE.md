@@ -9,21 +9,34 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 > **INSTRUÇÃO PARA O PRÓXIMO AGENTE (Claude Code / Gemini / Codex)**:
 > Sempre que iniciares uma sessão neste repositório, lê este bloco primeiro e verifica `git status` e `git diff`. Se o agente anterior tiver sido interrompido a meio de uma tarefa (por limite de quota ou contexto), retoma a partir do ponto indicado abaixo. Ao trabalhares numa tarefa, mantém este bloco atualizado.
 
-- **Último Agente Ativo**: OpenAI Codex — `2026-10-12`
-- **Estado de Validação**: Revisão de 12/10: 72 testes unitários passaram; TypeScript/build passaram (aviso conhecido de chunks grandes). Chromium com dados fictícios: abertura de produto, teclado/temas, reservas/saldos/reload, navegação fixa, Calendário, previsão móvel e identificação/rejeição de contas de PDF Home/Business. Oito regressões financeiras Business e scripts Home financeiro/completo/blocos 3–6/ficheiros Home e Business passaram. Sem dados reais ou serviços de produção; nenhuma mudança SQL nesta revisão.
-- **Tarefa em Andamento / Pendente de Retoma**: Correções prioritárias do relatório concluídas; commit solicitado pelo utilizador. Integração/push/publicação ainda pendentes. Falha original do produto era evento de clique usado como categoria. Reserva está desligada por padrão para novos dados, preservando preferências explícitas. Não acrescentar preferências globais sem perguntar.
+- **Último Agente Ativo**: Google AI Studio Build (Gemini) — `2026-10-21`
+- **Estado de Validação**: 77 testes automatizados aprovados (`npm test`), Lint/TypeScript (`tsc --noEmit`) limpo e build Vite (`npm run build`) concluídos com 100% de sucesso.
+- **Auditoria Funcional Concluída**:
+  - **Ponto 1 — Venda a prazo (gravidade alta)**:
+    - 1.1 Exige cliente identificado. "Consumidor final" bloqueia com mensagem dedicada junto ao campo Cliente (`#sale-client-error-msg`). Data de vencimento opcional (`#sale-due-date-input`).
+    - 1.2 Ao finalizar venda a prazo, gera saída de estoque atómica (`saida`), mas NÃO gera crédito bancário nem movimentação financeira imediata. Gera Dívida a receber em Financeiro → Dívidas com o cliente, empresa e valor total (com transporte).
+    - 1.3 Pagamentos parciais ou totais da dívida criam as entradas bancárias na conta escolhida. Estado dinâmico da venda: "A prazo" → "Parcialmente paga" → "Paga".
+    - 1.4 Recibo de venda a prazo (`SaleReceiptModal`): exibe "Por receber", "Saldo em dívida" e link direto para a dívida (`#btn-receipt-link-debt`), omitindo menções a recebimento ou contas creditadas.
+    - 1.5 Estorno de venda a prazo (`cancelSale`): repõe estoque das saídas ativas, marca a dívida vinculada como anulada (`isCancelled: true`, `status: 'anulada'`) e emite saídas bancárias de reversão para os pagamentos já liquidados. Cobre e cancela também entregas de transporte pendentes.
+    - 1.6 Dashboard: faturamento conta na data da venda. O valor a prazo não é somado aos saldos bancários.
+    - 1.7 Aviso no topo de Vendas (`#banner-warning-credit-sales-with-bank-credit`) identifica vendas a prazo anteriores com crédito bancário sem reescrever movimentos históricos.
+  - **Ponto 2 — Preços negativos no cadastro (gravidade alta)**:
+    - 2.1 Custo, preço de venda e acréscimo de variação não aceitam negativos, strings vazias inválidas, NaN nem infinito. Zero é explicitamente permitido. O aviso de venda abaixo do custo mantém-se.
+    - 2.2 Valida em cada etapa do assistente (`ProductCreateModal`), tanto ao avançar normalmente como no clique direto em passos do stepper (Passos 2 e 3) e na gravação final (`handleFinalSubmit` e `handleSaveFromHeader`).
+    - 2.3 Validação idêntica na edição de produto, na Lista de compras (`PurchaseListView` e `StockContext`: preço unitário, frete, outros custos >= 0; quantidade > 0) e no Simulador de Importação (`ImportSimulatorView`: preço unitário, frete/kg, frete fixo, orçamento, preço de venda >= 0; quantidade > 0).
+    - 2.4 Mensagens de erro dedicadas junto aos campos com feedback visual imediato e contorno destacado.
+    - 2.5 Detetor de produtos guardados com valores negativos no Estoque → Armazém (`#banner-warning-products-negative-prices` com alerta visual, detalhe por campo afetado e botão direto de correção sem alteração silenciosa).
+  - **Ponto 3 — Telefone inválido em contactos (gravidade média)**:
+    - 3.1 Normalização (`normalizePhone`) removendo espaços, hífens, pontos, parênteses, chavetas e barras. Validação (`isValidPhone` / `validatePhoneField`): "+" inicial opcional e 7 a 15 dígitos numéricos; aceita números nacionais de Angola e internacionais.
+    - 3.2 Aplicado a Telefone principal e WhatsApp de Clientes (`ClientModal`), telefones de Funcionários (`EmployeeModal`) e Fornecedores (`SupplierModal` e criação rápida inline em `ProductCreateModal`), na criação e na edição.
+    - 3.3 Mensagem de erro dedicada junto ao campo com foco automático no input inválido. Registos antigos inválidos: assinalados nas listas (`ClientesView`, `FuncionariosView`, `FornecedoresView`) com badge visual de alerta (`#invalid-phone-${id}` / `#invalid-contact-${id}`) e tooltip explicativa, sem exclusão destrutiva.
+  - **Ponto 4 — Botão Voltar do navegador e Rotas Hash (gravidade média)**:
+    - 4.1 Cada secção e alternância Home/Business cria uma entrada no histórico do navegador (`window.history.pushState`). Botão "Voltar" do navegador regressa à secção anterior; "Avançar" vai à seguinte.
+    - 4.2 Atualizar a página (`F5`) mantém a secção. URL direto (ex.: `#/armazem`, `#/venda`, `#/home/orcamento`) abre a secção correta.
+    - 4.3 Rotas com hash implementadas em `src/utils/navigationRouter.ts` (`#/armazem`, `#/movimentacao`, `#/simulador`, `#/lista-compras`, `#/defeituoso`, `#/venda`, `#/transporte`, `#/contas`, `#/lancamentos`, `#/dividas`, `#/funcionarios`, `#/clientes`, `#/fornecedores`, `#/afiliados`, `#/dashboard`, `#/calendario`, `#/definicoes`, `#/home/...`) prevenindo erros 404 em hospedagens estáticas (como GitHub Pages).
+    - 4.4 Mantém todos os filtros que persistem em memória e `localStorage` (ex.: seleção multi-empresa e armazém no Armazém via `WarehouseFilterContext`).
+- **Próximos Passos**: Servidor de desenvolvimento operacional e sincronizado. Aguardar novas instruções do utilizador.
 
-- **O que foi concluído**:
-  1. IDs novos com UUID aleatório criptográfico; IDs antigos preservados. Validação central de produtos/variações, quantidades, preços e transporte antes de gravar vendas.
-  2. Estorno financeiro preserva original e cria compensação vinculada. Bloqueio de estornos duplicados/restauro, cancelamento de venda integrado e pagamentos de dívida preservados com motivo obrigatório.
-  3. Migração idempotente das remoções financeiras antigas sem alterar saldo. Bloqueio central e visual de resets quando existe histórico operacional/financeiro.
-  4. Esquema PostgreSQL offline (36 tabelas, 4 vistas), estrutura Pessoal/Business, instruções de migração e testes locais em `database/` e `tests/`. Sem conexão/backend/novas credenciais.
-  5. Ideologia e requisitos aceites registados em `docs/PRODUCT_DIRECTION.md` para continuidade entre ferramentas.
-  6. Home pessoal funcional e separado do Business, com documentação e backup JSON.
-  7. Categorias/subcategorias e compras pessoais, aparência, datas dinâmicas e indicadores de dashboard. Migração offline 002 acrescenta quatro tabelas, totalizando 40. Migração 003 prepara financiamento/aquisição das metas.
-  8. Contas AOA/USD, receita empresarial transferida para carteira separada, diário de recuperação e backup com vínculos; aquisição sem duplo débito; gráficos e categorias por tipo. Definições/ícones/scroll corrigidos.
-  9. Todas as ferramentas de vida pessoal pedidas; migração 006 com 48 tabelas; recuperação/conferência auditadas e relatórios/documentos locais.
-- **Próximos Passos**: Recolher feedback do Home implementado conforme `PRODUCT_DIRECTION.md` e `HOME.md`. Base de dados, autenticação e autorização serão uma fase posterior por pedido do utilizador; consultar `database/README.md` antes de qualquer conexão. Não declarar conformidade fiscal ou segurança de backend na versão local.
 
 ---
 

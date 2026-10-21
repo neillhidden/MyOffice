@@ -13,6 +13,7 @@ import {
   Trash2,
   Sun,
   Moon,
+  Menu,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -27,6 +28,7 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onNavigateToModule?: (module: string, submodule?: string) => void;
+  onOpenMobileMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onNavigateToModule,
+  onOpenMobileMenu,
 }) => {
   const {
     notifications,
@@ -118,23 +121,34 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="h-14 shrink-0 bg-white dark:bg-dm-surface border-b border-slate-200/80 dark:border-dm-border px-4 sm:px-6 lg:px-8 flex items-center z-30 transition-colors duration-200">
       <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Breadcrumb alinhado verticalmente e com o contentor principal abaixo */}
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-xs leading-none text-slate-400 dark:text-dm-muted font-normal min-w-0"
-        >
-          <span className="text-slate-500 dark:text-dm-muted font-medium leading-none truncate">
-            {currentModule}
-          </span>
-          {currentSubmodule && (
-            <>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-dm-border shrink-0" />
-              <span className="text-slate-700 dark:text-dm-text font-medium leading-none truncate">
-                {currentSubmodule}
-              </span>
-            </>
-          )}
-        </nav>
+        {/* Left side: Mobile menu button (44x44px target) + Breadcrumb */}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            id="btn-mobile-menu"
+            aria-label="Abrir menu"
+            onClick={onOpenMobileMenu}
+            className="md:hidden w-11 h-11 -ml-2 inline-flex items-center justify-center rounded-lg text-slate-600 dark:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border cursor-pointer shrink-0"
+          >
+            <Menu className="w-5 h-5" aria-hidden="true" />
+          </button>
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1.5 text-xs sm:text-sm leading-none text-slate-400 dark:text-dm-muted font-normal min-w-0"
+          >
+            <span className="text-slate-500 dark:text-dm-muted font-medium leading-none truncate">
+              {currentModule}
+            </span>
+            {currentSubmodule && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-dm-border shrink-0" />
+                <span className="text-slate-700 dark:text-dm-text font-medium leading-none truncate">
+                  {currentSubmodule}
+                </span>
+              </>
+            )}
+          </nav>
+        </div>
 
         {/* Controlos alinhados à direita e centrados verticalmente na mesma linha (h-8 = 32px) */}
         <div className="flex items-center gap-2 sm:gap-2.5 ml-auto shrink-0">

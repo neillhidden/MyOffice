@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, UserRound, Building2, Phone, Mail, MapPin, FileText, AlignLeft, AlertTriangle } from 'lucide-react';
 import { Client } from '../../types/client';
 import { useStock } from '../../context/StockContext';
+import { validatePhoneField } from '../../utils/phoneValidation';
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -26,11 +27,15 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const [status, setStatus] = useState<'ativo' | 'inativo'>('ativo');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [whatsappError, setWhatsappError] = useState<string | null>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setShowDiscardConfirm(false);
+      setPhoneError(null);
+      setWhatsappError(null);
       if (clientToEdit) {
         setName(clientToEdit.name || '');
         setType(clientToEdit.type || 'individual');
@@ -92,13 +97,36 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!name.trim()) {
       setError('O nome do cliente é obrigatório.');
       return;
     }
-    if (!phone.trim()) {
-      setError('O contacto de telefone é obrigatório.');
+
+    const phoneValidation = validatePhoneField(phone, true);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error || 'Telefone inválido.');
+      setError(phoneValidation.error || 'Telefone inválido.');
+      const el = document.getElementById('client-phone');
+      el?.focus();
       return;
+    }
+    setPhoneError(null);
+
+    let finalWhatsapp = phoneValidation.normalized;
+    if (whatsapp.trim()) {
+      const waValidation = validatePhoneField(whatsapp, false);
+      if (!waValidation.isValid) {
+        setWhatsappError(waValidation.error || 'WhatsApp inválido.');
+        setError(waValidation.error || 'WhatsApp inválido.');
+        const el = document.getElementById('client-whatsapp');
+        el?.focus();
+        return;
+      }
+      finalWhatsapp = waValidation.normalized;
+      setWhatsappError(null);
+    } else {
+      setWhatsappError(null);
     }
 
     try {
@@ -107,8 +135,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           name: name.trim(),
           type,
           document: document.trim() || undefined,
-          phone: phone.trim(),
-          whatsapp: whatsapp.trim() || phone.trim(),
+          phone: phoneValidation.normalized,
+          whatsapp: finalWhatsapp,
           email: email.trim() || undefined,
           address: address.trim() || undefined,
           status,
@@ -119,8 +147,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           name: name.trim(),
           type,
           document: document.trim() || undefined,
-          phone: phone.trim(),
-          whatsapp: whatsapp.trim() || phone.trim(),
+          phone: phoneValidation.normalized,
+          whatsapp: finalWhatsapp,
           email: email.trim() || undefined,
           address: address.trim() || undefined,
           status,
@@ -294,11 +322,24 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                   type="text"
                   required
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (phoneError) setPhoneError(null);
+                  }}
                   placeholder="Ex.: +244 923 111 222"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+                  className={`w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 ${
+                    phoneError
+                      ? 'border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900 dark:focus:ring-slate-400'
+                  }`}
                 />
               </div>
+              {phoneError && (
+                <p id="error-client-phone" role="alert" className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 animate-in fade-in duration-150">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span>{phoneError}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -314,11 +355,24 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                   id="client-whatsapp"
                   type="text"
                   value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
+                  onChange={(e) => {
+                    setWhatsapp(e.target.value);
+                    if (whatsappError) setWhatsappError(null);
+                  }}
                   placeholder="Ex.: +244 923 111 222"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-slate-400"
+                  className={`w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 ${
+                    whatsappError
+                      ? 'border-rose-500 ring-1 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-slate-900 dark:focus:ring-slate-400'
+                  }`}
                 />
               </div>
+              {whatsappError && (
+                <p id="error-client-whatsapp" role="alert" className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 animate-in fade-in duration-150">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span>{whatsappError}</span>
+                </p>
+              )}
             </div>
 
             {/* Email */}

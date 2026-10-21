@@ -36,7 +36,7 @@ export function navigationLink(base, sha) {
   const isPreview = Boolean(sha);
   const href = isPreview ? `${base}versoes/` : PROJECTS_HUB_URL;
   const label = isPreview ? `Versão ${sha.slice(0, 7)} · Voltar às versões` : 'Projetos e versões';
-  return `<a aria-label="${escapeHtml(label)}" href="${escapeHtml(href)}" style="position:fixed;bottom:12px;right:12px;z-index:40;background:#0f172a;color:white;padding:10px 14px;border-radius:10px;border:1px solid #64748b;font:13px system-ui;text-decoration:none;box-shadow:0 2px 8px #0003">${escapeHtml(label)}</a>`;
+  return `<footer id="pages-version-footer" style="position:relative;width:100%;margin-top:auto;background:#0f172a;color:#f8fafc;padding:12px 16px;border-top:1px solid #334155;font:13px/1.4 system-ui,sans-serif;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;z-index:30"><a aria-label="${escapeHtml(label)}" href="${escapeHtml(href)}" style="color:#93c5fd;text-decoration:underline;font-weight:600">${escapeHtml(label)}</a></footer>`;
 }
 
 export async function preparePreview(directory, sha, base) {

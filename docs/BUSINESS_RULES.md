@@ -44,7 +44,13 @@ Com base em `StockConfig` (`minLimit` e `maxLimit` por produto e armazém):
 - `maxLimit > 0 && currentStock > maxLimit` $\rightarrow$ `'excesso'`
 - Caso contrário $\rightarrow$ `'normal'`
 
+### 2.4. Proibição de Preços Negativos e Valorização do Estoque
+- **Validação Central Obrigatória**: O cadastro e edição de produtos (`costPrice`, `salePrice`) e variações (`additionalPrice`) rejeitam estritamente valores negativos, infinitos ou `NaN` (`validateProductPrices`).
+- **Preço Zero Permite Oferta/Brinde**: Preço de venda `0` é permitido como oferta promocional; preços negativos são categoricamente bloqueados no formulário, nos inputs e no contexto.
+- **Valorização de Estoque Protegida**: O cálculo do valor monetário do estoque (`metrics.totalStockValueKz` em `WarehouseStockView.tsx` e `capitalTiedUp` em análises) utiliza preços e saldos não negativos (`Math.max(0, p.costPrice || 0)`), garantindo que anomalias em preços nunca contaminem negativamente a valorização do estoque da empresa.
+
 ---
+
 
 ## 3. Auditoria de Movimentações de Estoque ("Remover do Histórico")
 
@@ -89,20 +95,23 @@ Em **Financeiro → Lançamentos** (`LancamentosView.tsx` e `StockContext.tsx`):
 
 Quando uma venda é concluída (`completeSale` em `StockContext.tsx`) ou carregada do histórico:
 
-1. **Três Registos Vinculados Obrigatórios**:
+1. **Registos Vinculados da Venda**:
    - **Estoque (`Movement`)**: Um movimento de `type: 'saida'` por cada item vendido, com `saleId: sale.id` e `reference: "Venda #VND-XXXX"`.
-   - **Financeiro (`BankMovement`)**: Um lançamento de `type: 'entrada'` na conta bancária selecionada, com `saleId: sale.id` e `reference: "Venda #VND-XXXX"`.
+   - **Financeiro (`BankMovement` vs `Debt`)**:
+     - *Venda à vista / imediata* (`dinheiro`, `multicaixa`, `tpa`, `transferencia`): Um lançamento de `type: 'entrada'` na conta bancária selecionada com `saleId: sale.id` e `reference: "Venda #VND-XXXX"`.
+     - *Venda a prazo* (`a_prazo`): **Não gera entrada bancária imediata** (o dinheiro ainda não entrou no banco). Gera obrigatoriamente um registo em **Financeiro → Dívidas** (`Debt` com `type: 'a_receber'`, `counterpartyType: 'cliente'`, vinculado pelo `saleId` e `debtId`). A entrada financeira só é registada quando o pagamento da dívida for efetivado em Dívidas (`recordDebtPayment`).
    - **Transporte (`Transport`)**: Sempre que `sale.requiresTransport === true`, existe obrigatoriamente um registo em `transports` com `saleId: sale.id`.
 2. **Venda com Entrega inclui o Custo de Transporte**:
-   - Quando `requiresTransport === true`, tanto o **total da venda** (`sale.total = subtotalProdutos + transportCost`) quanto a **receita financeira gerada** (`BankMovement.amount`) incluem obrigatoriamente o custo do transporte (`transportCost`), e não apenas o valor dos produtos.
+   - Quando `requiresTransport === true`, tanto o **total da venda** (`sale.total = subtotalProdutos + transportCost`) quanto a **receita financeira gerada** (`BankMovement.amount` ou `Debt.totalAmount`) incluem obrigatoriamente o custo do transporte (`transportCost`), e não apenas o valor dos produtos.
 3. **Venda guarda o Banco Original (`sale.bankId`) e Valida a Conta**:
-   - Ao escolher a conta/banco numa venda (`NewSaleModal.tsx` e `completeSale`), o sistema valida obrigatoriamente que a conta está **ativa**, pertence à **mesma Empresa** do armazém de saída e está na **mesma moeda** da venda (impedindo o uso ambíguo de conta de outra empresa).
+   - Ao escolher a conta/banco numa venda imediata (`NewSaleModal.tsx` e `completeSale`), o sistema valida obrigatoriamente que a conta está **ativa**, pertence à **mesma Empresa** do armazém de saída e está na **mesma moeda** da venda (impedindo o uso ambíguo de conta de outra empresa).
    - O ID da conta bancária creditada fica guardado em `sale.bankId`.
-   - Num **Estorno futuro (`cancelSale`)**, o lançamento financeiro de saída reverte **sempre na conta original** (`sale.bankId`) que recebeu o dinheiro no momento da venda, mesmo que a Conta Principal da Empresa tenha mudado depois.
+   - Num **Estorno futuro (`cancelSale`)** de venda imediata, o lançamento financeiro de saída reverte **sempre na conta original** (`sale.bankId`) que recebeu o dinheiro no momento da venda, mesmo que a Conta Principal da Empresa tenha mudado depois.
 4. **Estorno / Cancelamento de Venda (`cancelSale`) sem Devolução Dupla**:
    - Ao estornar uma venda, o sistema:
      - Cancela automaticamente as entregas de **Transporte** associadas que ainda não estejam concluídas (`status !== 'entregue' && status !== 'cancelado'` $\rightarrow$ `'cancelado'`).
      - Repõe em estoque (`type: 'entrada'`) **apenas as saídas de estoque dessa venda que ainda estão ativas** (`!m.removido && !m.isRemoved`). Se uma saída de estoque da venda já tinha sido "Removida do histórico" por outro motivo, não é reposta novamente (evitando duplicar a reposição).
+     - Para *vendas a prazo*, cancela/remove a dívida a receber vinculada pendente (se já houver pagamentos registados, o estorno da venda é bloqueado até reconciliação prévia dos pagamentos em Dívidas).
 5. **Carrinho da Venda Acumula Itens Repetidos**:
    - Se o mesmo produto/variação (`productId` + `variationId`) for adicionado mais de uma vez à mesma venda, o sistema **soma a quantidade numa única linha** (validando o limite de estoque disponível no armazém para o total acumulado), em vez de criar linhas duplicadas.
 6. **Dívidas — Rejeição de Pagamento Acima do Saldo Devedor**:
@@ -110,13 +119,16 @@ Quando uma venda é concluída (`completeSale` em `StockContext.tsx`) ou carrega
 7. **Navegação Direta a partir do Recibo de Venda (`SaleReceiptModal.tsx`)**:
    - O rodapé do recibo apresenta a secção **"Registos gerados por esta venda:"**:
      - `→ Ver saída no Estoque (Movimentação)`: Fecha o modal, navega para **Estoque → Movimentação** e filtra pelo código `sale.id`.
-     - `→ Ver entrada no Financeiro (Lançamentos)`: Fecha o modal, navega para **Financeiro → Lançamentos** e filtra pelo código `sale.id`.
+     - `→ Ver entrada no Financeiro (Lançamentos)`: Para vendas imediatas, navega para **Financeiro → Lançamentos** filtrando por `sale.id`.
+     - `→ Ver dívida a receber no Financeiro (Dívidas)`: Para vendas a prazo, navega para **Financeiro → Dívidas** filtrando pelo código da dívida/venda.
      - `→ Ver registo de Transporte` (se `requiresTransport: true`): Fecha o modal, navega para **Caixa → Transporte** e filtra pelo código `sale.id`.
    - Na tabela de **Caixa → Venda**, clicar no emblema `Sim` da coluna **Transporte** também navega diretamente para **Caixa → Transporte** filtrado por `sale.id`.
+   - O recibo exibe `"Total a Receber (A Prazo)"` para vendas a prazo em vez de `"Total Pago"`.
 
 8. **Identificadores novos**: `VND-<UUID>` e `TRP-<UUID>` usam aleatoriedade criptográfica; não dependem dos últimos dígitos do relógio. Os demais registos criados pelo contexto seguem o mesmo padrão. IDs históricos são preservados.
 9. **Validação central antes de gravar**: Armazém ativo, produto ativo existente, variação válida quando o produto tem variações, quantidade finita superior a zero, preço finito não negativo e subtotal/total finitos. Custos de entrega devem ser finitos e não negativos. Quantidades fracionárias continuam permitidas. Preço zero admite oferta; não admite quantidade zero. Itens repetidos com preços diferentes são rejeitados, sem alterar silenciosamente preços anteriores.
-10. **Cancelamento justificado**: Motivo obrigatório; a compensação usa o lançamento bancário original. Se esse lançamento já foi compensado por migração antiga, não é compensado duas vezes. Venda sem lançamento/conta original exige reconciliação antes de cancelar, sem escolher arbitrariamente outra conta.
+10. **Cancelamento justificado**: Motivo obrigatório; a compensação usa o lançamento bancário original para vendas imediatas. Se esse lançamento já foi compensado por migração antiga, não é compensado duas vezes. Venda sem lançamento/conta original exige reconciliação antes de cancelar, sem escolher arbitrariamente outra conta.
+11. **Vendas a Prazo exigem Cliente Identificado**: É estritamente proibido realizar venda a prazo para consumidor final anónimo / não identificado (`validateCreditSaleClient`). O cliente deve ser selecionado do catálogo de clientes ou ter nome explícito informado, permitindo correta vinculação da dívida a receber e cobrança posterior.
 
 ---
 

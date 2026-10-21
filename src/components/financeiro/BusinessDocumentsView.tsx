@@ -235,19 +235,32 @@ export function BusinessDocumentsView() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
-    <div className="space-y-4 min-w-0">
-      <section className={panel} aria-label="Leitura financeira Business">
-        <h2 className="font-semibold">Extratos e comprovativos Business</h2>
-        <p className="text-xs text-slate-500">
-          PDF, CSV, Excel .xlsx e fotografia. Revê os movimentos antes de
-          aplicar. + Entrada aumenta o saldo; − Saída reduz. O saldo do extrato
-          não é um movimento. Leitura local, sem enviar documentos a terceiros.
+    <div className="space-y-6 max-w-[760px] w-full min-w-0">
+      <div className="border-b border-slate-200/80 dark:border-dm-border pb-3">
+        <h2 className="text-base font-bold text-slate-900 dark:text-dm-text">
+          Extratos e Comprovativos (Financeiro Business)
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-dm-muted mt-1 leading-relaxed">
+          Importação e conciliação inteligente em 3 passos. Leitura local em memória segura sem envio de documentos a servidores externos.
         </p>
-        <label className="block text-xs">
-          Conta empresarial
+      </div>
+
+      {/* Passo 1. Conta */}
+      <section className={`${panel} space-y-3`} aria-label="Passo 1: Conta empresarial">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-dm-muted">
+            Passo 1 · Selecionar Conta Empresarial
+          </h3>
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-dm-muted">
+            {bankId ? 'Conta Vinculada' : 'Obrigatório'}
+          </span>
+        </div>
+
+        <label className="block text-xs font-medium">
+          <span>Conta bancária da empresa</span>
           <select
             aria-label="Conta empresarial do documento"
-            className={input}
+            className={`${input} min-h-[44px] h-11 mt-1 font-semibold`}
             value={bankId}
             onChange={(e) => {
               setBankId(e.target.value);
@@ -255,7 +268,7 @@ export function BusinessDocumentsView() {
               setConfirm(false);
             }}
           >
-            <option value="">Escolher conta</option>
+            <option value="">Escolha a conta bancária da empresa…</option>
             {banks
               .filter(
                 (b) =>
@@ -270,19 +283,44 @@ export function BusinessDocumentsView() {
               ))}
           </select>
         </label>
+
         {company?.status === 'parada' && (
-          <p role="alert" className="text-xs text-amber-700">
-            Empresa parada — operações bloqueadas.
+          <p role="alert" className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
+            Empresa parada — novas operações financeiras estão temporariamente bloqueadas.
           </p>
         )}
-        <label className="block text-xs">
-          Selecionar documento
+      </section>
+
+      {/* Passo 2. Documento (Área única de importação para PDF, Excel, fotografia, CSV) */}
+      <section className={`${panel} space-y-3`} aria-label="Passo 2: Carregar documento">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-dm-muted">
+            Passo 2 · Carregar Extrato ou Comprovativo
+          </h3>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              PDF
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              Excel
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              Fotografia
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              CSV
+            </span>
+          </div>
+        </div>
+
+        <label className="block text-xs font-medium">
+          <span>Ficheiro de extrato ou recibo (.pdf, .csv, .xlsx, .png, .jpg)</span>
           <input
-            className={input}
+            className={`${input} min-h-[44px] mt-1`}
             aria-label="Ler ficheiro Business"
             type="file"
             accept=".pdf,.csv,.xlsx,.png,.jpg,.jpeg,.webp"
-            disabled={busy}
+            disabled={busy || company?.status === 'parada'}
             onChange={(e) => {
               const f = e.target.files?.[0];
               e.target.value = '';
@@ -290,12 +328,13 @@ export function BusinessDocumentsView() {
             }}
           />
         </label>
+
         {sheets.length > 1 && (
-          <label className="block text-xs">
-            Folha do Excel
+          <label className="block text-xs font-medium">
+            <span>Folha da folha de cálculo Excel</span>
             <select
               aria-label="Folha do Excel Business"
-              className={input}
+              className={`${input} min-h-[44px] mt-1`}
               value={sheet}
               onChange={(e) => {
                 const index = Number(e.target.value);
@@ -318,73 +357,110 @@ export function BusinessDocumentsView() {
             </select>
           </label>
         )}
-        <details>
-          <summary className="text-xs cursor-pointer">
-            Colar ou corrigir texto
-          </summary>
-          <textarea
-            aria-label="Texto do documento Business"
-            className={input + ' min-h-28'}
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            maxLength={200000}
-          />
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <button
-            className={button}
-            disabled={busy || !source.trim()}
+            className={button + ' min-h-[44px] px-4 cursor-pointer'}
+            disabled={busy || company?.status === 'parada'}
             onClick={() => {
-              try {
-                propose(source);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'Revê o texto.');
-              }
+              setFile(null);
+              setFileHash('');
+              setSource('');
+              setRows((old) => [
+                ...old,
+                {
+                  id: createId('business-draft'),
+                  date: '',
+                  title: '',
+                  amount: '',
+                  currency: '',
+                  direction: '',
+                  category: '',
+                  subcategory: '',
+                  selected: true,
+                },
+              ]);
+              setConfirm(false);
             }}
           >
-            Interpretar texto Business
+            Adicionar movimento manual
           </button>
+
+          {busy && (
+            <button className={button + ' min-h-[44px] px-4 cursor-pointer'} onClick={() => abort.current?.abort()}>
+              Cancelar leitura
+            </button>
+          )}
+        </div>
+
+        <details className="pt-1">
+          <summary className="text-xs text-slate-500 dark:text-dm-muted cursor-pointer hover:underline">
+            Opção avançada: Colar ou corrigir texto do extrato manualmente
+          </summary>
+          <div className="mt-2 space-y-2">
+            <textarea
+              aria-label="Texto do documento Business"
+              className={input + ' min-h-24 font-mono text-xs'}
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="Cole aqui o texto do comprovativo ou linhas do extrato..."
+              maxLength={200000}
+            />
+            <button
+              className={button + ' cursor-pointer'}
+              disabled={busy || !source.trim()}
+              onClick={() => {
+                try {
+                  propose(source);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : 'Revê o texto.');
+                }
+              }}
+            >
+              Interpretar texto colado
+            </button>
+          </div>
         </details>
-        <button
-          className={button}
-          disabled={busy}
-          onClick={() => {
-            setFile(null);
-            setFileHash('');
-            setSource('');
-            setRows((old) => [
-              ...old,
-              {
-                id: createId('business-draft'),
-                date: '',
-                title: '',
-                amount: '',
-                currency: '',
-                direction: '',
-                category: '',
-                subcategory: '',
-                selected: true,
-              },
-            ]);
-            setConfirm(false);
-          }}
-        >
-          Adicionar movimento manual
-        </button>
+
         {message && (
-          <p role="status" className="text-xs">
+          <p role="status" className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
             {message}
           </p>
         )}
-        {busy && (
-          <button className={button} onClick={() => abort.current?.abort()}>
-            Cancelar leitura
-          </button>
-        )}
+
         {(error || stock.businessDocumentsError) && (
-          <p role="alert" className="text-sm text-rose-600">
+          <p role="alert" className="text-sm text-rose-600 dark:text-rose-400 font-medium">
             {error || stock.businessDocumentsError}
           </p>
         )}
-        {rows.map((row, i) => {
+      </section>
+
+      {/* Passo 3. Revisão */}
+      <section className={`${panel} space-y-4`} aria-label="Passo 3: Revisão de movimentos">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-dm-muted">
+            Passo 3 · Revisão e Aplicação dos Movimentos
+          </h3>
+          {rows.length > 0 && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              {rows.length} {rows.length === 1 ? 'movimento lido' : 'movimentos lidos'}
+            </span>
+          )}
+        </div>
+
+        {rows.length === 0 ? (
+          <div className="p-6 rounded-lg bg-slate-50 dark:bg-dm-elevated border border-dashed border-slate-200 dark:border-dm-border text-center text-xs text-slate-400 dark:text-dm-muted space-y-1">
+            <p className="font-medium text-slate-600 dark:text-slate-300">Nenhum movimento pendente para revisão</p>
+            <p className="text-[11px]">
+              Selecione uma conta no Passo 1 e carregue um extrato ou comprovativo no Passo 2 para rever as movimentações.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-500 dark:text-dm-muted">
+              Confira os dados identificados. + Entrada aumenta o saldo; − Saída reduz. Apenas movimentos selecionados serão aplicados.
+            </p>
+            {rows.map((row, i) => {
           let matches: ReturnType<typeof businessReceiptMatches> = [];
           try {
             if (bank)
@@ -576,6 +652,8 @@ export function BusinessDocumentsView() {
           >
             Rever e aplicar no Business
           </button>
+        )}
+          </div>
         )}
       </section>
       <section className={panel}>

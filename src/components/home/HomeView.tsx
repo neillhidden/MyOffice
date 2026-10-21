@@ -23,6 +23,7 @@ import { HomeCharts } from './HomeCharts';
 import { useToday } from '../../hooks/useToday';
 import { HomeCategories, HomeShopping } from './HomeShopping';
 import { AppearanceSettings } from '../settings/AppearanceSettings';
+import { EmptyState } from '../common/EmptyState';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowDownLeft,
@@ -171,6 +172,7 @@ export function HomeView({
   const [importConfirmation, setImportConfirmation] = useState('');
   const [name, setName] = useState(data.name);
   const [settingsSection, setSettingsSection] = useState<string | null>(null);
+  const [showBusinessTransfer, setShowBusinessTransfer] = useState(false);
   useEffect(() => {
     setSettingsSection(null);
   }, [section]);
@@ -1081,56 +1083,137 @@ export function HomeView({
 
       {section === 'Dashboard' && (
         <>
-          {!data.entries.length && (
-            <div
-              className={`${panel} flex flex-wrap items-center justify-between gap-4 bg-indigo-50/40`}
-            >
-              <div>
-                <h2 className="text-sm font-semibold">Bem-vindo ao teu Home</h2>
-                <p className={`${muted} mt-1`}>
-                  Começa por registar uma receita ou adicionar uma conta com o
-                  teu saldo atual.
-                </p>
+          {!data.entries.length ? (
+            <div className="space-y-4" id="home-dashboard-empty-guide">
+              {/* Resumo compacto de saldos */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Saldo disponível', value: available, icon: Wallet },
+                  { label: 'Rendimentos', value: income, icon: ArrowDownLeft },
+                  { label: 'Despesas', value: spent, icon: ArrowUpRight },
+                  { label: 'Reservado', value: reserved, icon: Target },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="rounded-xl border border-slate-200/80 dark:border-dm-border bg-white dark:bg-dm-surface p-3.5 sm:p-4">
+                    <div className="flex justify-between items-center text-xs text-slate-500 dark:text-dm-muted">
+                      <span>{label}</span>
+                      <Icon className="h-4 w-4 text-indigo-500 shrink-0" />
+                    </div>
+                    <p className="mt-2 text-base sm:text-lg font-semibold tabular-nums text-right break-words">
+                      {cash(value)}
+                    </p>
+                  </div>
+                ))}
               </div>
-              <button
-                className={primary}
-                onClick={() => onNavigate('Finanças')}
-              >
-                Organizar as finanças
-                <ArrowUpRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          <div className="grid grid-cols-1 min-[450px]:grid-cols-2 xl:grid-cols-4 gap-3">
-            {[
-              { label: 'Saldo disponível', value: available, icon: Wallet },
-              {
-                label: 'Rendimentos do mês',
-                value: income,
-                icon: ArrowDownLeft,
-              },
-              { label: 'Despesas do mês', value: spent, icon: ArrowUpRight },
-              { label: 'Reservado para metas', value: reserved, icon: Target },
-            ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className={panel}>
-                <div className="flex justify-between gap-2">
-                  <p className={muted}>{label}</p>
-                  <Icon className="h-4 w-4 text-indigo-500" />
+
+              {/* Três passos guiados (Bloco 6.3) */}
+              <div className={`${panel} p-6 sm:p-8 space-y-5`}>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-dm-text">
+                    Começa a organizar o teu espaço pessoal
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-dm-muted mt-1 leading-relaxed">
+                    Segue os três passos abaixo para teres uma visão clara das tuas finanças. Os gráficos detalhados e previsões aparecerão assim que tiveres movimentos registados.
+                  </p>
                 </div>
-                <p className="mt-3 text-lg sm:text-xl font-semibold font-mono break-words">
-                  {cash(value)}
-                </p>
+
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {/* Passo 1 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-dm-border bg-slate-50/60 dark:bg-dm-elevated p-4 flex flex-col justify-between space-y-3">
+                    <div>
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold mb-2">
+                        1
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-800 dark:text-dm-text">Adicionar conta</h3>
+                      <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
+                        Regista as tuas contas à ordem, carteiras físicas ou contas poupança com o saldo inicial.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-home-step-account"
+                      className={`${primary} w-full mt-2 cursor-pointer`}
+                      onClick={() => open('account')}
+                    >
+                      Adicionar conta
+                    </button>
+                  </div>
+
+                  {/* Passo 2 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-dm-border bg-slate-50/60 dark:bg-dm-elevated p-4 flex flex-col justify-between space-y-3">
+                    <div>
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold mb-2">
+                        2
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-800 dark:text-dm-text">Registar movimento</h3>
+                      <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
+                        Lança um rendimento, despesa ou transferência entre carteiras para alimentar o teu histórico.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-home-step-entry"
+                      className={`${primary} w-full mt-2 cursor-pointer`}
+                      onClick={() => open('entry')}
+                    >
+                      Registar movimento
+                    </button>
+                  </div>
+
+                  {/* Passo 3 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-dm-border bg-slate-50/60 dark:bg-dm-elevated p-4 flex flex-col justify-between space-y-3">
+                    <div>
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold mb-2">
+                        3
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-800 dark:text-dm-text">Definir orçamento</h3>
+                      <p className="text-xs text-slate-500 dark:text-dm-muted mt-1">
+                        Estipula um teto mensal para alimentação, lazer ou casa e acompanha o teu progresso.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-home-step-budget"
+                      className={`${primary} w-full mt-2 cursor-pointer`}
+                      onClick={() => open('budget', { currency: currency ?? 'AOA', month })}
+                    >
+                      Definir orçamento
+                    </button>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-          <HomeCharts entries={period} month={month} currency={currency} />
-          <HomeForecastPanel currency={currency} onOpenPlanning={() => onNavigate('Planeamento')} />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 min-[450px]:grid-cols-2 xl:grid-cols-4 gap-3">
+                {[
+                  { label: 'Saldo disponível', value: available, icon: Wallet },
+                  {
+                    label: 'Rendimentos do mês',
+                    value: income,
+                    icon: ArrowDownLeft,
+                  },
+                  { label: 'Despesas do mês', value: spent, icon: ArrowUpRight },
+                  { label: 'Reservado para metas', value: reserved, icon: Target },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className={panel}>
+                    <div className="flex justify-between gap-2">
+                      <p className={muted}>{label}</p>
+                      <Icon className="h-4 w-4 text-indigo-500" />
+                    </div>
+                    <p className="mt-3 text-lg sm:text-xl font-semibold tabular-nums text-right break-words">
+                      {cash(value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <HomeCharts entries={period} month={month} currency={currency} />
+              <HomeForecastPanel currency={currency} onOpenPlanning={() => onNavigate('Planeamento')} />
           <section className={panel} id="home-dashboard-planning">
             <h2 className="text-sm font-semibold">O mês em perspetiva</h2>
             <div className="grid sm:grid-cols-3 gap-4 mt-4">
               <div>
                 <p className={muted}>Contas ainda por pagar</p>
-                <p className="mt-1 font-mono font-semibold">{cash(dueTotal)}</p>
+                <p className="mt-1 tabular-nums font-semibold text-right">{cash(dueTotal)}</p>
                 <p className={`${muted} mt-1`}>
                   {outstanding.length} contas no mês selecionado
                 </p>
@@ -1138,7 +1221,7 @@ export function HomeView({
               <div>
                 <p className={muted}>Saldo atual após essas contas</p>
                 <p
-                  className={`mt-1 font-mono font-semibold ${available < dueTotal ? 'text-rose-600 dark:text-rose-300' : ''}`}
+                  className={`mt-1 tabular-nums font-semibold text-right ${available < dueTotal ? 'text-rose-600 dark:text-rose-300' : ''}`}
                 >
                   {cash(available - dueTotal)}
                 </p>
@@ -1361,24 +1444,38 @@ export function HomeView({
               </div>
             </section>
           </div>
+            </>
+          )}
         </>
       )}
 
       {section === 'Finanças' && (
         <>
-          {data.settings?.showBusinessIncome !== false && (
-            <BusinessIncomeTransfer currency={currency} />
-          )}
+          {/* As tuas contas e o saldo PRIMEIRO (Bloco 6.4) */}
           <section className={panel}>
-            <div className="flex flex-wrap justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-sm font-semibold">As tuas contas</h2>
-              <button
-                id="home-add-account"
-                className={secondary}
-                onClick={() => open('account')}
-              >
-                Adicionar conta
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {data.settings?.showBusinessIncome !== false && (
+                  <button
+                    id="home-btn-toggle-business-transfer"
+                    type="button"
+                    className={secondary}
+                    onClick={() => setShowBusinessTransfer((prev) => !prev)}
+                  >
+                    {showBusinessTransfer
+                      ? 'Ocultar transferência Business'
+                      : 'Transferir rendimento do Business'}
+                  </button>
+                )}
+                <button
+                  id="home-add-account"
+                  className={secondary}
+                  onClick={() => open('account')}
+                >
+                  Adicionar conta
+                </button>
+              </div>
             </div>
             <div
               className="grid sm:grid-cols-3 gap-3 mb-4"
@@ -1394,7 +1491,7 @@ export function HomeView({
                   className="rounded-lg bg-slate-50 dark:bg-dm-elevated p-3"
                 >
                   <p className={muted}>{item.label}</p>
-                  <p className="font-mono text-sm font-semibold mt-1">
+                  <p className="tabular-nums text-sm font-semibold mt-1 text-right">
                     {cash(item.value)}
                   </p>
                 </div>
@@ -1436,7 +1533,7 @@ export function HomeView({
                       )}
                     </div>
                     {editStamp(a)}
-                    <p className="font-mono text-base font-semibold mt-2 break-words">
+                    <p className="tabular-nums text-base font-semibold mt-2 break-words text-right">
                       {cash(totals[a.id])}
                     </p>
                     <p className={`${muted} mt-1`}>
@@ -1448,6 +1545,13 @@ export function HomeView({
                 ))}
             </div>
           </section>
+
+          {/* Formulário de Transferência de Rendimento do Business (abre via botão secundário) */}
+          {data.settings?.showBusinessIncome !== false && showBusinessTransfer && (
+            <BusinessIncomeTransfer currency={currency} />
+          )}
+
+          {/* Movimentos DEPOIS das contas (Bloco 6.4) */}
           <section className={panel}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-sm font-semibold">
@@ -1590,47 +1694,51 @@ export function HomeView({
                   className="flex justify-between gap-2 text-xs rounded-lg bg-slate-50 dark:bg-dm-elevated p-3"
                 >
                   <span>{homeCategoryName(data, category)}</span>
-                  <span className="font-mono">{cash(spending(category))}</span>
+                  <span className="tabular-nums font-medium text-right">{cash(spending(category))}</span>
                 </div>
               ))}
             </div>
           </section>
           <section className={panel}>
             <h2 className="text-sm font-semibold">Despesas registadas</h2>
-            <div className="divide-y divide-slate-200 dark:divide-dm-border">
-              {period
-                .filter((e) => e.type === 'expense')
-                .map((e) => (
-                  <div
-                    key={e.id}
-                    data-home-budget-entry-id={e.id}
-                    className="flex flex-wrap items-center justify-between gap-3 py-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{e.title}</p>
-                      <p className={muted}>
-                        {dateLabel(e.date)} ·{' '}
-                        {homeCategoryName(
-                          data,
-                          e.category,
-                          undefined,
-                          e.type === 'income' ||
-                            (e.type === 'reversal' &&
-                              data.entries.find((o) => o.id === e.reversalOf)
-                                ?.type === 'income')
-                            ? 'income'
-                            : 'expense',
-                        )}
-                      </p>
-                      {editStamp(e)}
+            {period.filter((e) => e.type === 'expense').length === 0 ? (
+              <p className={`${muted} py-4 text-center`}>Sem despesas neste período.</p>
+            ) : (
+              <div className="divide-y divide-slate-200 dark:divide-dm-border">
+                {period
+                  .filter((e) => e.type === 'expense')
+                  .map((e) => (
+                    <div
+                      key={e.id}
+                      data-home-budget-entry-id={e.id}
+                      className="flex flex-wrap items-center justify-between gap-3 py-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{e.title}</p>
+                        <p className={muted}>
+                          {dateLabel(e.date)} ·{' '}
+                          {homeCategoryName(
+                            data,
+                            e.category,
+                            undefined,
+                            e.type === 'income' ||
+                              (e.type === 'reversal' &&
+                                data.entries.find((o) => o.id === e.reversalOf)
+                                  ?.type === 'income')
+                              ? 'income'
+                              : 'expense',
+                          )}
+                        </p>
+                        {editStamp(e)}
+                      </div>
+                      <span className="tabular-nums text-xs font-semibold text-right">
+                        {entryMoneyLabel(data, e)}
+                      </span>
+                      {entryActions(e)}
                     </div>
-                    <span className="font-mono text-xs">
-                      {entryMoneyLabel(data, e)}
-                    </span>
-                    {entryActions(e)}
-                  </div>
-                ))}
-            </div>
+                  ))}
+              </div>
+            )}
           </section>
           <p className={muted}>
             Define limites mensais por categoria. As despesas pagas atualizam o
@@ -1667,7 +1775,7 @@ export function HomeView({
                     )}
                   </div>
                   {editStamp(b)}
-                  <p className="font-mono text-sm mt-3">
+                  <p className="tabular-nums text-sm font-semibold mt-3 text-right">
                     {cash(used)} / {cash(b.limit)}
                   </p>
                   <div className="mt-3">
@@ -1686,9 +1794,17 @@ export function HomeView({
             })}
           </div>
           {!budgets.length && (
-            <div className={panel}>
-              <Empty>Define o primeiro limite para este mês.</Empty>
-            </div>
+            <EmptyState
+              id="home-budget-empty"
+              title="Sem orçamentos definidos"
+              description="Define limites mensais por categoria para controlar os teus gastos e receber alertas."
+              action={{
+                label: 'Definir orçamento',
+                id: 'btn-home-empty-budget',
+                onClick: () =>
+                  open('budget', { currency: currency ?? 'AOA', month }),
+              }}
+            />
           )}
         </>
       )}
@@ -1812,7 +1928,7 @@ export function HomeView({
                         </p>
                       ))}
                     {editStamp(b)}
-                    <span className="font-mono text-sm">
+                    <span className="tabular-nums text-sm font-semibold text-right">
                       {exchangeLabel(
                         b.amount,
                         b.currency ?? 'AOA',
@@ -1917,11 +2033,21 @@ export function HomeView({
                 );
               })}
             {!data.bills.length && (
-              <div className={panel}>
-                <Empty>
-                  Adiciona as mensalidades e despesas recorrentes da tua casa.
-                </Empty>
-              </div>
+              <EmptyState
+                id="home-bills-empty"
+                title="Sem contas da casa registadas"
+                description="Adiciona as mensalidades e despesas recorrentes da tua casa para acompanhar cada vencimento."
+                action={{
+                  label: 'Adicionar conta da casa',
+                  id: 'btn-home-empty-bill',
+                  onClick: () =>
+                    open('bill', {
+                      currency: currency ?? 'AOA',
+                      startDate: todayLocal(),
+                      day: '1',
+                    }),
+                }}
+              />
             )}
           </div>
         </>
@@ -2093,12 +2219,16 @@ export function HomeView({
               })}
           </div>
           {!data.goals.length && (
-            <div className={panel}>
-              <Empty>
-                Uma viagem, a tua casa, um curso ou uma reserva de emergência:
-                começa com uma meta.
-              </Empty>
-            </div>
+            <EmptyState
+              id="home-goals-empty"
+              title="Sem metas ou sonhos definidos"
+              description="Uma viagem, a tua casa, um curso ou uma reserva de emergência: começa com uma meta."
+              action={{
+                label: 'Criar meta',
+                id: 'btn-home-empty-goal',
+                onClick: () => open('goal'),
+              }}
+            />
           )}
         </>
       )}

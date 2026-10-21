@@ -12,6 +12,7 @@ interface SaleReceiptModalProps {
   onGoToTransport?: (saleId?: string) => void;
   onGoToStockMovement?: (saleId: string) => void;
   onGoToFinancialEntry?: (saleId: string) => void;
+  onGoToDebt?: (debtIdOrSaleId: string) => void;
 }
 
 export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
@@ -22,13 +23,21 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
   onGoToTransport,
   onGoToStockMovement,
   onGoToFinancialEntry,
+  onGoToDebt,
 }) => {
-  const { warehouses, companies, banks, bankMovements, transports } = useStock();
+  const { warehouses, companies, banks, bankMovements, transports, debts, getDebtCalculations } = useStock();
 
   if (!isOpen || !sale) return null;
 
   const warehouse = warehouses.find((w) => w.id === sale.warehouseId);
   const company = companies.find((c) => c.id === warehouse?.companyId);
+  const linkedDebt = debts.find(
+    (d) =>
+      (sale.debtId && d.id === sale.debtId) ||
+      d.saleId === sale.id ||
+      d.reference === `Venda #${sale.id}`
+  );
+  const debtCalcs = linkedDebt ? getDebtCalculations(linkedDebt) : null;
   const originalBankMov = bankMovements.find(
     (bm) =>
       bm.type === 'entrada' &&
@@ -81,10 +90,12 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Notification Bar (Non-print) */}
-        <div className="bg-emerald-600 px-6 py-3 text-white flex items-center justify-between print:hidden">
+        <div className={`${sale.paymentMethod === 'a_prazo' ? 'bg-amber-600' : 'bg-emerald-600'} px-6 py-3 text-white flex items-center justify-between print:hidden`}>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-            <span className="text-xs font-semibold">Venda Finalizada com Sucesso</span>
+            <CheckCircle2 className={`w-4 h-4 ${sale.paymentMethod === 'a_prazo' ? 'text-amber-200' : 'text-emerald-200'}`} />
+            <span className="text-xs font-semibold">
+              {sale.paymentMethod === 'a_prazo' ? 'Venda a Prazo Registada com Sucesso' : 'Venda Finalizada com Sucesso'}
+            </span>
           </div>
           <button
             type="button"
@@ -206,17 +217,34 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
               </div>
             )}
             <div className="flex justify-between items-baseline">
-              <span className="text-sm font-bold text-slate-900 uppercase">Total Pago</span>
+              <span className="text-sm font-bold text-slate-900 uppercase">
+                {sale.paymentMethod === 'a_prazo' ? 'Por receber' : 'Total Pago'}
+              </span>
               <span className="text-lg font-extrabold text-slate-900">
                 {formatCurrencyValue(sale.total, company?.currency || 'Kz')}
               </span>
             </div>
 
-            {targetBank && (
+            {sale.paymentMethod === 'a_prazo' ? (
+              <div className="pt-2 space-y-1.5 border-t border-dashed border-slate-200">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-amber-900">Saldo em dívida:</span>
+                  <span className="font-bold font-mono text-sm text-amber-700">
+                    {formatCurrencyValue(
+                      debtCalcs ? debtCalcs.remainingAmount : sale.total,
+                      company?.currency || 'Kz'
+                    )}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200 text-center font-medium">
+                  Venda a Prazo / Conta Corrente — Dívida a receber registada no Financeiro (Dívidas)
+                </p>
+              </div>
+            ) : targetBank ? (
               <p className="text-[10px] text-slate-400 text-center pt-2">
                 Movimentação creditada em: {targetBank.name} ({targetBank.currency})
               </p>
-            )}
+            ) : null}
 
             {/* Secção de links para registos gerados por esta venda */}
             <div className="mt-3 pt-3 border-t border-dashed border-slate-200 print:hidden">
@@ -239,7 +267,22 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
                   </button>
                 )}
 
-                {onGoToFinancialEntry && (
+                {sale.paymentMethod === 'a_prazo' && onGoToDebt && (
+                  <button
+                    type="button"
+                    id="btn-receipt-link-debt"
+                    onClick={() => {
+                      onClose();
+                      onGoToDebt(sale.debtId || sale.id);
+                    }}
+                    className="w-full text-left px-3 py-1.5 rounded-lg bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200/80 text-xs font-medium text-amber-800 hover:text-amber-900 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>→ Ver dívida a receber no Financeiro (Dívidas)</span>
+                    <span className="text-[10px] font-mono text-amber-600">#{sale.debtId || sale.id}</span>
+                  </button>
+                )}
+
+                {sale.paymentMethod !== 'a_prazo' && onGoToFinancialEntry && (
                   <button
                     type="button"
                     id="btn-receipt-link-financial-entry"

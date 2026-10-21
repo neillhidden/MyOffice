@@ -49,9 +49,9 @@ export function ModeSwitcher({
             id={`mode-btn-${choice}`}
             aria-pressed={mode === choice}
             onClick={() => onChange(choice)}
-            className={`flex min-h-10 items-center justify-center gap-2 rounded-lg text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${mode === choice ? 'bg-white dark:bg-dm-surface text-slate-900 dark:text-dm-text shadow-xs' : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text'}`}
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border ${mode === choice ? 'bg-white dark:bg-dm-surface text-slate-900 dark:text-dm-text shadow-xs' : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text'}`}
           >
-            <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+            <Icon className="w-4 h-4" aria-hidden="true" />
             {title}
           </button>
         ))}

@@ -24,6 +24,8 @@ const input =
   'w-full min-h-10 rounded-lg border border-slate-200 dark:border-dm-border bg-white dark:bg-dm-elevated px-3 py-2 text-sm';
 const button =
   'min-h-10 rounded-lg border border-slate-200 dark:border-dm-border px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-dm-elevated disabled:opacity-50';
+const primary =
+  button + ' dm-btn-primary bg-slate-900 text-white dark:bg-dm-text dark:text-dm-page';
 export { HomeCategories } from './HomeCategories';
 export function HomeShopping({
   currency = 'AOA',
@@ -109,7 +111,7 @@ export function HomeShopping({
         <form
           noValidate
           id="home-shopping-form"
-          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             const errors = homeFormErrors(e.currentTarget);
@@ -152,95 +154,110 @@ export function HomeShopping({
             });
           }}
         >
-          <label className="text-xs">
-            Produto ou item
+          {/* Linha 1: Produto numa linha larga (Bloco 5.5) */}
+          <label className="block text-xs font-medium">
+            <span>Produto ou item</span>
             <input
               id="home-shopping-name"
               required
               maxLength={300}
-              className={`${input} mt-1`}
+              placeholder="Ex: Arroz agulha 5kg, Azeite virgem, Detergente..."
+              className={`${input} mt-1.5`}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
             {inlineError('home-shopping-name')}
           </label>
-          <label className="text-xs">
-            Categoria
-            <select
-              id="home-shopping-category"
-              required
-              className={`${input} mt-1`}
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setSubcategory('');
-              }}
-            >
-              <option value="">Escolher…</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {homeCategoryName(data, c)}
-                </option>
-              ))}
-            </select>
-            {inlineError('home-shopping-category')}
-          </label>
-          <label className="text-xs">
-            Subcategoria
-            <select
-              id="home-shopping-subcategory"
-              className={`${input} mt-1`}
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value)}
-            >
-              <option value="">Sem subcategoria</option>
-              {categoryChildren(
-                data.subcategories ?? HOME_SUBCATEGORIES,
-                category,
-              ).map((c) => (
-                <option key={c} value={c}>
-                  {homeCategoryName(data, c, category)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs">
-            Quantidade
-            <input
-              id="home-shopping-quantity"
-              required
-              type="number"
-              min="0.001"
-              max="1000000"
-              step="0.001"
-              className={`${input} mt-1`}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-            />
-            {inlineError('home-shopping-quantity')}
-          </label>
-          <label className="text-xs">
-            Preço unitário previsto ({currency === 'AOA' ? 'Kz' : 'USD'})
-            <input
-              id="home-shopping-price"
-              required
-              type="number"
-              min="0"
-              step="0.01"
-              className={`${input} mt-1`}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-            {inlineError('home-shopping-price')}
-          </label>
-          <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
-            <button id="home-shopping-save" className={button}>
+
+          {/* Linha 2: Categoria e Subcategoria numa linha (16px de intervalo) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="block text-xs font-medium">
+              <span>Categoria</span>
+              <select
+                id="home-shopping-category"
+                required
+                className={`${input} mt-1.5`}
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setSubcategory('');
+                }}
+              >
+                <option value="">Escolher…</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {homeCategoryName(data, c)}
+                  </option>
+                ))}
+              </select>
+              {inlineError('home-shopping-category')}
+            </label>
+
+            <label className="block text-xs font-medium">
+              <span>Subcategoria</span>
+              <select
+                id="home-shopping-subcategory"
+                className={`${input} mt-1.5`}
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+              >
+                <option value="">Sem subcategoria</option>
+                {categoryChildren(
+                  data.subcategories ?? HOME_SUBCATEGORIES,
+                  category,
+                ).map((c) => (
+                  <option key={c} value={c}>
+                    {homeCategoryName(data, c, category)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* Linha 3: Quantidade e Preço na seguinte (16px de intervalo) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="block text-xs font-medium">
+              <span>Quantidade</span>
+              <input
+                id="home-shopping-quantity"
+                required
+                type="number"
+                min="0.001"
+                max="1000000"
+                step="0.001"
+                placeholder="1"
+                className={`${input} mt-1.5 font-mono`}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+              />
+              {inlineError('home-shopping-quantity')}
+            </label>
+
+            <label className="block text-xs font-medium">
+              <span>Preço unitário previsto ({currency === 'AOA' ? 'Kz' : 'USD'})</span>
+              <input
+                id="home-shopping-price"
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                className={`${input} mt-1.5 font-mono`}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+              {inlineError('home-shopping-price')}
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button id="home-shopping-save" className={primary + ' min-h-[44px] px-5 font-semibold cursor-pointer'}>
               {editingId ? 'Guardar item' : 'Adicionar item'}
             </button>
             {editingId && (
               <button
                 type="button"
-                className={button}
+                className={button + ' min-h-[44px] px-4 cursor-pointer'}
                 onClick={() => {
                   setEditingId(null);
                   setName('');

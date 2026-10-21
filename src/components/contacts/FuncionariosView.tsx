@@ -21,13 +21,24 @@ import { useStock } from '../../context/StockContext';
 import { Employee } from '../../types/employee';
 import { EmployeeModal } from './EmployeeModal';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { isValidPhone } from '../../utils/phoneValidation';
 
-export const FuncionariosView: React.FC = () => {
+interface FuncionariosViewProps {
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
+}
+
+export const FuncionariosView: React.FC<FuncionariosViewProps> = ({
+  externalSearchQuery,
+  onExternalSearchChange,
+}) => {
   const { employees, companies, deleteEmployee, isCompanyDisabled } = useStock();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('todas');
   const [selectedStatus, setSelectedStatus] = useState<'todos' | 'ativo' | 'inativo'>('todos');
+
+  const effectiveSearchTerm = externalSearchQuery !== undefined ? externalSearchQuery : searchTerm;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,8 +62,8 @@ export const FuncionariosView: React.FC = () => {
       if (selectedCompanyId !== 'todas' && emp.companyId !== selectedCompanyId) return false;
       if (selectedStatus !== 'todos' && emp.status !== selectedStatus) return false;
 
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase();
+      if (effectiveSearchTerm.trim()) {
+        const q = effectiveSearchTerm.toLowerCase();
         const matchName = emp.name.toLowerCase().includes(q);
         const matchPhone = emp.phone?.toLowerCase().includes(q) || false;
         const matchRole = emp.role?.toLowerCase().includes(q) || false;
@@ -61,7 +72,7 @@ export const FuncionariosView: React.FC = () => {
       }
       return true;
     });
-  }, [employees, selectedCompanyId, selectedStatus, searchTerm, companies, isCompanyDisabled]);
+  }, [employees, selectedCompanyId, selectedStatus, effectiveSearchTerm, companies, isCompanyDisabled]);
 
   // Birthday checks
   const currentMonth = new Date().getMonth() + 1; // 1-12
@@ -261,8 +272,11 @@ export const FuncionariosView: React.FC = () => {
             <input
               id="input-search-employees"
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={effectiveSearchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                onExternalSearchChange?.(e.target.value);
+              }}
               placeholder="Pesquisar por nome, telefone ou cargo..."
               className="w-full bg-transparent border-0 text-xs text-slate-900 dark:text-dm-text placeholder:text-slate-400 dark:placeholder:text-dm-muted focus:outline-none"
             />
@@ -284,20 +298,19 @@ export const FuncionariosView: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                <th className="py-2.5 px-4">Funcionário</th>
-                <th className="py-2.5 px-3">Empresa</th>
-                <th className="py-2.5 px-3">Cargo / Função</th>
-                <th className="py-2.5 px-3">Contacto</th>
-                <th className="py-2.5 px-3">Nascimento</th>
-                <th className="py-2.5 px-3">Endereço</th>
-                <th className="py-2.5 px-3 text-center">Estado</th>
-                <th className="py-2.5 px-4 text-right">Ações</th>
+                <th className="py-2.5 px-4 min-w-[240px]">Funcionário / Empresa</th>
+                <th className="py-2.5 px-3 min-w-[140px]">Cargo / Função</th>
+                <th className="py-2.5 px-3 min-w-[150px]">Contacto</th>
+                <th className="py-2.5 px-3 text-center min-w-[100px]">Estado</th>
+                <th className="py-2.5 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[120px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={5} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhum funcionário encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -305,13 +318,13 @@ export const FuncionariosView: React.FC = () => {
                 filteredEmployees.map((emp) => {
                   const company = companies.find((c) => c.id === emp.companyId);
                   const isToday = isTodayBirthday(emp.birthDate);
-                  const isMonth = isBirthdaySoon(emp.birthDate);
-                  const cleanPhone = emp.phone?.replace(/\D/g, '') || '';
+                  const isPhoneValid = !emp.phone || isValidPhone(emp.phone);
+                  const cleanPhone = (isPhoneValid && emp.phone) ? emp.phone.replace(/\D/g, '') : '';
 
                   return (
-                    <tr {...detailRowProps(() => handleOpenEdit(emp))} key={emp.id} className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                      {/* Name with initials avatar */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                    <tr {...detailRowProps(() => handleOpenEdit(emp))} key={emp.id} className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group">
+                      {/* Name with initials avatar + Empresa as secondary line (Item 2.6) */}
+                      <td className="py-3 px-4 min-w-[240px]">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs shrink-0">
                             {emp.name.charAt(0).toUpperCase()}
@@ -320,32 +333,31 @@ export const FuncionariosView: React.FC = () => {
                             <span className="font-semibold text-slate-900 dark:text-slate-100 block">
                               {emp.name}
                             </span>
-                            {emp.accessPermissions && (
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                Acesso: {emp.accessPermissions}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                              {company ? (
+                                <span className="inline-flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                                  <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                                  {company.name}
+                                </span>
+                              ) : (
+                                <span>Sem empresa vinculada</span>
+                              )}
+                              {emp.accessPermissions && (
+                                <>
+                                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                                  <span>Acesso: {emp.accessPermissions}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </td>
-
-                      {/* Empresa */}
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        {company ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                            <Building2 className="w-3 h-3 text-slate-400" />
-                            {company.name}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Não atribuída</span>
-                        )}
                       </td>
 
                       {/* Cargo */}
                       <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
                         {emp.role ? (
-                          <span className="flex items-center gap-1.5">
-                            <Briefcase className="w-3 h-3 text-slate-400" />
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Briefcase className="w-3.5 h-3.5 text-slate-400" />
                             {emp.role}
                           </span>
                         ) : (
@@ -353,12 +365,22 @@ export const FuncionariosView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Contacto */}
+                      {/* Contacto & Nascimento */}
                       <td className="py-3 px-3 whitespace-nowrap">
                         {emp.phone ? (
                           <div className="flex items-center gap-1.5">
-                            <Phone className="w-3 h-3 text-slate-400" />
+                            <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                             <span className="font-mono text-slate-700 dark:text-slate-300">{emp.phone}</span>
+                            {!isPhoneValid && (
+                              <span
+                                id={`invalid-phone-${emp.id}`}
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 ml-1"
+                                title="Número de telefone inválido no cadastro antigo"
+                              >
+                                <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                                Inválido
+                              </span>
+                            )}
                             {cleanPhone && (
                               <a
                                 href={`https://wa.me/${cleanPhone}`}
@@ -374,37 +396,10 @@ export const FuncionariosView: React.FC = () => {
                         ) : (
                           <span className="text-slate-400 text-[11px]">—</span>
                         )}
-                      </td>
-
-                      {/* Data de Nascimento */}
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-slate-700 dark:text-slate-300">
-                            {formatBirthDate(emp.birthDate)}
+                        {emp.birthDate && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
+                            Nasc: {formatBirthDate(emp.birthDate)} {isToday ? '🎂 Hoje!' : ''}
                           </span>
-                          {isToday ? (
-                            <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-bold inline-flex items-center gap-1 animate-pulse">
-                              <Cake className="w-2.5 h-2.5" />
-                              Hoje!
-                            </span>
-                          ) : isMonth ? (
-                            <span className="px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 text-[10px] font-medium inline-flex items-center gap-0.5">
-                              <Cake className="w-2.5 h-2.5" />
-                              Este mês
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-
-                      {/* Endereço */}
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400 max-w-xs truncate" title={emp.address}>
-                        {emp.address ? (
-                          <span className="flex items-center gap-1 truncate">
-                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                            {emp.address}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">—</span>
                         )}
                       </td>
 
@@ -419,15 +414,21 @@ export const FuncionariosView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Action buttons */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      {/* Action buttons (44x44px icon buttons, sticky right) */}
+                      <td
+                        className="py-2.5 px-4 text-right whitespace-nowrap sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[120px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            id={`btn-detail-employee-${emp.id}`}
                             onClick={() => handleOpenEdit(emp)}
-                            className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
+                            title="Ver detalhes do funcionário"
                           >
-                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
+                            <span className="sr-only">Abrir detalhes</span>
+                            <DetailsIcon aria-hidden="true" className="w-4 h-4" />
                           </button>
 
                           <button
@@ -435,9 +436,9 @@ export const FuncionariosView: React.FC = () => {
                             id={`btn-edit-employee-${emp.id}`}
                             onClick={() => handleOpenEdit(emp)}
                             title="Editar funcionário"
-                            className="dm-icon-action p-1.5 text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-dm-muted dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-4 h-4" />
                           </button>
 
                           <button
@@ -445,9 +446,9 @@ export const FuncionariosView: React.FC = () => {
                             id={`btn-delete-employee-${emp.id}`}
                             onClick={() => setEmployeeToDelete(emp)}
                             title="Eliminar funcionário"
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

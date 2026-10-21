@@ -11,11 +11,15 @@ import {
   RotateCcw,
   Archive,
   X,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStock } from '../../context/StockContext';
 import { Movement } from '../../types/stock';
 import { formatDateTime } from '../../utils/formatters';
 import { PositiveBadge } from '../common/PositiveBadge';
+import { ProductThumbnail } from '../common/ProductThumbnail';
+import { formatShortRef, matchRefOrFull } from '../../utils/references';
 
 interface MovementsViewProps {
   onOpenNewMovementModal: () => void;
@@ -51,6 +55,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
   const [movementToRemove, setMovementToRemove] = useState<Movement | null>(null);
   const [removalReason, setRemovalReason] = useState<string>('');
   const [removalError, setRemovalError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Sync external search query (e.g. when navigating from Recibo de Venda -> Ver saída no Estoque)
   useEffect(() => {
@@ -142,8 +147,9 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
           const matchesProd =
             product?.name.toLowerCase().includes(q) || product?.sku.toLowerCase().includes(q);
           const matchesReason = m.reason?.toLowerCase().includes(q);
-          const matchesRef = m.reference?.toLowerCase().includes(q);
-          const matchesSaleId = m.saleId?.toLowerCase().includes(q);
+          const matchesId = matchRefOrFull(m.id, q, 'MOV');
+          const matchesRef = m.reference ? matchRefOrFull(m.reference, q, 'DOC') : false;
+          const matchesSaleId = m.saleId ? matchRefOrFull(m.saleId, q, 'VND') : false;
           const matchesResp = m.responsible?.toLowerCase().includes(q);
           const matchesRemovalReason = (m.motivo_remocao || m.removedReason || '')
             .toLowerCase()
@@ -151,6 +157,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
           if (
             !matchesProd &&
             !matchesReason &&
+            !matchesId &&
             !matchesRef &&
             !matchesSaleId &&
             !matchesResp &&
@@ -249,10 +256,9 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
             type="button"
             id="btn-new-movement"
             onClick={onOpenNewMovementModal}
-            className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-lg text-xs font-medium transition-colors shadow-xs shrink-0 cursor-pointer"
+            className="dm-btn-primary min-h-[44px] h-11 inline-flex items-center justify-center px-5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors shadow-xs shrink-0 cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Registar Movimentação</span>
+            <span>Registar movimentação</span>
           </button>
         </div>
       </div>
@@ -340,38 +346,31 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
             )}
           </div>
         </div>
-
-        {/* Capsule Action Button */}
-        <button
-          type="button"
-          onClick={onOpenNewMovementModal}
-          className="dm-btn-primary inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:hover:bg-white dark:text-dm-page rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Adicionar</span>
-        </button>
       </div>
 
       {/* Movements Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-4">Data & Hora</th>
-                <th className="py-3 px-4">Produto</th>
-                <th className="py-3 px-4 text-center">Tipo</th>
-                <th className="py-3 px-4 text-right">Quantidade</th>
-                <th className="py-3 px-4">Origem / Destino</th>
-                <th className="py-3 px-4">Responsável</th>
-                <th className="py-3 px-4">Motivo / Documento</th>
-                <th className="py-3 px-4 text-right">Ações</th>
+              <tr className="bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                <th className="py-3 px-3.5 w-[140px] min-w-[120px]">Ref. Movimento</th>
+                <th className="py-3 px-3.5">Data & Hora</th>
+                <th className="py-3 px-3.5">Produto</th>
+                <th className="py-3 px-3.5 text-center">Tipo</th>
+                <th className="py-3 px-3.5 text-right">Quantidade</th>
+                <th className="py-3 px-3.5">Origem / Destino</th>
+                <th className="py-3 px-3.5">Responsável</th>
+                <th className="py-3 px-3.5">Motivo / Documento</th>
+                <th className="py-3 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[110px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                  Ações
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300 text-sm">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     {activeTab === 'removidos'
                       ? 'Nenhum registo foi removido do histórico até ao momento.'
                       : 'Nenhuma movimentação encontrada com os filtros selecionados.'}
@@ -395,29 +394,56 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                         isRemoved ? 'bg-slate-50/40 dark:bg-slate-800/30 opacity-85' : ''
                       }`}
                     >
+                      {/* Ref. Movimento curta (Item 2.7) com cópia de ID completo */}
+                      <td className="py-3.5 px-3.5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-mono">
+                          <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                            {formatShortRef(mov.reference || mov.id, mov.saleId ? 'VND' : 'MOV')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const full = mov.reference || mov.id;
+                              navigator.clipboard.writeText(full);
+                              setCopiedId(mov.id);
+                              setTimeout(() => setCopiedId(null), 1500);
+                            }}
+                            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded cursor-pointer"
+                            title={`Copiar identificador completo (#${mov.reference || mov.id})`}
+                            aria-label="Copiar ID completo"
+                          >
+                            {copiedId === mov.id ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+
                       {/* Data & Hora */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-xs">
                         {formatDateTime(mov.date)}
                       </td>
 
-                      {/* Produto */}
-                      <td className="py-3 px-4">
+                      {/* Produto com miniatura consistente 48x48px (Item 2.2) */}
+                      <td className="py-3.5 px-3.5">
                         <div
                           onClick={() => onSelectProduct?.(mov.productId)}
                           className="flex items-center gap-2.5 cursor-pointer group"
                         >
-                          {product?.mainImage && (
-                            <img
-                              src={product.mainImage}
-                              alt=""
-                              className="w-7 h-7 rounded object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-                            />
-                          )}
+                          <ProductThumbnail
+                            src={product?.mainImage}
+                            alt={product?.name || ''}
+                            category={product?.category}
+                            size="sm"
+                          />
                           <div>
-                            <span className="font-semibold text-slate-900 dark:text-slate-100 group-hover:underline block">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 group-hover:underline block text-sm">
                               {product?.name || 'Produto não encontrado'}
                             </span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                               SKU: {product?.sku}
                             </span>
                           </div>
@@ -425,12 +451,12 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                       </td>
 
                       {/* Tipo */}
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
                         {mov.type === 'entrada' ? (
                           <PositiveBadge label="Entrada" />
                         ) : (
                           <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded capitalize ${
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded capitalize ${
                               mov.type === 'saida'
                                 ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60'
                                 : mov.type === 'transferencia'
@@ -450,7 +476,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                       </td>
 
                       {/* Quantidade */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-bold">
+                      <td className="py-3.5 px-3.5 text-right whitespace-nowrap tabular-nums font-semibold text-sm">
                         <span
                           className={
                             mov.type === 'saida' || mov.type === 'defeituoso'
@@ -464,7 +490,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                       </td>
 
                       {/* Origem / Destino */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 text-sm">
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span>{wh?.name || 'Armazém Geral'}</span>
@@ -476,7 +502,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                           </div>
                           {destWh && (
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[11px] text-purple-700 dark:text-purple-400 font-medium">
+                              <span className="text-xs text-purple-700 dark:text-purple-400 font-medium">
                                 → {destWh.name}
                               </span>
                               {destComp?.status === 'parada' && (
@@ -490,15 +516,15 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                       </td>
 
                       {/* Responsável */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400 text-[11px]">
+                      <td className="py-3.5 px-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 text-xs">
                         {mov.responsible}
                       </td>
 
                       {/* Motivo & Referência */}
-                      <td className="py-3 px-4 max-w-xs">
+                      <td className="py-3.5 px-3.5 max-w-xs text-sm">
                         <p className="text-slate-800 dark:text-slate-200 line-clamp-1">{mov.reason}</p>
                         {mov.reference && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block">
                             Doc: {mov.reference}
                           </span>
                         )}
@@ -511,33 +537,38 @@ export const MovementsView: React.FC<MovementsViewProps> = ({
                         )}
                       </td>
 
-                      {/* Ações */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right">
-                        {!isRemoved ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMovementToRemove(mov);
-                              setRemovalReason('');
-                              setRemovalError(null);
-                            }}
-                            className="dm-icon-action p-1.5 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
-                            title="Remover do histórico"
-                            aria-label="Remover movimentação do histórico"
-                          >
-                            <Archive className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => restoreStockMovement(mov.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                            title="Restaurar registo ao Histórico"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            <span>Restaurar</span>
-                          </button>
-                        )}
+                      {/* Ações: Sticky right com botões 44x44px */}
+                      <td
+                        className="py-2.5 px-4 whitespace-nowrap text-right sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[110px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end">
+                          {!isRemoved ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMovementToRemove(mov);
+                                setRemovalReason('');
+                                setRemovalError(null);
+                              }}
+                              className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-slate-400 hover:text-rose-600 dark:text-dm-muted dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
+                              title="Remover do histórico"
+                              aria-label="Remover movimentação do histórico"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => restoreStockMovement(mov.id)}
+                              className="inline-flex items-center gap-1 min-h-[44px] px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                              title="Restaurar registo ao Histórico"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Restaurar</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

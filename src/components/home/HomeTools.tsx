@@ -1,7 +1,8 @@
 import { HomeFileImport } from './HomeFileImport';
 import { useToday } from '../../hooks/useToday';
 import React, { useState, useRef, useEffect } from 'react';
-import { Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { EmptyState } from '../common/EmptyState';
 import { useHome } from '../../context/HomeContext';
 import {
   HomeCurrency,
@@ -341,15 +342,28 @@ export function HomeDebts() {
           }),
         ),
     });
+  const activeDebts = (data.debts ?? []).filter((d) => !d.deletedAt);
   return (
     <div className="space-y-4">
       {a.alert}
-      <button className={primary} onClick={() => edit()}>
-        Nova dívida pessoal
-      </button>
-      {(data.debts ?? [])
-        .filter((d) => !d.deletedAt)
-        .map((d) => (
+      {activeDebts.length > 0 && (
+        <button className={primary} onClick={() => edit()}>
+          Nova dívida pessoal
+        </button>
+      )}
+      {activeDebts.length === 0 ? (
+        <EmptyState
+          id="home-debts-empty"
+          title="Sem dívidas pessoais registadas"
+          description="Regista contas a pagar ou a receber com prestações e prazos para acompanhar a liquidação."
+          action={{
+            label: 'Nova dívida pessoal',
+            id: 'btn-home-empty-debt',
+            onClick: () => edit(),
+          }}
+        />
+      ) : (
+        activeDebts.map((d) => (
           <section key={d.id} className={panel}>
             <div className="flex justify-between gap-3">
               <div>
@@ -467,9 +481,7 @@ export function HomeDebts() {
                 ))}
             </details>
           </section>
-        ))}
-      {!data.debts?.some((d) => !d.deletedAt) && (
-        <p className={muted}>Ainda não existem dívidas pessoais.</p>
+        ))
       )}
       {a.modal}
     </div>
@@ -673,9 +685,17 @@ export function HomeHistory() {
           </section>
         ))}
       {!rows.some((r) => r.deletedAt || r.edits?.length) && (
-        <p className={muted}>
-          Ainda não há alterações ou eliminações neste grupo.
-        </p>
+        <EmptyState
+          id="home-history-empty"
+          title="Histórico sem registos"
+          description="Ainda não existem alterações ou eliminações registadas neste grupo."
+          action={{
+            label: 'Consultar lançamentos',
+            id: 'btn-home-empty-history',
+            variant: 'secondary',
+            onClick: () => setKind('entry'),
+          }}
+        />
       )}
       {a.modal}
     </div>
@@ -761,47 +781,56 @@ export function HomePlanning() {
   return (
     <div className="space-y-4">
       {a.alert}
-      <div className="flex flex-wrap gap-2">
-        <select
-          aria-label="Moeda da previsão"
-          className={input + ' sm:w-auto'}
-          value={currency}
-          onChange={(e) => {
-            setCurrency(e.target.value as HomeCurrency);
-            setAccount('all');
-          }}
-        >
-          {currencies.map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Carteira da previsão"
-          className={input + ' sm:w-auto'}
-          value={account}
-          onChange={(e) => setAccount(e.target.value)}
-        >
-          <option value="all">Todas as carteiras desta moeda</option>
-          {walletOptions(a.data)
-            .filter(
-              ([id]) =>
-                accountCurrency(a.data.accounts.find((a) => a.id === id)) ===
-                currency,
-            )
-            .map(([v, l]) => (
+      {/* Filtros com rótulo superior, inputs de 44px, alinhados pela base (Bloco 5.6) */}
+      <div className="flex flex-wrap items-end gap-3 pb-2">
+        <label className="text-xs font-medium flex flex-col gap-1 sm:w-auto">
+          <span>Moeda</span>
+          <select
+            aria-label="Moeda da previsão"
+            className={`${input} min-h-[44px] h-11 px-3 py-2 sm:w-auto`}
+            value={currency}
+            onChange={(e) => {
+              setCurrency(e.target.value as HomeCurrency);
+              setAccount('all');
+            }}
+          >
+            {currencies.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>
             ))}
-        </select>
-        <label className="text-xs">
-          Prever até
+          </select>
+        </label>
+
+        <label className="text-xs font-medium flex flex-col gap-1 sm:w-auto">
+          <span>Carteira</span>
+          <select
+            aria-label="Carteira da previsão"
+            className={`${input} min-h-[44px] h-11 px-3 py-2 sm:w-auto`}
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+          >
+            <option value="all">Todas as carteiras desta moeda</option>
+            {walletOptions(a.data)
+              .filter(
+                ([id]) =>
+                  accountCurrency(a.data.accounts.find((a) => a.id === id)) ===
+                  currency,
+              )
+              .map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <label className="text-xs font-medium flex flex-col gap-1 sm:w-auto">
+          <span>Prever até</span>
           <input
             aria-label="Fim da previsão"
             type="date"
-            className={input}
+            className={`${input} min-h-[44px] h-11 px-3 py-2`}
             min={today}
             value={to}
             onChange={(e) => {
@@ -809,9 +838,15 @@ export function HomePlanning() {
             }}
           />
         </label>
-        <button className={primary} onClick={() => edit()}>
-          Nova previsão
-        </button>
+
+        <div className="flex flex-col justify-end">
+          <button
+            className={`${primary} min-h-[44px] h-11 px-4 inline-flex items-center justify-center font-semibold cursor-pointer`}
+            onClick={() => edit()}
+          >
+            Nova previsão
+          </button>
+        </div>
       </div>
       <p className={muted}>
         Parte do saldo disponível de hoje. Contas pendentes, prestações e planos
@@ -852,10 +887,25 @@ export function HomePlanning() {
           <p className={muted}>Sem movimentos previstos neste intervalo.</p>
         )}
       </section>
+
+      {/* Planos registados: quando vazio, estado explícito 'Ainda não tens planos' com botão 'Criar previsão' (Bloco 5.6) */}
       <h2 className="font-medium">Planos registados</h2>
-      {(a.data.plans ?? [])
-        .filter((p) => !p.deletedAt)
-        .map((p) => (
+      {(() => {
+        const activePlans = (a.data.plans ?? []).filter((p) => !p.deletedAt);
+        if (activePlans.length === 0) {
+          return (
+            <div className={panel + ' text-center py-6 space-y-3'}>
+              <p className={muted}>Ainda não tens planos</p>
+              <button
+                className={primary + ' min-h-[44px] h-11 px-5 mx-auto inline-flex items-center justify-center font-semibold cursor-pointer'}
+                onClick={() => edit()}
+              >
+                Criar previsão
+              </button>
+            </div>
+          );
+        }
+        return activePlans.map((p) => (
           <div
             key={p.id}
             className={panel + ' flex items-center justify-between gap-3'}
@@ -879,7 +929,8 @@ export function HomePlanning() {
               remove={() => a.remove('plan', p.id, p.title)}
             />
           </div>
-        ))}
+        ));
+      })()}
       {a.modal}
     </div>
   );
@@ -1024,14 +1075,85 @@ export function HomeReports() {
               ['Resultado', formatHomeMoney(r.net, currency)],
             ]}
           />
-          <p className={muted}>
-            Período anterior: {dateLabel(prevStart)} a {dateLabel(prevEnd)} ·
-            Rendimentos {formatHomeMoney(previous.income, currency)} · Despesas{' '}
-            {formatHomeMoney(previous.expense, currency)} · Variação do
-            resultado {formatHomeMoney(r.net - previous.net, currency)}.
-            Amortizações e transferências são mostradas à parte e não duplicam
-            consumo.
-          </p>
+          {/* Comparação num bloco de três colunas, com números alinhados à direita (Bloco 6.6) */}
+          <section className={`${panel} space-y-3`}>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-dm-border pb-2.5">
+              <h2 className="text-sm font-semibold">Comparação de períodos</h2>
+              <p className="text-xs text-slate-500 dark:text-dm-muted">
+                {dateLabel(start)} a {dateLabel(end)} vs. {dateLabel(prevStart)} a {dateLabel(prevEnd)}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Coluna 1: Período Anterior */}
+              <div className="rounded-lg bg-slate-50 dark:bg-dm-elevated p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-700 dark:text-dm-text">Período Anterior</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-dm-muted">Rendimentos:</span>
+                    <span className="tabular-nums text-right font-medium">{formatHomeMoney(previous.income, currency)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-dm-muted">Despesas:</span>
+                    <span className="tabular-nums text-right font-medium">{formatHomeMoney(previous.expense, currency)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-dm-border">
+                    <span className="font-semibold text-slate-800 dark:text-dm-text">Resultado:</span>
+                    <span className="tabular-nums text-right font-semibold">{formatHomeMoney(previous.net, currency)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna 2: Período Atual */}
+              <div className="rounded-lg bg-slate-50 dark:bg-dm-elevated p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-700 dark:text-dm-text">Período Atual</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-dm-muted">Rendimentos:</span>
+                    <span className="tabular-nums text-right font-semibold text-emerald-600 dark:text-emerald-400">{formatHomeMoney(r.income, currency)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-dm-muted">Despesas:</span>
+                    <span className="tabular-nums text-right font-semibold text-rose-600 dark:text-rose-400">{formatHomeMoney(r.expense, currency)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-dm-border">
+                    <span className="font-semibold text-slate-800 dark:text-dm-text">Resultado:</span>
+                    <span className="tabular-nums text-right font-bold text-slate-900 dark:text-slate-100">{formatHomeMoney(r.net, currency)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna 3: Variação */}
+              <div className="rounded-lg bg-slate-50 dark:bg-dm-elevated p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-700 dark:text-dm-text">Variação</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-dm-muted">Rendimentos:</span>
+                    <span className={`tabular-nums text-right font-semibold ${r.income - previous.income >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {r.income - previous.income > 0 ? '+' : ''}{formatHomeMoney(r.income - previous.income, currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-dm-muted">Despesas:</span>
+                    <span className={`tabular-nums text-right font-semibold ${r.expense - previous.expense <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {r.expense - previous.expense > 0 ? '+' : ''}{formatHomeMoney(r.expense - previous.expense, currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-dm-border">
+                    <span className="font-semibold text-slate-800 dark:text-dm-text">Resultado:</span>
+                    <span className={`tabular-nums text-right font-bold ${r.net - previous.net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {r.net - previous.net > 0 ? '+' : ''}{formatHomeMoney(r.net - previous.net, currency)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 dark:text-dm-muted pt-1">
+              Amortizações e transferências são mostradas à parte e não duplicam consumo.
+            </p>
+          </section>
+
           <div className="flex gap-2">
             <button
               className={btn}
@@ -1077,25 +1199,29 @@ export function HomeReports() {
           </section>
           <section className={panel}>
             <h2 className="font-semibold text-sm">Despesas por categoria</h2>
-            {r.categories
-              .sort((a, b) => b.amount - a.amount)
-              .map((c) => (
-                <div key={c.category} className="text-xs">
-                  <div className="flex justify-between gap-2">
-                    <span>{homeCategoryName(data, c.category)}</span>
-                    <span>
-                      {formatHomeMoney(c.amount, currency)} ·{' '}
-                      {Math.round((c.amount / r.expense) * 100)}%
-                    </span>
+            {!r.categories.length ? (
+              <p className={muted}>Sem despesas neste período.</p>
+            ) : (
+              r.categories
+                .sort((a, b) => b.amount - a.amount)
+                .map((c) => (
+                  <div key={c.category} className="text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span>{homeCategoryName(data, c.category)}</span>
+                      <span>
+                        {formatHomeMoney(c.amount, currency)} ·{' '}
+                        {Math.round((c.amount / r.expense) * 100)}%
+                      </span>
+                    </div>
+                    <div className="h-2 rounded bg-slate-100 dark:bg-dm-elevated mt-1">
+                      <div
+                        className="h-2 rounded bg-indigo-500"
+                        style={{ width: (c.amount / r.expense) * 100 + '%' }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 rounded bg-slate-100 dark:bg-dm-elevated mt-1">
-                    <div
-                      className="h-2 rounded bg-indigo-500"
-                      style={{ width: (c.amount / r.expense) * 100 + '%' }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))
+            )}
           </section>
         </>
       )}
@@ -1118,121 +1244,168 @@ export function HomeStatements() {
     (a.data.statementRows ?? []).map((r) => r.fingerprint),
   );
   const fresh = preview.filter((r) => !existing.has(r.fingerprint));
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-[760px] w-full">
       {a.alert}
-      <p className={muted}>
-        CSV com colunas Data, Descrição e Valor; Referência é opcional. Saídas
-        negativas, entradas positivas. Datas AAAA-MM-DD ou DD/MM/AAAA. Primeiro
-        revê o extrato; depois confere cada movimento. A importação não altera
-        saldos.
-      </p>
-      <label className="block text-xs">
-        Carteira do extrato
-        <select
-          aria-label="Carteira do extrato"
-          className={input}
-          value={account}
-          onChange={(e) => {
-            setAccount(e.target.value);
-            setPreview([]);
-            setClosing('');
-          }}
-        >
-          <option value="">Escolher carteira</option>
-          {walletOptions(a.data).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </select>
-      </label>
-      <HomeFileImport
-        mode="statement"
-        accountId={account}
-        onAccount={setAccount}
-        onRows={setPreview}
-      />
-      <label className="block text-xs">
-        Selecionar CSV
-        <input
-          aria-label="Selecionar extrato CSV"
-          type="file"
-          accept=".csv,text/csv"
-          disabled={!account}
-          className={input}
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            e.target.value = '';
-            if (!file) return;
-            if (file.size > 2e6) {
-              a.run(() => {
-                throw new Error('O extrato excede 2 MB.');
-              });
-              return;
-            }
-            try {
-              const value = await file.text();
-              if (currentAccount.current === account)
-                a.run(() => setPreview(parseStatementCsv(value, account)));
-            } catch {
-              a.run(() => {
-                throw new Error('Não foi possível ler o ficheiro.');
-              });
-            }
-          }}
-        />
-      </label>
-      {!!preview.length && (
-        <section className={panel}>
-          <h2 className="font-medium">Pré-visualização</h2>
-          <p className={muted}>
-            {fresh.length} novas linhas · {preview.length - fresh.length} já
-            importadas
-          </p>
-          <div className="max-h-64 overflow-auto space-y-2">
-            {preview.map((r) => (
-              <div key={r.id} className="text-xs">
-                {dateLabel(r.date)} · {r.title} ·{' '}
-                {formatHomeMoney(
-                  r.amount,
-                  accountCurrency(
-                    a.data.accounts.find((a) => a.id === account),
-                  ),
-                )}
-                {existing.has(r.fingerprint) ? ' · Repetida' : ''}
-              </div>
-            ))}
-          </div>
-          <button
-            className={primary}
-            disabled={!fresh.length}
-            onClick={() =>
-              a.open({
-                title: 'Importar linhas do extrato',
-                description: `Guardar ${fresh.length} linhas para conferência? Não serão criados lançamentos nesta etapa.`,
-                submit: () => {
-                  a.update((data) => {
-                    const ids = new Set(
-                      (data.statementRows ?? []).map((r) => r.fingerprint),
-                    );
-                    return validateHomeData({
-                      ...data,
-                      statementRows: [
-                        ...(data.statementRows ?? []),
-                        ...fresh.filter((r) => !ids.has(r.fingerprint)),
-                      ],
-                    });
-                  });
-                  setPreview([]);
-                },
-              })
-            }
+
+      <div className="border-b border-slate-200/80 dark:border-dm-border pb-3">
+        <h2 className="text-base font-bold text-slate-900 dark:text-dm-text">
+          Extratos Bancários (Home)
+        </h2>
+        <p className={`${muted} mt-1 leading-relaxed`}>
+          Importação inteligente em 3 passos simples. Confere cada movimento sem alterar saldos
+          automaticamente.
+        </p>
+      </div>
+
+      {/* Passo 1. Conta */}
+      <section className={`${panel} space-y-3`}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-dm-muted">
+            Passo 1 · Escolher Carteira / Conta de Destino
+          </h3>
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-dm-muted">
+            {account ? 'Conta Selecionada' : 'Obrigatório'}
+          </span>
+        </div>
+        <label className="block text-xs font-medium">
+          <span>Carteira da conciliação</span>
+          <select
+            aria-label="Carteira do extrato"
+            className={`${input} min-h-[44px] h-11 mt-1 font-semibold`}
+            value={account}
+            onChange={(e) => {
+              setAccount(e.target.value);
+              setPreview([]);
+              setClosing('');
+            }}
           >
-            Importar para conferência
-          </button>
-        </section>
-      )}
+            <option value="">Selecione a carteira da conciliação…</option>
+            {walletOptions(a.data).map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+
+      {/* Passo 2. Documento (Área única de importação para PDF, Excel, foto e CSV) */}
+      <section className={`${panel} space-y-3`}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-dm-muted">
+            Passo 2 · Carregar Ficheiro de Extrato
+          </h3>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              PDF
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              Excel
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              Fotografia
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-dm-elevated text-slate-600 dark:text-dm-muted border border-slate-200 dark:border-dm-border">
+              CSV
+            </span>
+          </div>
+        </div>
+
+        {!account ? (
+          <div className="p-4 rounded-lg bg-slate-50 dark:bg-dm-elevated border border-dashed border-slate-200 dark:border-dm-border text-center text-xs text-slate-500 dark:text-dm-muted">
+            Por favor, selecione uma carteira no Passo 1 para ativar o carregamento do extrato.
+          </div>
+        ) : (
+          <HomeFileImport
+            mode="statement"
+            accountId={account}
+            onAccount={setAccount}
+            onRows={setPreview}
+          />
+        )}
+      </section>
+
+      {/* Passo 3. Revisão */}
+      <section className={`${panel} space-y-3`}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-dm-muted">
+            Passo 3 · Revisão e Conferência de Movimentos
+          </h3>
+          {preview.length > 0 && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              {fresh.length} novas linhas lidas
+            </span>
+          )}
+        </div>
+
+        {preview.length === 0 ? (
+          <div className="p-6 rounded-lg bg-slate-50 dark:bg-dm-elevated border border-dashed border-slate-200 dark:border-dm-border text-center text-xs text-slate-400 dark:text-dm-muted space-y-1">
+            <p className="font-medium text-slate-600 dark:text-slate-300">Nenhum movimento pendente de revisão</p>
+            <p className="text-[11px]">
+              Carregue um ficheiro no Passo 2 acima para conferir os movimentos antes de guardar.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className={muted}>
+              {fresh.length} novas linhas para importar · {preview.length - fresh.length} já
+              importadas anteriormente.
+            </p>
+            <div className="max-h-64 overflow-auto space-y-2 border border-slate-100 dark:border-dm-border rounded-lg p-2.5 bg-slate-50/50 dark:bg-dm-elevated/50">
+              {preview.map((r) => (
+                <div key={r.id} className="text-xs flex items-center justify-between py-1 border-b border-slate-100 dark:border-dm-border last:border-0">
+                  <div className="min-w-0 pr-2">
+                    <span className="font-medium text-slate-800 dark:text-dm-text">{r.title}</span>
+                    <span className="text-[11px] text-slate-400 ml-2">({dateLabel(r.date)})</span>
+                    {existing.has(r.fingerprint) && (
+                      <span className="ml-2 text-[10px] text-amber-600 dark:text-amber-400 font-semibold uppercase">
+                        Repetida
+                      </span>
+                    )}
+                  </div>
+                  <span className={`font-mono font-semibold shrink-0 ${r.amount < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {formatHomeMoney(
+                      r.amount,
+                      accountCurrency(
+                        a.data.accounts.find((a) => a.id === account),
+                      ),
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              className={`${primary} min-h-[44px] h-11 px-5 w-full sm:w-auto font-semibold cursor-pointer`}
+              disabled={!fresh.length}
+              onClick={() =>
+                a.open({
+                  title: 'Importar linhas do extrato',
+                  description: `Guardar ${fresh.length} linhas para conferência? Não serão criados lançamentos nesta etapa.`,
+                  submit: () => {
+                    a.update((data) => {
+                      const ids = new Set(
+                        (data.statementRows ?? []).map((r) => r.fingerprint),
+                      );
+                      return validateHomeData({
+                        ...data,
+                        statementRows: [
+                          ...(data.statementRows ?? []),
+                          ...fresh.filter((r) => !ids.has(r.fingerprint)),
+                        ],
+                      });
+                    });
+                    setPreview([]);
+                  },
+                })
+              }
+            >
+              Importar {fresh.length} linhas para conferência
+            </button>
+          </div>
+        )}
+      </section>
       <div className="flex flex-wrap gap-2">
         <select
           aria-label="Estado do extrato"
@@ -1483,88 +1656,123 @@ export function HomeDocuments() {
     }
   };
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-[760px] w-full">
       {a.alert}
-      <p className={muted}>
-        PDF, PNG ou JPEG até 1 MB por ficheiro e 2 MB no total (
-        {(used / 1024).toFixed(0)} KB usados). Ficheiros incluídos na cópia JSON
-        e guardados neste navegador. Eliminar conserva o ficheiro para
-        recuperação no Histórico e continua a ocupar espaço.
-      </p>
-      <div key={readingDocument?.id ?? 'new-reader'}>
-        <HomeFileImport
-          mode="receipt"
-          existingDocument={readingDocument}
-          onApplied={() => setReadingDocument(undefined)}
-        />
+
+      <div className="border-b border-slate-200/80 dark:border-dm-border pb-3">
+        <h2 className="text-base font-bold text-slate-900 dark:text-dm-text">
+          Documentos & Comprovativos (Home)
+        </h2>
+        <p className={`${muted} mt-1 leading-relaxed`}>
+          PDF, PNG ou JPEG até 1 MB por ficheiro e 2 MB no total (
+          {(used / 1024).toFixed(0)} KB usados). Guardados localmente no seu dispositivo.
+        </p>
       </div>
-      <form noValidate onSubmit={submit} className={panel}>
-        <h2 className="font-medium">Adicionar documento</h2>
-        <label className="block text-xs">
-          Título
+
+      {/* SECÇÃO 1: Ler Comprovativo (Extração e leitura inteligente) */}
+      <section className={`${panel} space-y-3`}>
+        <div className="border-b border-slate-100 dark:border-dm-border pb-2">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-dm-text">
+            1. Ler Comprovativo
+          </h3>
+          <p className={`${muted} text-xs mt-0.5`}>
+            Extraia dados automaticamente de talões, recibos ou transferências para sugerir ou conciliar lançamentos.
+          </p>
+        </div>
+
+        <div key={readingDocument?.id ?? 'new-reader'}>
+          <HomeFileImport
+            mode="receipt"
+            existingDocument={readingDocument}
+            onApplied={() => setReadingDocument(undefined)}
+          />
+        </div>
+      </section>
+
+      {/* SECÇÃO 2: Guardar Documento (Arquivo geral com 640-800px e duas colunas Tipo e Validade) */}
+      <form noValidate onSubmit={submit} className={`${panel} space-y-4`}>
+        <div className="border-b border-slate-100 dark:border-dm-border pb-2">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-dm-text">
+            2. Guardar Documento no Arquivo
+          </h3>
+          <p className={`${muted} text-xs mt-0.5`}>
+            Guarde faturas, garantias ou apólices para consulta segura no histórico.
+          </p>
+        </div>
+
+        <label className="block text-xs font-medium">
+          <span>Título do documento</span>
           <input
             aria-label="Título do documento"
-            className={input}
+            className={`${input} mt-1.5`}
+            placeholder="Ex: Fatura Televisor LG, Garantia Máquina Café..."
             value={title}
             maxLength={300}
             onChange={(e) => setTitle(e.target.value)}
           />
           {documentErrors['title'] && (
-            <span role="alert" className="text-rose-600">
+            <span role="alert" className="text-xs text-rose-600 mt-1 block">
               {documentErrors['title']}
             </span>
           )}
         </label>
-        <label className="block text-xs">
-          Tipo
-          <select
-            aria-label="Tipo de documento"
-            className={input}
-            value={kind}
-            onChange={(e) => setKind(e.target.value as typeof kind)}
-          >
-            <option value="">Escolher</option>
-            <option value="receipt">Comprovativo</option>
-            <option value="invoice">Fatura</option>
-            <option value="warranty">Garantia</option>
-            <option value="other">Outro</option>
-          </select>
-          {documentErrors['kind'] && (
-            <span role="alert" className="text-rose-600">
-              {documentErrors['kind']}
-            </span>
-          )}
-        </label>
-        <label className="block text-xs">
-          Ficheiro
+
+        {/* Duas colunas para Tipo e Validade (Bloco 5.7) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="block text-xs font-medium">
+            <span>Tipo de documento</span>
+            <select
+              aria-label="Tipo de documento"
+              className={`${input} mt-1.5`}
+              value={kind}
+              onChange={(e) => setKind(e.target.value as typeof kind)}
+            >
+              <option value="">Escolher tipo…</option>
+              <option value="receipt">Comprovativo</option>
+              <option value="invoice">Fatura</option>
+              <option value="warranty">Garantia</option>
+              <option value="other">Outro</option>
+            </select>
+            {documentErrors['kind'] && (
+              <span role="alert" className="text-xs text-rose-600 mt-1 block">
+                {documentErrors['kind']}
+              </span>
+            )}
+          </label>
+
+          <label className="block text-xs font-medium">
+            <span>Validade / Expiração (opcional)</span>
+            <input
+              aria-label="Validade do documento"
+              className={`${input} mt-1.5`}
+              type="date"
+              value={expires}
+              onChange={(e) => setExpires(e.target.value)}
+            />
+          </label>
+        </div>
+
+        <label className="block text-xs font-medium">
+          <span>Ficheiro (PDF, PNG ou JPEG)</span>
           <input
             aria-label="Ficheiro do documento"
-            className={input}
+            className={`${input} mt-1.5`}
             type="file"
             accept="application/pdf,image/png,image/jpeg"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
           {documentErrors['file'] && (
-            <span role="alert" className="text-rose-600">
+            <span role="alert" className="text-xs text-rose-600 mt-1 block">
               {documentErrors['file']}
             </span>
           )}
         </label>
-        <label className="block text-xs">
-          Validade (opcional)
-          <input
-            aria-label="Validade do documento"
-            className={input}
-            type="date"
-            value={expires}
-            onChange={(e) => setExpires(e.target.value)}
-          />
-        </label>
-        <label className="block text-xs">
-          Associar a (opcional)
+
+        <label className="block text-xs font-medium">
+          <span>Associar a registo existente (opcional)</span>
           <select
             aria-label="Associação do documento"
-            className={input}
+            className={`${input} mt-1.5`}
             value={entity}
             onChange={(e) => setEntity(e.target.value)}
           >
@@ -1576,7 +1784,11 @@ export function HomeDocuments() {
             ))}
           </select>
         </label>
-        <button className={primary} disabled={busy}>
+
+        <button
+          className={`${primary} min-h-[44px] h-11 px-5 w-full sm:w-auto font-semibold cursor-pointer`}
+          disabled={busy}
+        >
           {busy ? 'A guardar…' : 'Guardar documento'}
         </button>
       </form>
@@ -1875,87 +2087,266 @@ export function HomeCalendar({
         {dateLabel(start)} — {dateLabel(end)} · Tarefas, contas, metas,
         prestações e garantias
       </p>
-      <div className="overflow-x-auto">
-        <div className="grid grid-cols-7 min-w-[560px] gap-1 text-xs">
-          {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d) => (
-            <p key={d} className="text-center py-2">
-              {d}
+      {/* Vista Computador: Mês em grelha + Agenda compacta lateral (Bloco 6.5) */}
+      <div className="hidden md:grid md:grid-cols-3 gap-4">
+        {/* Coluna 1 & 2: Grelha do mês/semana */}
+        <div className="md:col-span-2 overflow-x-auto">
+          <div className="grid grid-cols-7 min-w-[480px] gap-1 text-xs">
+            {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d) => (
+              <p key={d} className="text-center py-2 font-medium text-slate-600 dark:text-dm-muted">
+                {d}
+              </p>
+            ))}
+            {Array.from({ length: offset }, (_, i) => (
+              <div key={'empty' + i} />
+            ))}
+            {Array.from({ length: count }, (_, i) => {
+              const date = new Date(Date.parse(start) + i * 86400000)
+                .toISOString()
+                .slice(0, 10);
+              return (
+                <div
+                  key={date}
+                  className={
+                    'min-h-24 rounded-lg border p-2 ' +
+                    (date === today
+                      ? 'border-indigo-500 bg-indigo-50/70 dark:bg-dm-elevated'
+                      : 'border-slate-200 dark:border-dm-border')
+                  }
+                >
+                  <p className="font-semibold mb-2">{Number(date.slice(8))}</p>
+                  {events
+                    .filter((e) => e.date === date)
+                    .map((e) => (
+                      <div key={e.id} className="space-y-1 mb-2 break-words">
+                        {e.kind === 'task' ? (
+                          <>
+                            <label className="flex items-start gap-1">
+                              <input
+                                type="checkbox"
+                                aria-label={`Concluir ocorrência ${e.title} ${date}`}
+                                checked={e.done}
+                                onChange={() =>
+                                  a.run(() =>
+                                    a.update((data) =>
+                                      completeHomeTask(
+                                        data,
+                                        e.sourceId,
+                                        date,
+                                        !e.done,
+                                      ),
+                                    ),
+                                  )
+                                }
+                              />
+                              <span
+                                className={
+                                  e.done ? 'line-through opacity-50' : ''
+                                }
+                              >
+                                {e.time ?? ''} {e.title}
+                              </span>
+                            </label>
+                            <button
+                              className="text-indigo-600 dark:text-indigo-300 underline"
+                              onClick={() => details(e.sourceId)}
+                            >
+                              Detalhes
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className={
+                              'text-left ' + (e.done ? 'opacity-50' : '')
+                            }
+                            onClick={() => onNavigate(destinations[e.kind])}
+                          >
+                            {e.done ? '✓ ' : ''}
+                            {e.title}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Coluna 3: Agenda compacta no computador */}
+        <div className="md:col-span-1 rounded-xl border border-slate-200 dark:border-dm-border bg-slate-50/50 dark:bg-dm-elevated p-3.5 space-y-3 flex flex-col">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-dm-border pb-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-dm-text">
+              Agenda compacta
+            </h3>
+            <span className="text-[11px] text-slate-400 dark:text-dm-muted">
+              {events.length} {events.length === 1 ? 'item' : 'itens'}
+            </span>
+          </div>
+
+          {events.length === 0 ? (
+            <p className="text-xs text-slate-400 dark:text-dm-muted py-6 text-center">
+              Sem compromissos ou tarefas neste período.
             </p>
-          ))}
-          {Array.from({ length: offset }, (_, i) => (
-            <div key={'empty' + i} />
-          ))}
-          {Array.from({ length: count }, (_, i) => {
+          ) : (
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+              {events.map((e) => (
+                <div
+                  key={e.id}
+                  className="rounded-lg border border-slate-200/80 dark:border-dm-border bg-white dark:bg-dm-surface p-2.5 text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-dm-muted">
+                    <span className="font-medium text-slate-600 dark:text-dm-text">{dateLabel(e.date)}</span>
+                    {e.time && <span>{e.time}</span>}
+                  </div>
+                  {e.kind === 'task' ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="flex items-start gap-1.5 min-w-0">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={e.done}
+                          onChange={() =>
+                            a.run(() =>
+                              a.update((data) =>
+                                completeHomeTask(data, e.sourceId, e.date, !e.done),
+                              ),
+                            )
+                          }
+                        />
+                        <span className={e.done ? 'line-through opacity-50' : 'font-medium'}>
+                          {e.title}
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        className="text-indigo-600 dark:text-indigo-400 text-[11px] underline shrink-0"
+                        onClick={() => details(e.sourceId)}
+                      >
+                        Detalhes
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`text-left w-full font-medium text-slate-800 dark:text-dm-text ${e.done ? 'opacity-50 line-through' : ''}`}
+                      onClick={() => onNavigate(destinations[e.kind])}
+                    >
+                      {e.done ? '✓ ' : ''}{e.title}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Vista Telemóvel: Lista dos próximos dias em vez da grelha (Bloco 6.5) */}
+      <div className="md:hidden space-y-3">
+        {(() => {
+          const daysWithEvents = Array.from({ length: count }, (_, i) => {
             const date = new Date(Date.parse(start) + i * 86400000)
               .toISOString()
               .slice(0, 10);
+            const dayEvents = events.filter((e) => e.date === date);
+            return { date, dayEvents };
+          }).filter(({ date, dayEvents }) => dayEvents.length > 0 || date === today);
+
+          if (daysWithEvents.length === 0) {
+            return (
+              <EmptyState
+                title="Sem eventos neste período"
+                description="Não há tarefas, contas ou metas agendadas para os dias selecionados."
+                action={{
+                  label: 'Ir para Hoje',
+                  onClick: () => setAnchor(today),
+                }}
+              />
+            );
+          }
+
+          return daysWithEvents.map(({ date, dayEvents }) => {
+            const isToday = date === today;
+            const formatted = new Date(`${date}T12:00:00Z`).toLocaleDateString('pt-PT', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+            });
             return (
               <div
                 key={date}
-                className={
-                  'min-h-24 rounded-lg border p-2 ' +
-                  (date === today
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-dm-elevated'
-                    : 'border-slate-200 dark:border-dm-border')
-                }
+                className={`rounded-xl border p-3 space-y-2 ${
+                  isToday
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-dm-elevated'
+                    : 'border-slate-200 dark:border-dm-border bg-white dark:bg-dm-surface'
+                }`}
               >
-                <p className="font-semibold mb-2">{Number(date.slice(8))}</p>
-                {events
-                  .filter((e) => e.date === date)
-                  .map((e) => (
-                    <div key={e.id} className="space-y-1 mb-2 break-words">
-                      {e.kind === 'task' ? (
-                        <>
-                          <label className="flex items-start gap-1">
-                            <input
-                              type="checkbox"
-                              aria-label={`Concluir ocorrência ${e.title} ${date}`}
-                              checked={e.done}
-                              onChange={() =>
-                                a.run(() =>
-                                  a.update((data) =>
-                                    completeHomeTask(
-                                      data,
-                                      e.sourceId,
-                                      date,
-                                      !e.done,
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-dm-border pb-1.5">
+                  <span className="text-xs font-semibold text-slate-800 dark:text-dm-text">
+                    {isToday ? `Hoje · ${formatted}` : formatted}
+                  </span>
+                  <span className="text-[11px] text-slate-400 dark:text-dm-muted">
+                    {dayEvents.length} {dayEvents.length === 1 ? 'evento' : 'eventos'}
+                  </span>
+                </div>
+                {dayEvents.length === 0 ? (
+                  <p className="text-xs text-slate-400 dark:text-dm-muted italic py-1">
+                    Sem compromissos hoje.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {dayEvents.map((e) => (
+                      <div key={e.id} className="text-xs space-y-1">
+                        {e.kind === 'task' ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="flex items-start gap-2 min-w-0">
+                              <input
+                                type="checkbox"
+                                className="mt-0.5"
+                                checked={e.done}
+                                onChange={() =>
+                                  a.run(() =>
+                                    a.update((data) =>
+                                      completeHomeTask(
+                                        data,
+                                        e.sourceId,
+                                        date,
+                                        !e.done,
+                                      ),
                                     ),
-                                  ),
-                                )
-                              }
-                            />
-                            <span
-                              className={
-                                e.done ? 'line-through opacity-50' : ''
-                              }
+                                  )
+                                }
+                              />
+                              <span className={e.done ? 'line-through opacity-50' : ''}>
+                                {e.time ? `${e.time} · ` : ''}{e.title}
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              className="text-indigo-600 dark:text-indigo-400 text-[11px] shrink-0 underline"
+                              onClick={() => details(e.sourceId)}
                             >
-                              {e.time ?? ''} {e.title}
-                            </span>
-                          </label>
+                              Detalhes
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            className="text-indigo-600 dark:text-indigo-300 underline"
-                            onClick={() => details(e.sourceId)}
+                            type="button"
+                            className={`text-left w-full text-indigo-700 dark:text-indigo-300 ${e.done ? 'opacity-50 line-through' : ''}`}
+                            onClick={() => onNavigate(destinations[e.kind])}
                           >
-                            Detalhes
+                            {e.done ? '✓ ' : ''}{e.title}
                           </button>
-                        </>
-                      ) : (
-                        <button
-                          className={
-                            'text-left ' + (e.done ? 'opacity-50' : '')
-                          }
-                          onClick={() => onNavigate(destinations[e.kind])}
-                        >
-                          {e.done ? '✓ ' : ''}
-                          {e.title}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
-          })}
-        </div>
+          });
+        })()}
       </div>
       <div className="space-y-2 border-t border-slate-200 dark:border-dm-border pt-3">
         <h3 className="text-sm font-medium">Organização das tarefas</h3>

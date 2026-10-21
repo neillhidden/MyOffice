@@ -28,12 +28,22 @@ import { PositiveBadge } from '../common/PositiveBadge';
 
 type DebtFilterTab = 'todas' | 'a_pagar' | 'a_receber' | 'vencidas';
 
-export const DividasView: React.FC = () => {
+interface DividasViewProps {
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
+}
+
+export const DividasView: React.FC<DividasViewProps> = ({
+  externalSearchQuery,
+  onExternalSearchChange,
+}) => {
   const { debts, companies, deleteDebt, getDebtCalculations, isCompanyDisabled } = useStock();
 
   // Filters
   const [activeTab, setActiveTab] = useState<DebtFilterTab>('todas');
-  const [search, setSearch] = useState<string>('');
+  const [internalSearch, setInternalSearch] = useState<string>('');
+  const search = externalSearchQuery !== undefined ? externalSearchQuery : internalSearch;
+  const setSearch = onExternalSearchChange || setInternalSearch;
   const [companyFilter, setCompanyFilter] = useState<string>('todas');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
 
@@ -75,6 +85,9 @@ export const DividasView: React.FC = () => {
 
     visibleDebts.forEach((d) => {
       const calcs = getDebtCalculations(d.id);
+      if (calcs.status === 'anulada') {
+        return;
+      }
       if (calcs.status === 'quitada') {
         totalQuitado += d.totalAmount;
       } else {
@@ -118,11 +131,14 @@ export const DividasView: React.FC = () => {
         // Search text
         if (search.trim()) {
           const q = search.toLowerCase();
+          const matchId = d.id.toLowerCase().includes(q);
+          const matchSaleId = d.saleId?.toLowerCase().includes(q) || false;
+          const matchRef = d.reference?.toLowerCase().includes(q) || false;
           const matchName = d.counterpartyName.toLowerCase().includes(q);
           const matchNotes = (d.notes || '').toLowerCase().includes(q);
           const comp = companies.find((c) => c.id === d.companyId);
           const matchCompany = (comp?.name || '').toLowerCase().includes(q);
-          return matchName || matchNotes || matchCompany;
+          return matchId || matchSaleId || matchRef || matchName || matchNotes || matchCompany;
         }
 
         return true;
@@ -159,7 +175,7 @@ export const DividasView: React.FC = () => {
               setDebtToEdit(null);
               setIsDebtModalOpen(true);
             }}
-            className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg text-xs font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors shadow-xs cursor-pointer"
+            className="dm-btn-primary min-h-[44px] h-11 px-5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-semibold inline-flex items-center justify-center transition-colors shadow-xs cursor-pointer"
           >
             Registar dívida
           </button>
@@ -362,6 +378,7 @@ export const DividasView: React.FC = () => {
                 <option value="pendente">Pendente (nada pago)</option>
                 <option value="parcialmente_paga">Parcialmente Paga</option>
                 <option value="quitada">Quitada</option>
+                <option value="anulada">Anulada (Estornada)</option>
               </select>
             </div>
 
@@ -410,17 +427,19 @@ export const DividasView: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 font-medium uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="py-3 px-4">Contraparte</th>
-                  <th className="py-3 px-4">Tipo</th>
-                  <th className="py-3 px-4">Empresa</th>
-                  <th className="py-3 px-4 text-right">Valor Total</th>
-                  <th className="py-3 px-4 text-right">Valor Pago</th>
-                  <th className="py-3 px-4 text-right">Restante</th>
-                  <th className="py-3 px-4">Vencimento</th>
-                  <th className="py-3 px-4">Estado</th>
-                  <th className="py-3 px-4 text-right">Ações</th>
+              <thead>
+                <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 font-medium uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-4 min-w-[170px]">Contraparte</th>
+                  <th className="py-3 px-4 min-w-[90px]">Tipo</th>
+                  <th className="py-3 px-4 min-w-[130px]">Empresa</th>
+                  <th className="py-3 px-4 text-right min-w-[110px]">Valor Total</th>
+                  <th className="py-3 px-4 text-right min-w-[110px]">Valor Pago</th>
+                  <th className="py-3 px-4 text-right min-w-[130px]">Restante</th>
+                  <th className="py-3 px-4 min-w-[120px]">Vencimento</th>
+                  <th className="py-3 px-4 min-w-[110px]">Estado</th>
+                  <th className="py-3 px-4 text-right sticky right-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs min-w-[140px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -464,17 +483,17 @@ export const DividasView: React.FC = () => {
                       </td>
 
                       {/* Valor Total */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono font-medium text-slate-800 dark:text-slate-200">
+                      <td className="py-3 px-4 whitespace-nowrap text-right tabular-nums font-semibold text-slate-800 dark:text-slate-200">
                         {formatCurrencyValue(debt.totalAmount, 'Kz')}
                       </td>
 
                       {/* Valor Pago */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono text-emerald-700 dark:text-emerald-400 font-medium">
+                      <td className="py-3 px-4 whitespace-nowrap text-right tabular-nums text-emerald-700 dark:text-emerald-400 font-semibold">
                         {formatCurrencyValue(calcs.paidAmount, 'Kz')}
                       </td>
 
                       {/* Restante + Barra de progresso */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono">
+                      <td className="py-3 px-4 whitespace-nowrap text-right tabular-nums">
                         <span
                           className={`font-semibold ${
                             calcs.remainingAmount === 0 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-slate-100'
@@ -512,6 +531,11 @@ export const DividasView: React.FC = () => {
 
                       {/* Estado */}
                       <td className="py-3 px-4 whitespace-nowrap">
+                        {calcs.status === 'anulada' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
+                            Anulada
+                          </span>
+                        )}
                         {calcs.status === 'quitada' && <PositiveBadge label="Quitada" />}
                         {calcs.status === 'parcialmente_paga' && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
@@ -525,76 +549,84 @@ export const DividasView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Ações */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right">
-                        <div className="inline-flex items-center gap-1.5 justify-end">
-                          {/* Ver Histórico / Detalhes em pílula branca sólida */}
+                      {/* Ações (sempre visíveis à direita com ícones 44x44px) */}
+                      <td
+                        className="py-2.5 px-4 whitespace-nowrap text-right sticky right-0 bg-white/95 dark:bg-slate-900/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-xs min-w-[140px] shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          {/* Ver Histórico / Detalhes (Item 2.6 e 2.8) */}
                           <button
                             type="button"
                             onClick={() => {
                               setLedgerTargetDebt(debt);
                               setIsLedgerModalOpen(true);
                             }}
-                            className="dm-btn-primary px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-dm-text dark:text-dm-page text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 rounded-lg text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated transition-colors cursor-pointer"
                             title="Histórico e extrato"
                             aria-label={`Ver histórico de pagamentos de ${debt.counterpartyName}`}
                           >
-                            <span className="sr-only">Abrir detalhes</span><DetailsIcon aria-hidden="true" className="h-4 w-4" />
+                            <span className="sr-only">Abrir detalhes</span>
+                            <DetailsIcon aria-hidden="true" className="w-4 h-4" />
                           </button>
 
-                          {/* Registar Pagamento (só se não quitada) */}
-                          {calcs.remainingAmount > 0 && (
+                          {/* Registar Pagamento (só se não quitada e não anulada) */}
+                          {calcs.status !== 'anulada' && calcs.remainingAmount > 0 && (
                             <button
                               type="button"
                               onClick={() => {
                                 setPaymentTargetDebt(debt);
                                 setIsPaymentModalOpen(true);
                               }}
-                              className="dm-icon-action p-1.5 text-slate-400 dark:text-dm-muted hover:text-emerald-700 dark:hover:text-dm-text hover:bg-emerald-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
+                              className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-slate-400 dark:text-dm-muted hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer"
                               title={isAPagar ? 'Registar pagamento' : 'Registar recebimento'}
                               aria-label={`Registar pagamento para ${debt.counterpartyName}`}
                             >
-                              <CreditCard className="w-3.5 h-3.5" />
+                              <CreditCard className="w-4 h-4" />
                             </button>
                           )}
 
-                          {/* Acrescentar Valor à Dívida (Rule 6) */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIncrementTargetDebt(debt);
-                              setIsIncrementModalOpen(true);
-                            }}
-                            className="dm-icon-action p-1.5 text-slate-400 dark:text-dm-muted hover:text-indigo-600 dark:hover:text-dm-text hover:bg-indigo-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
-                            title={isAPagar ? 'Acrescentar valor a pagar' : 'Acrescentar valor a receber'}
-                            aria-label={`Acrescentar valor à dívida de ${debt.counterpartyName}`}
-                          >
-                            <PlusCircle className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Acrescentar Valor à Dívida (Rule 6 - não permitido em dívidas anuladas) */}
+                          {calcs.status !== 'anulada' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIncrementTargetDebt(debt);
+                                setIsIncrementModalOpen(true);
+                              }}
+                              className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-slate-400 dark:text-dm-muted hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors cursor-pointer"
+                              title={isAPagar ? 'Acrescentar valor a pagar' : 'Acrescentar valor a receber'}
+                              aria-label={`Acrescentar valor à dívida de ${debt.counterpartyName}`}
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                            </button>
+                          )}
 
-                          {/* Editar Dívida (apenas ícone de lápis) */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDebtToEdit(debt);
-                              setIsDebtModalOpen(true);
-                            }}
-                            className="dm-icon-action p-1.5 text-slate-400 dark:text-dm-muted hover:text-slate-700 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
-                            title="Editar dívida"
-                            aria-label={`Editar dívida de ${debt.counterpartyName}`}
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Editar Dívida (não permitido em dívidas anuladas) */}
+                          {calcs.status !== 'anulada' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDebtToEdit(debt);
+                                setIsDebtModalOpen(true);
+                              }}
+                              className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-slate-400 dark:text-dm-muted hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
+                              title="Editar dívida"
+                              aria-label={`Editar dívida de ${debt.counterpartyName}`}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
 
-                          {/* Eliminar Dívida (apenas ícone de lixeira) */}
+                          {/* Eliminar Dívida */}
                           <button
                             type="button"
                             onClick={() => setDebtToDelete(debt)}
-                            className="dm-icon-action p-1.5 text-slate-400 dark:text-dm-muted hover:text-rose-600 dark:hover:text-dm-text hover:bg-rose-50 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
+                            className="dm-icon-action min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-slate-400 dark:text-dm-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
                             title="Eliminar dívida"
                             aria-label={`Eliminar dívida de ${debt.counterpartyName}`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

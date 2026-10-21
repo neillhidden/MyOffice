@@ -29,6 +29,7 @@ import {
   TrendingUp,
   FileCheck,
   Paperclip,
+  X,
 } from 'lucide-react';
 
 import { HomeSection, OfficeMode } from '../../types/home';
@@ -86,6 +87,8 @@ interface SidebarProps {
   onSelectFinanceiroSubmodule?: (submodule: FinanceiroSubmodule) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 interface NavItemConfig {
@@ -116,7 +119,7 @@ const ESTOQUE_SUBMODULES: { id: EstoqueSubmodule; label: string; icon: React.Ele
   { id: 'Movimentação', label: 'Movimentação', icon: ArrowLeftRight },
   {
     id: 'Simulador de Importação e Rentabilidade',
-    label: 'Simulador de Importação e Rentabilidade',
+    label: 'Simulador de importação',
     icon: Calculator,
   },
   { id: 'Lista de compras', label: 'Lista de compras', icon: ShoppingCart },
@@ -164,7 +167,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectFinanceiroSubmodule,
   isCollapsed,
   onToggleCollapse,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
+  // Mobile overlay takes precedence over collapsed state so labels are fully visible
+  const isEffectivelyCollapsed = isMobileOpen ? false : isCollapsed;
+
+  // Fechar o menu móvel com a tecla Esc
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCloseMobile?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, onCloseMobile]);
+
   // Acordeão: no máximo um submenu aberto de cada vez na barra expandida
   const [openSubmenu, setOpenSubmenu] = useState<MainModule | null>(() => {
     if (['Estoque', 'Caixa', 'Contactos', 'Financeiro', 'Banco'].includes(activeModule)) {
@@ -284,7 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleItemClick = (module: MainModule, element: HTMLElement) => {
     onSelectModule(module);
 
-    if (isCollapsed) {
+    if (isEffectivelyCollapsed) {
       const hasSub = Boolean(MODULE_SUBMODULES[module]?.length);
       if (hasSub) {
         // Suporte para toque / clique com a barra recolhida
@@ -307,6 +327,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     } else {
       if (MODULE_SUBMODULES[module]) {
         setOpenSubmenu((prev) => (prev === module ? null : module));
+      } else if (isMobileOpen) {
+        onCloseMobile?.();
       }
     }
   };
@@ -325,6 +347,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
     cancelCloseTimer();
     setHoveredFlyout(null);
+    if (isMobileOpen) {
+      onCloseMobile?.();
+    }
   };
 
   // Verificar se o subitem atual está ativo
@@ -350,301 +375,366 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return `subnav-${cleanId}`;
   };
 
+  const previewSha = typeof window !== 'undefined'
+    ? (window.location.pathname.match(/\/([a-f0-9]{7,40})(?:\/|$)/)?.[1] || null)
+    : null;
+
   return (
-    <aside
-      id="app-sidebar"
-      onMouseLeave={() => {
-        if (isCollapsed) {
-          scheduleClose();
-        }
-      }}
-      className={`h-full bg-white dark:bg-dm-surface border-r border-slate-200/80 dark:border-dm-border flex flex-col shrink-0 transition-[width] duration-200 ease-in-out z-40 relative select-none overflow-x-hidden ${
-        isCollapsed ? 'w-16' : 'w-60'
-      }`}
-    >
-      {/* Brand Header: altura fixa h-14 (56px) alinhada exatamente com o Header principal */}
-      <div className="h-14 shrink-0 flex items-center border-b border-slate-200/80 dark:border-dm-border px-2 overflow-hidden">
-        <button
-          type="button"
-          id="sidebar-brand-toggle"
-          onClick={onToggleCollapse}
-          title={isCollapsed ? 'Expandir barra lateral (MyOffice)' : 'Recolher barra lateral (MyOffice)'}
-          aria-label={isCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-          className="w-full h-10 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-dm-elevated"
-        >
-          {/* Ícone fixo: sem reposicionamento ou recriação de nós */}
-          <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-            M
-          </div>
-
-          {/* Texto animado suavemente em opacidade e largura */}
-          <div
-            className={`flex flex-col min-w-0 ml-2.5 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-              isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[140px] opacity-100'
-            }`}
-          >
-            <span className="font-semibold text-slate-900 dark:text-dm-text text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
-              MyOffice
-            </span>
-            <span className="text-[10px] text-slate-400 dark:text-dm-muted font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
-              Angola
-            </span>
-          </div>
-        </button>
-      </div>
-
-      {mode === 'home' && (
-        <nav aria-label="Menu Home" className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-          {([
-            { section: 'Dashboard', icon: LayoutDashboard },
-            { section: 'Finanças', icon: Wallet },
-            { section: 'Orçamento', icon: Calculator },
-            { section: 'Contas da casa', icon: House },
-            { section: 'Metas e sonhos', icon: Target },
-            { section: 'Agenda', icon: ListChecks },
-            { section: 'Definições', icon: Settings },
-            { section: 'Compras', icon: ShoppingCart },
-            { section: 'Histórico', icon: History },
-            { section: 'Dívidas pessoais', icon: HandCoins },
-            { section: 'Planeamento', icon: TrendingUp },
-            { section: 'Relatórios', icon: FileText },
-            { section: 'Extratos', icon: FileCheck },
-            { section: 'Documentos', icon: Paperclip },
-          ] as const).map(({ section, icon: Icon }, index) => ({ section, Icon, index })).filter(({ section }) => section !== 'Definições').map(({ section, Icon, index }) => (
-            <button type="button" key={section} id={`home-nav-${index}`}
-              title={isCollapsed ? (section === 'Agenda' ? 'Calendário' : section) : undefined} aria-label={section === 'Agenda' ? 'Calendário' : section}
-              aria-current={homeSection === section ? 'page' : undefined}
-              onClick={() => onSelectHomeSection(section)}
-              className={`w-full min-h-11 flex items-center ${isCollapsed ? 'justify-center gap-0 px-0' : 'gap-3 px-3'} py-2.5 rounded-lg text-left text-xs font-medium ${homeSection === section
-                ? 'bg-slate-900 dark:bg-dm-elevated text-white dark:text-dm-text'
-                : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}
-            >
-              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-              {!isCollapsed && <span className="min-w-0">{section === 'Agenda' ? 'Calendário' : section}</span>}
-            </button>
-          ))}
-        </nav>
+    <>
+      {/* Fundo escurecido móvel (não clicável conforme regra dos modais) */}
+      {isMobileOpen && (
+        <div
+          id="mobile-sidebar-backdrop"
+          aria-hidden="true"
+          className="fixed inset-0 bg-slate-950/60 dark:bg-black/70 z-40 md:hidden backdrop-blur-xs"
+        />
       )}
-      {/* Navigation List: começa exatamente abaixo da barra de topo h-14 */}
-      <nav hidden={mode !== 'business'} style={mode !== 'business' ? {display:'none'} : undefined} className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1 flex flex-col">
-        {NAV_ITEMS.filter((item) => item.id !== 'Definições').map((item) => {
-          const Icon = item.icon;
-          const submodules = MODULE_SUBMODULES[item.id];
-          const hasSubmodules = Boolean(submodules && submodules.length > 0);
-          const isActiveModule = activeModule === item.id;
-          const isAccordionOpen = !isCollapsed && openSubmenu === item.id;
 
-          return (
-            <div key={item.id} className="w-full relative">
-              {/* Main Navigation Item Button: largura 100%, altura 40px (h-10), ícone centrado a 32px */}
-              <button
-                type="button"
-                id={`nav-item-${item.id.toLowerCase()}`}
-                onClick={(e) => handleItemClick(item.id, e.currentTarget)}
-                title={isCollapsed ? item.label : undefined}
-                aria-label={item.label}
-                aria-expanded={hasSubmodules ? (isCollapsed ? Boolean(hoveredFlyout?.id === item.id) : isAccordionOpen) : undefined}
-                onMouseEnter={(e) => handleMouseEnterItem(item.id, e.currentTarget)}
-                onMouseLeave={handleMouseLeaveItem}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape' && isCollapsed && hoveredFlyout) {
-                    closeImmediately();
-                  }
+      <aside
+        id="app-sidebar"
+        onMouseLeave={() => {
+          if (isCollapsed && !isMobileOpen) {
+            scheduleClose();
+          }
+        }}
+        className={`h-full bg-white dark:bg-dm-surface border-r border-slate-200/80 dark:border-dm-border flex flex-col shrink-0 transition-[width] duration-200 ease-in-out select-none overflow-x-hidden ${
+          isMobileOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-2xl md:relative md:inset-auto md:shadow-none md:z-40 ' + (isCollapsed ? 'md:w-16' : 'md:w-60')
+            : 'hidden md:flex md:relative md:inset-auto md:z-40 ' + (isCollapsed ? 'md:w-16' : 'md:w-60')
+        }`}
+      >
+        {/* Brand Header: altura fixa h-14 (56px) alinhada exatamente com o Header principal */}
+        <div className="h-14 shrink-0 flex items-center justify-between border-b border-slate-200/80 dark:border-dm-border px-2 overflow-hidden">
+          <button
+            type="button"
+            id="sidebar-brand-toggle"
+            onClick={onToggleCollapse}
+            title={isEffectivelyCollapsed ? 'Expandir barra lateral (MyOffice)' : 'Recolher barra lateral (MyOffice)'}
+            aria-label={isEffectivelyCollapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+            className="flex-1 h-11 flex items-center rounded-lg px-2 transition-colors cursor-pointer text-left group hover:bg-slate-100/80 dark:hover:bg-dm-elevated min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border"
+          >
+            {/* Ícone fixo: sem reposicionamento ou recriação de nós */}
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-dm-text text-white dark:text-dm-page flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+              M
+            </div>
+
+            {/* Texto animado suavemente em opacidade e largura */}
+            <div
+              className={`flex flex-col min-w-0 ml-2.5 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                isEffectivelyCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[140px] opacity-100'
+              }`}
+            >
+              <span className="font-semibold text-slate-900 dark:text-dm-text text-sm tracking-tight leading-none group-hover:text-slate-950 dark:group-hover:text-white transition-colors truncate whitespace-nowrap">
+                MyOffice
+              </span>
+              <span className="text-[10px] text-slate-400 dark:text-dm-muted font-medium mt-0.5 tracking-wider uppercase whitespace-nowrap">
+                Angola
+              </span>
+            </div>
+          </button>
+
+          {/* Botão X para fechar no telemóvel (44x44px target) */}
+          <button
+            type="button"
+            id="btn-close-mobile-sidebar"
+            aria-label="Fechar menu"
+            onClick={onCloseMobile}
+            className="md:hidden w-11 h-11 shrink-0 flex items-center justify-center rounded-lg text-slate-500 dark:text-dm-muted hover:text-slate-800 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border cursor-pointer ml-1"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        {mode === 'home' && (
+          <nav aria-label="Menu Home" className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
+            {([
+              { section: 'Dashboard', icon: LayoutDashboard },
+              { section: 'Finanças', icon: Wallet },
+              { section: 'Orçamento', icon: Calculator },
+              { section: 'Contas da casa', icon: House },
+              { section: 'Metas e sonhos', icon: Target },
+              { section: 'Agenda', icon: ListChecks },
+              { section: 'Definições', icon: Settings },
+              { section: 'Compras', icon: ShoppingCart },
+              { section: 'Histórico', icon: History },
+              { section: 'Dívidas pessoais', icon: HandCoins },
+              { section: 'Planeamento', icon: TrendingUp },
+              { section: 'Relatórios', icon: FileText },
+              { section: 'Extratos', icon: FileCheck },
+              { section: 'Documentos', icon: Paperclip },
+            ] as const).map(({ section, icon: Icon }, index) => ({ section, Icon, index })).filter(({ section }) => section !== 'Definições').map(({ section, Icon, index }) => (
+              <button type="button" key={section} id={`home-nav-${index}`}
+                title={isEffectivelyCollapsed ? (section === 'Agenda' ? 'Calendário' : section) : undefined} aria-label={section === 'Agenda' ? 'Calendário' : section}
+                aria-current={homeSection === section ? 'page' : undefined}
+                onClick={() => {
+                  onSelectHomeSection(section);
+                  if (isMobileOpen) onCloseMobile?.();
                 }}
-                className={`w-full h-10 flex items-center rounded-lg ${isCollapsed ? 'justify-center px-0' : 'px-2'} text-xs font-medium transition-colors cursor-pointer group ${
-                  isActiveModule
-                    ? 'bg-slate-900 dark:bg-dm-border/70 text-white dark:text-dm-text shadow-xs dark:shadow-none font-semibold'
-                    : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100/80 dark:hover:bg-dm-elevated'
-                }`}
+                className={`w-full min-h-[44px] h-11 flex items-center ${isEffectivelyCollapsed ? 'justify-center gap-0 px-0' : 'gap-3 px-3'} py-2 rounded-lg text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border transition-colors ${homeSection === section
+                  ? 'bg-slate-900 dark:bg-dm-elevated text-white dark:text-dm-text'
+                  : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}
               >
-                {/* Contentor de ícone com largura e posição fixa (32px de largura, centrado) */}
-                <div className="w-8 h-8 shrink-0 flex items-center justify-center">
-                  <Icon
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isActiveModule
-                        ? 'text-white dark:text-dm-text'
-                        : 'text-slate-500 dark:text-dm-muted group-hover:text-slate-800 dark:group-hover:text-dm-text'
-                    }`}
-                  />
-                </div>
+                <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                {!isEffectivelyCollapsed && <span className="min-w-0">{section === 'Agenda' ? 'Calendário' : section}</span>}
+              </button>
+            ))}
+          </nav>
+        )}
+        {/* Navigation List: começa exatamente abaixo da barra de topo h-14 */}
+        <nav hidden={mode !== 'business'} style={mode !== 'business' ? {display:'none'} : undefined} className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1 flex flex-col">
+          {NAV_ITEMS.filter((item) => item.id !== 'Definições').map((item) => {
+            const Icon = item.icon;
+            const submodules = MODULE_SUBMODULES[item.id];
+            const hasSubmodules = Boolean(submodules && submodules.length > 0);
+            const isActiveModule = activeModule === item.id;
+            const isAccordionOpen = !isEffectivelyCollapsed && openSubmenu === item.id;
 
-                {/* Texto e seta colapsam suavemente sem desmontar o DOM */}
-                <div
-                  className={`flex items-center justify-between flex-1 min-w-0 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-                    isCollapsed ? 'ml-0 max-w-0 opacity-0 pointer-events-none' : 'ml-2 max-w-[160px] opacity-100'
+            return (
+              <div key={item.id} className="w-full relative">
+                {/* Main Navigation Item Button: largura 100%, altura 44px (h-11), ícone centrado a 32px */}
+                <button
+                  type="button"
+                  id={`nav-item-${item.id.toLowerCase()}`}
+                  onClick={(e) => handleItemClick(item.id, e.currentTarget)}
+                  title={isEffectivelyCollapsed ? (item.id === 'Agentes' ? 'Agentes (Em breve)' : item.label) : undefined}
+                  aria-label={item.id === 'Agentes' ? 'Agentes (Em breve)' : item.label}
+                  aria-expanded={hasSubmodules ? (isEffectivelyCollapsed ? Boolean(hoveredFlyout?.id === item.id) : isAccordionOpen) : undefined}
+                  onMouseEnter={(e) => handleMouseEnterItem(item.id, e.currentTarget)}
+                  onMouseLeave={handleMouseLeaveItem}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' && isEffectivelyCollapsed && hoveredFlyout) {
+                      closeImmediately();
+                    }
+                  }}
+                  className={`w-full min-h-[44px] h-11 flex items-center rounded-lg ${isEffectivelyCollapsed ? 'justify-center px-0' : 'px-2'} text-sm font-medium transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border ${
+                    isActiveModule
+                      ? 'bg-slate-900 dark:bg-dm-border/70 text-white dark:text-dm-text shadow-xs dark:shadow-none font-semibold'
+                      : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-100/80 dark:hover:bg-dm-elevated'
                   }`}
                 >
-                  <span className="truncate whitespace-nowrap">{item.label}</span>
-                  {hasSubmodules && (
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                        isAccordionOpen ? 'rotate-180' : ''
-                      } ${
+                  {/* Contentor de ícone com largura e posição fixa (32px de largura, centrado) */}
+                  <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+                    <Icon
+                      className={`w-4.5 h-4.5 shrink-0 transition-colors ${
                         isActiveModule
-                          ? 'text-slate-300 dark:text-dm-text'
-                          : 'text-slate-400 dark:text-dm-muted'
+                          ? 'text-white dark:text-dm-text'
+                          : 'text-slate-500 dark:text-dm-muted group-hover:text-slate-800 dark:group-hover:text-dm-text'
                       }`}
                     />
-                  )}
-                </div>
-              </button>
+                  </div>
 
-              {/* Submenu Inline (Acordeão quando Expandido) */}
-              {hasSubmodules && (
-                <div
-                  className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out ${
-                    !isCollapsed && isAccordionOpen
-                      ? 'max-h-64 opacity-100 mt-1'
-                      : 'max-h-0 opacity-0 pointer-events-none'
-                  } ml-6 pl-2 border-l border-slate-200 dark:border-dm-border space-y-0.5`}
-                >
-                  {submodules.map((sub) => {
-                    const SubIcon = sub.icon;
-                    const active = isSubActive(item.id, sub.id);
-                    return (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        id={getSubnavId(item.id, sub.id, false)}
-                        onClick={() => handleSelectSub(item.id, sub.id)}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] font-medium transition-colors text-left cursor-pointer ${
-                          active
-                            ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
-                            : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
-                        }`}
-                      >
-                        <SubIcon
-                          className={`w-3.5 h-3.5 shrink-0 ${
-                            active ? 'text-slate-900 dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'
-                          }`}
-                        />
-                        <span className="truncate whitespace-nowrap">{sub.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
-
-      <div className="shrink-0 border-t border-slate-200 dark:border-dm-border p-2">
-        <button type="button" id={mode === 'home' ? 'home-nav-6' : 'nav-item-definições'}
-          aria-label="Definições" title={isCollapsed ? 'Definições' : undefined}
-          aria-current={(mode === 'home' ? homeSection === 'Definições' : activeModule === 'Definições') ? 'page' : undefined}
-          onClick={() => { setHoveredFlyout(null); mode === 'home' ? onSelectHomeSection('Definições') : onSelectModule('Definições'); }}
-          className={`w-full min-h-11 flex items-center rounded-lg text-xs font-medium ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} ${(mode === 'home' ? homeSection === 'Definições' : activeModule === 'Definições') ? 'bg-slate-900 dark:bg-dm-elevated text-white' : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}>
-          <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />
-          {!isCollapsed && <span>Definições</span>}
-        </button>
-      </div>
-
-      <ModeSwitcher mode={mode} compact={isCollapsed} onChange={(value) => {
-        setHoveredFlyout(null);
-        onModeChange(value);
-      }} />
-      {/* Bottom Section: Footer info (sem o controlo de tema) */}
-      <div className="border-t border-slate-200/80 dark:border-dm-border p-2 shrink-0 overflow-hidden">
-        <div className="h-7 flex items-center px-2 overflow-hidden">
-          <div className="w-8 h-6 shrink-0 flex items-center justify-center">
-            <span className="text-[10px] bg-slate-100 dark:bg-dm-elevated text-slate-500 dark:text-dm-muted border border-transparent dark:border-dm-border font-mono px-1.5 py-0.5 rounded text-center">
-              AO
-            </span>
-          </div>
-          <div
-            className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-              isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
-            }`}
-          >
-            <span className="text-[11px] text-slate-400 dark:text-dm-muted truncate whitespace-nowrap">
-              MyOffice v1.0
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Submenu Flutuante com Portal (Estado Recolhido) */}
-      {mode === 'business' && isCollapsed && hoveredFlyout && createPortal(
-        <div
-          key={hoveredFlyout.id}
-          role="region"
-          aria-label={`Submenu ${hoveredFlyout.id}`}
-          tabIndex={-1}
-          onMouseEnter={cancelCloseTimer}
-          onMouseLeave={scheduleClose}
-          onFocus={cancelCloseTimer}
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-              scheduleClose();
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              cancelCloseTimer();
-              const targetModule = hoveredFlyout.id;
-              setHoveredFlyout(null);
-              triggerButtonsRef.current.get(targetModule)?.focus();
-            }
-          }}
-          style={{
-            position: 'fixed',
-            // Clampar a posição vertical para impedir corte na margem inferior do ecrã
-            top: Math.max(8, Math.min(hoveredFlyout.top, window.innerHeight - 260)),
-            // Começa exatamente na borda direita da barra lateral
-            left: hoveredFlyout.left,
-            zIndex: 9999,
-          }}
-          className="pl-2 pt-0 pb-0 select-none outline-none group/portal pointer-events-auto"
-        >
-          {/* Ponte de Hover entre o botão e o popup (sem transbordar verticalmente para itens adjacentes) */}
-          <div
-            className="absolute -left-2.5 top-0 bottom-0 w-3 pointer-events-auto"
-            aria-hidden="true"
-          />
-
-          {/* Cartão visível do submenu flutuante */}
-          <div className="w-48 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-xl shadow-xl dark:shadow-none p-1.5 backdrop-blur-xs relative z-10 animate-in fade-in zoom-in-95 duration-75">
-            <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-dm-border mb-1 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-800 dark:text-dm-text">
-                {hoveredFlyout.id}
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-dm-muted font-mono">
-                Esc
-              </span>
-            </div>
-            <div className="space-y-0.5">
-              {MODULE_SUBMODULES[hoveredFlyout.id]?.map((sub) => {
-                const SubIcon = sub.icon;
-                const active = isSubActive(hoveredFlyout.id, sub.id);
-                return (
-                  <button
-                    key={sub.id}
-                    type="button"
-                    id={getSubnavId(hoveredFlyout.id, sub.id, true)}
-                    onClick={() => handleSelectSub(hoveredFlyout.id, sub.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors text-left cursor-pointer ${
-                      active
-                        ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
-                        : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
+                  {/* Texto e seta colapsam suavemente sem desmontar o DOM */}
+                  <div
+                    className={`flex items-center justify-between flex-1 min-w-0 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                      isEffectivelyCollapsed ? 'ml-0 max-w-0 opacity-0 pointer-events-none' : 'ml-2 max-w-[170px] opacity-100'
                     }`}
                   >
-                    <SubIcon
-                      className={`w-3.5 h-3.5 shrink-0 ${
-                        active
-                          ? 'text-slate-900 dark:text-dm-text'
-                          : 'text-slate-400 dark:text-dm-muted'
-                      }`}
-                    />
-                    <span className="truncate">{sub.label}</span>
-                  </button>
-                );
-              })}
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="truncate whitespace-nowrap">{item.label}</span>
+                      {item.id === 'Agentes' && (
+                        <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 shrink-0">
+                          Em breve
+                        </span>
+                      )}
+                    </div>
+                    {hasSubmodules && (
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                          isAccordionOpen ? 'rotate-180' : ''
+                        } ${
+                          isActiveModule
+                            ? 'text-slate-300 dark:text-dm-text'
+                            : 'text-slate-400 dark:text-dm-muted'
+                        }`}
+                      />
+                    )}
+                  </div>
+                </button>
+
+                {/* Submenu Inline (Acordeão quando Expandido) */}
+                {hasSubmodules && (
+                  <div
+                    className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out ${
+                      !isEffectivelyCollapsed && isAccordionOpen
+                        ? 'max-h-96 opacity-100 mt-1'
+                        : 'max-h-0 opacity-0 pointer-events-none'
+                    } ml-6 pl-2 border-l border-slate-200 dark:border-dm-border space-y-1`}
+                  >
+                    {submodules.map((sub) => {
+                      const SubIcon = sub.icon;
+                      const active = isSubActive(item.id, sub.id);
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          id={getSubnavId(item.id, sub.id, false)}
+                          onClick={() => handleSelectSub(item.id, sub.id)}
+                          className={`w-full min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border ${
+                            active
+                              ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
+                              : 'text-slate-500 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
+                          }`}
+                        >
+                          <SubIcon
+                            className={`w-4 h-4 shrink-0 ${
+                              active ? 'text-slate-900 dark:text-dm-text' : 'text-slate-400 dark:text-dm-muted'
+                            }`}
+                          />
+                          <span className="truncate whitespace-nowrap">{sub.label}</span>
+                          {sub.id === 'Afiliados' && (
+                            <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 shrink-0 ml-auto">
+                              Em breve
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="shrink-0 border-t border-slate-200 dark:border-dm-border p-2">
+          <button type="button" id={mode === 'home' ? 'home-nav-6' : 'nav-item-definições'}
+            aria-label="Definições" title={isEffectivelyCollapsed ? 'Definições' : undefined}
+            aria-current={(mode === 'home' ? homeSection === 'Definições' : activeModule === 'Definições') ? 'page' : undefined}
+            onClick={() => {
+              setHoveredFlyout(null);
+              if (mode === 'home') {
+                onSelectHomeSection('Definições');
+              } else {
+                onSelectModule('Definições');
+              }
+              if (isMobileOpen) onCloseMobile?.();
+            }}
+            className={`w-full min-h-[44px] h-11 flex items-center rounded-lg text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border ${isEffectivelyCollapsed ? 'justify-center' : 'gap-3 px-3'} ${(mode === 'home' ? homeSection === 'Definições' : activeModule === 'Definições') ? 'bg-slate-900 dark:bg-dm-elevated text-white' : 'text-slate-600 dark:text-dm-muted hover:bg-slate-100 dark:hover:bg-dm-elevated'}`}>
+            <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />
+            {!isEffectivelyCollapsed && <span>Definições</span>}
+          </button>
+        </div>
+
+        <ModeSwitcher mode={mode} compact={isEffectivelyCollapsed} onChange={(value) => {
+          setHoveredFlyout(null);
+          onModeChange(value);
+          if (isMobileOpen) onCloseMobile?.();
+        }} />
+
+        {/* Bottom Section: Footer info com versão e link de versões no rodapé do menu */}
+        <div className="border-t border-slate-200/80 dark:border-dm-border p-2 shrink-0 overflow-hidden">
+          <div className="h-7 flex items-center px-2 overflow-hidden">
+            <div className="w-8 h-6 shrink-0 flex items-center justify-center">
+              <span className="text-[10px] bg-slate-100 dark:bg-dm-elevated text-slate-500 dark:text-dm-muted border border-transparent dark:border-dm-border font-mono px-1.5 py-0.5 rounded text-center">
+                AO
+              </span>
+            </div>
+            <div
+              className={`flex items-center justify-between flex-1 min-w-0 ml-2 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+                isEffectivelyCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[160px] opacity-100'
+              }`}
+            >
+              <span className="text-xs text-slate-400 dark:text-dm-muted truncate whitespace-nowrap">
+                MyOffice v1.0
+              </span>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
-    </aside>
+          {previewSha && !isEffectivelyCollapsed && (
+            <div className="px-2 pt-1.5 mt-1 border-t border-slate-100 dark:border-dm-border">
+              <a
+                href="../versoes/"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline block truncate font-medium"
+                title={`Versão ${previewSha.slice(0, 7)} · Voltar às versões`}
+              >
+                Versão {previewSha.slice(0, 7)} · Voltar às versões
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Submenu Flutuante com Portal (Estado Recolhido em Desktop) */}
+        {mode === 'business' && isEffectivelyCollapsed && hoveredFlyout && createPortal(
+          <div
+            key={hoveredFlyout.id}
+            role="region"
+            aria-label={`Submenu ${hoveredFlyout.id}`}
+            tabIndex={-1}
+            onMouseEnter={cancelCloseTimer}
+            onMouseLeave={scheduleClose}
+            onFocus={cancelCloseTimer}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                scheduleClose();
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                cancelCloseTimer();
+                const targetModule = hoveredFlyout.id;
+                setHoveredFlyout(null);
+                triggerButtonsRef.current.get(targetModule)?.focus();
+              }
+            }}
+            style={{
+              position: 'fixed',
+              top: Math.max(8, Math.min(hoveredFlyout.top, window.innerHeight - 260)),
+              left: hoveredFlyout.left,
+              zIndex: 9999,
+            }}
+            className="pl-2 pt-0 pb-0 select-none outline-none group/portal pointer-events-auto"
+          >
+            <div
+              className="absolute -left-2.5 top-0 bottom-0 w-3 pointer-events-auto"
+              aria-hidden="true"
+            />
+
+            <div className="w-52 bg-white dark:bg-dm-surface border border-slate-200 dark:border-dm-border rounded-xl shadow-xl dark:shadow-none p-2 backdrop-blur-xs relative z-10 animate-in fade-in zoom-in-95 duration-75">
+              <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-dm-border mb-1 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800 dark:text-dm-text">
+                  {hoveredFlyout.id}
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-dm-muted font-mono">
+                  Esc
+                </span>
+              </div>
+              <div className="space-y-1">
+                {MODULE_SUBMODULES[hoveredFlyout.id]?.map((sub) => {
+                  const SubIcon = sub.icon;
+                  const active = isSubActive(hoveredFlyout.id, sub.id);
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      id={getSubnavId(hoveredFlyout.id, sub.id, true)}
+                      onClick={() => handleSelectSub(hoveredFlyout.id, sub.id)}
+                      className={`w-full min-h-[40px] flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-dm-border ${
+                        active
+                          ? 'bg-slate-100 dark:bg-dm-border/60 text-slate-900 dark:text-dm-text font-semibold'
+                          : 'text-slate-600 dark:text-dm-muted hover:text-slate-900 dark:hover:text-dm-text hover:bg-slate-50 dark:hover:bg-dm-elevated'
+                      }`}
+                    >
+                      <SubIcon
+                        className={`w-4 h-4 shrink-0 ${
+                          active
+                            ? 'text-slate-900 dark:text-dm-text'
+                            : 'text-slate-400 dark:text-dm-muted'
+                        }`}
+                      />
+                      <span className="truncate">{sub.label}</span>
+                      {sub.id === 'Afiliados' && (
+                        <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 shrink-0 ml-auto">
+                          Em breve
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </aside>
+    </>
   );
 };
