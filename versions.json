@@ -1,6 +1,12 @@
 {
-  "currentSha": "3277dfa878ca3fe78557de2938cc6b3bac489de4",
+  "currentSha": "19fc33c5a600c09dc7a0dbfa2b96d276b075c6e5",
   "entries": [
+    {
+      "sha": "19fc33c5a600c09dc7a0dbfa2b96d276b075c6e5",
+      "date": "2026-10-22T12:44:16+01:00",
+      "title": "feat: implement functional audit points 5-8",
+      "status": "ready"
+    },
     {
       "sha": "3277dfa878ca3fe78557de2938cc6b3bac489de4",
       "date": "2026-10-21T14:02:03+01:00",
