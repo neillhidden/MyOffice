@@ -23,12 +23,22 @@ import { ClientModal } from './ClientModal';
 import { PositiveBadge } from '../common/PositiveBadge';
 import { isValidPhone } from '../../utils/phoneValidation';
 
-export const ClientesView: React.FC = () => {
+interface ClientesViewProps {
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
+}
+
+export const ClientesView: React.FC<ClientesViewProps> = ({
+  externalSearchQuery,
+  onExternalSearchChange,
+}) => {
   const { clients, sales, deleteClient } = useStock();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<'todos' | 'individual' | 'empresa'>('todos');
   const [selectedStatus, setSelectedStatus] = useState<'todos' | 'ativo' | 'inativo'>('todos');
+
+  const effectiveSearchTerm = externalSearchQuery !== undefined ? externalSearchQuery : searchTerm;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,8 +117,8 @@ export const ClientesView: React.FC = () => {
       if (selectedType !== 'todos' && getEffectiveClientType(c) !== selectedType) return false;
       if (selectedStatus !== 'todos' && c.status !== selectedStatus) return false;
 
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase();
+      if (effectiveSearchTerm.trim()) {
+        const q = effectiveSearchTerm.toLowerCase();
         const matchName = c.name.toLowerCase().includes(q);
         const matchPhone = c.phone?.toLowerCase().includes(q) || false;
         const matchDoc = c.document?.toLowerCase().includes(q) || false;
@@ -118,7 +128,7 @@ export const ClientesView: React.FC = () => {
       }
       return true;
     });
-  }, [clients, selectedType, selectedStatus, searchTerm]);
+  }, [clients, selectedType, selectedStatus, effectiveSearchTerm]);
 
   const handleOpenAdd = () => {
     setClientToEdit(null);

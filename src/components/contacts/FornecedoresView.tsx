@@ -122,14 +122,9 @@ export const FornecedoresView: React.FC<FornecedoresViewProps> = ({
       });
 
       const allFound = Array.from(foundCompsMap.values());
-      const operationalComps = allFound.filter((c) => c.status !== 'desativada');
-      const deactivatedComps = allFound.filter((c) => c.status === 'desativada');
 
-      // Se existirem empresas operacionais (ativas ou paradas), mostramos essas empresas com o seu status real
-      // Caso contrário, se apenas existirem artigos em empresas desativadas, apresentamos com o selo de Desativada
-      const targetComps = operationalComps.length > 0 ? operationalComps : deactivatedComps;
-
-      const linkedCompanies: LinkedCompanySummary[] = targetComps.map((c) => ({
+      // Apresenta todas as empresas vinculadas aos artigos do fornecedor com o seu status real individual
+      const linkedCompanies: LinkedCompanySummary[] = allFound.map((c) => ({
         id: c.id,
         name: c.name,
         status: c.status,

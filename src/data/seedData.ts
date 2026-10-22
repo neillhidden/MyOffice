@@ -388,7 +388,7 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
-  // Arroz Viana (wh-1)
+  // Consola PS5 Viana (wh-1)
   {
     productId: 'prod-1',
     warehouseId: 'wh-1',
@@ -396,7 +396,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 500,
     physicalLocation: 'Corredor A-02, Posição 14',
   },
-  // Arroz Talatona (wh-2)
+  // Consola PS5 Talatona (wh-2)
   {
     productId: 'prod-1',
     warehouseId: 'wh-2',
@@ -404,7 +404,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 120,
     physicalLocation: 'Frente de Loja, Palete 1',
   },
-  // Óleo Viana (wh-1)
+  // Fritadeira Air Fryer Viana (wh-1)
   {
     productId: 'prod-2',
     warehouseId: 'wh-1',
@@ -412,7 +412,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 300,
     physicalLocation: 'Corredor A-04, Nível 2',
   },
-  // Óleo Talatona (wh-2) - CRITICAL ALERT (abaixo do mínimo propositado para demonstração)
+  // Fritadeira Air Fryer Talatona (wh-2) - CRITICAL ALERT (abaixo do mínimo propositado para demonstração)
   {
     productId: 'prod-2',
     warehouseId: 'wh-2',
@@ -436,7 +436,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 25,
     physicalLocation: 'Vitrine Principal de Smartphones',
   },
-  // Cimento Viana
+  // Comando DualSense Viana
   {
     productId: 'prod-4',
     warehouseId: 'wh-1',
@@ -444,7 +444,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 1500,
     physicalLocation: 'Pátio Coberto 1, Lote 3',
   },
-  // Cimento Benguela
+  // Comando DualSense Benguela
   {
     productId: 'prod-4',
     warehouseId: 'wh-3',
@@ -460,7 +460,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
     maxLimit: 200,
     physicalLocation: 'Arara Central 2',
   },
-  // Detergente Viana
+  // Ração Cães Viana
   {
     productId: 'prod-6',
     warehouseId: 'wh-1',
@@ -472,7 +472,7 @@ export const INITIAL_STOCK_CONFIGS: StockConfig[] = [
 ];
 
 export const INITIAL_MOVEMENTS: Movement[] = [
-  // 1. Arroz no Armazém Viana (Entrada inicial + saída)
+  // 1. Consola PlayStation 5 no Armazém Viana (Entrada inicial + transferência + saídas)
   {
     id: 'mov-1',
     productId: 'prod-1',
@@ -515,11 +515,11 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     quantity: 35,
     date: '2026-08-05T18:00:00.000Z',
     responsible: 'Esperança Ndala',
-    reason: 'Venda a grosso para restaurante parceiro',
+    reason: 'Venda corporativa para sala de jogos/convívio',
     reference: 'Venda #VD-2026-441',
   },
 
-  // 2. Óleo Vegetal (Abaixo do mínimo na Loja Talatona)
+  // 2. Fritadeira Air Fryer Digital 5.5L (Abaixo do mínimo na Loja Talatona)
   {
     id: 'mov-5',
     productId: 'prod-2',
@@ -554,7 +554,7 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     reference: 'Vendas Balcão 18',
   },
 
-  // 3. Smartphones
+  // 3. Smartphones Galaxy Pro 5G
   {
     id: 'mov-8',
     productId: 'prod-3',
@@ -589,7 +589,7 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     reference: 'Faturas Recibo 801-804',
   },
 
-  // 4. Cimento Portland
+  // 4. Comando DualSense Sem Fios PS5
   {
     id: 'mov-11',
     productId: 'prod-4',
@@ -598,8 +598,8 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     quantity: 900,
     date: '2026-08-01T08:00:00.000Z',
     responsible: 'Carlos Dinis',
-    reason: 'Carga direta da fábrica Nova Cimangola',
-    reference: 'Guia Remessa NC-449',
+    reason: 'Lote de comandos importados TechLuanda',
+    reference: 'Guia Remessa TL-449',
   },
   {
     id: 'mov-12',
@@ -609,8 +609,8 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     quantity: 250,
     date: '2026-08-20T14:00:00.000Z',
     responsible: 'Carlos Dinis',
-    reason: 'Fornecimento para Empreiteira Luanda Sul',
-    reference: 'Contrato Obra #88',
+    reason: 'Fornecimento para torneio de e-Sports Luanda Sul',
+    reference: 'Guia de Saída #88',
   },
   {
     id: 'mov-13',
@@ -620,11 +620,11 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     quantity: 450,
     date: '2026-08-05T10:00:00.000Z',
     responsible: 'Carlos Dinis',
-    reason: 'Lote de abertura Filial Benguela',
-    reference: 'Carga Rodoviária CR-77',
+    reason: 'Lote de comandos para abertura Filial Benguela',
+    reference: 'Guia de Transporte GT-77',
   },
 
-  // 5. T-Shirts
+  // 5. T-Shirts Benguela Apparel
   {
     id: 'mov-14',
     productId: 'prod-5',
@@ -648,7 +648,7 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     reference: 'POS Talatona',
   },
 
-  // 6. Detergente
+  // 6. Ração Premium Cães Adultos (Saco 15kg)
   {
     id: 'mov-16',
     productId: 'prod-6',
@@ -657,8 +657,8 @@ export const INITIAL_MOVEMENTS: Movement[] = [
     quantity: 140,
     date: '2026-08-12T09:00:00.000Z',
     responsible: 'Mateus Gaspar',
-    reason: 'Recebimento de fábrica Lavamax',
-    reference: 'NF-5521',
+    reason: 'Recebimento de lote de nutrição animal Mundo Pet',
+    reference: 'Guia Remessa MP-5521',
   },
 
   // Movimento de Defeituoso registrado anteriormente

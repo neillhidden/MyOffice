@@ -261,5 +261,87 @@ test('navigationRouter accurately bi-directionally maps URLs and respects browse
   assert.equal(hashToState('#/produtos').estoqueSub, 'Armazém');
 });
 
+test('companyState correctly normalizes and identifies ativa, parada, and desativada states', async () => {
+  const {
+    getCompanyStatus,
+    isCompanyActive,
+    isCompanyStopped,
+    isCompanyDeactivated,
+    getCompanyStatusLabel,
+    getCompanyStatusTooltip,
+  } = await import('../src/utils/companyState');
+
+  // Test Ativa
+  const compAtiva = { status: 'ativa' };
+  assert.equal(getCompanyStatus(compAtiva), 'ativa');
+  assert.equal(isCompanyActive(compAtiva), true);
+  assert.equal(isCompanyStopped(compAtiva), false);
+  assert.equal(isCompanyDeactivated(compAtiva), false);
+  assert.equal(getCompanyStatusLabel('ativa'), 'Ativa');
+  assert.equal(getCompanyStatusTooltip('Empresa Alpha', 'ativa'), 'Empresa ativa: Empresa Alpha');
+
+  // Test Parada
+  const compParada = { status: 'parada' };
+  assert.equal(getCompanyStatus(compParada), 'parada');
+  assert.equal(isCompanyActive(compParada), false);
+  assert.equal(isCompanyStopped(compParada), true);
+  assert.equal(isCompanyDeactivated(compParada), false);
+  assert.equal(getCompanyStatusLabel('parada'), 'Parada');
+  assert.equal(getCompanyStatusTooltip('Empresa Beta', 'parada'), 'Empresa parada (operações em pausa): Empresa Beta');
+
+  // Test Desativada (and synonyms like 'inativa')
+  const compDesativada = { status: 'desativada' };
+  assert.equal(getCompanyStatus(compDesativada), 'desativada');
+  assert.equal(isCompanyActive(compDesativada), false);
+  assert.equal(isCompanyStopped(compDesativada), false);
+  assert.equal(isCompanyDeactivated(compDesativada), true);
+  assert.equal(getCompanyStatusLabel('desativada'), 'Desativada');
+  assert.equal(getCompanyStatusTooltip('Empresa Gamma', 'desativada'), 'Empresa desativada (fora de serviço): Empresa Gamma');
+
+  const compInativaSynonym = { status: 'inativa' };
+  assert.equal(getCompanyStatus(compInativaSynonym), 'desativada');
+  assert.equal(isCompanyDeactivated(compInativaSynonym), true);
+
+  // Default fallback for empty/undefined
+  assert.equal(getCompanyStatus(null), 'ativa');
+  assert.equal(getCompanyStatus(undefined), 'ativa');
+  assert.equal(getCompanyStatus({}), 'ativa');
+});
+
+test('seedData movements and defective records are coherent with their respective products', async () => {
+  const { INITIAL_MOVEMENTS, INITIAL_DEFECTIVE_RECORDS, INITIAL_PRODUCTS } = await import('../src/data/seedData');
+
+  // Verify Air Fryer (prod-2) defective record does not mention bottles/garrafas
+  const def1 = INITIAL_DEFECTIVE_RECORDS.find((d) => d.id === 'def-1');
+  assert.ok(def1);
+  assert.equal(def1.productId, 'prod-2');
+  assert.ok(!def1.notes?.toLowerCase().includes('garrafa'));
+  assert.ok(!def1.notes?.toLowerCase().includes('vazamento'));
+  assert.ok(def1.notes?.toLowerCase().includes('fritadeira'));
+
+  // Verify Air Fryer (prod-2) defective movement does not mention bottles/garrafas
+  const mov17 = INITIAL_MOVEMENTS.find((m) => m.id === 'mov-17');
+  assert.ok(mov17);
+  assert.equal(mov17.productId, 'prod-2');
+  assert.ok(!mov17.reason.toLowerCase().includes('garrafa'));
+  assert.ok(!mov17.reason.toLowerCase().includes('vazamento'));
+
+  // Verify PS5 (prod-1) movement does not mention restaurant
+  const mov4 = INITIAL_MOVEMENTS.find((m) => m.id === 'mov-4');
+  assert.ok(mov4);
+  assert.ok(!mov4.reason.toLowerCase().includes('restaurante'));
+
+  // Verify DualSense (prod-4) movements do not mention cement factory Nova Cimangola
+  const mov11 = INITIAL_MOVEMENTS.find((m) => m.id === 'mov-11');
+  assert.ok(mov11);
+  assert.ok(!mov11.reason.toLowerCase().includes('cimangola'));
+
+  // Verify Pet food (prod-6) movement does not mention detergent factory Lavamax
+  const mov16 = INITIAL_MOVEMENTS.find((m) => m.id === 'mov-16');
+  assert.ok(mov16);
+  assert.ok(!mov16.reason.toLowerCase().includes('lavamax'));
+});
+
+
 
 

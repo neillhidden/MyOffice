@@ -471,8 +471,20 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const parsed: Movement[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const healed = parsed.map((m) => {
-            if (m.id === 'mov-17' && m.reason && m.reason.includes('Garrafas')) {
+            if (m.id === 'mov-17' && m.reason && (m.reason.toLowerCase().includes('garrafa') || m.reason.toLowerCase().includes('vazamento') || m.reason.toLowerCase().includes('rompida'))) {
               return { ...m, reason: 'Danos estruturais e carcaça amassada por queda de palete no transporte' };
+            }
+            if (m.id === 'mov-4' && m.reason && m.reason.toLowerCase().includes('restaurante')) {
+              return { ...m, reason: 'Venda corporativa para sala de jogos/convívio' };
+            }
+            if (m.id === 'mov-11' && m.reason && m.reason.toLowerCase().includes('cimangola')) {
+              return { ...m, reason: 'Lote de comandos importados TechLuanda', reference: 'Guia Remessa TL-449' };
+            }
+            if (m.id === 'mov-12' && m.reason && m.reason.toLowerCase().includes('empreiteira')) {
+              return { ...m, reason: 'Fornecimento para torneio de e-Sports Luanda Sul', reference: 'Guia de Saída #88' };
+            }
+            if (m.id === 'mov-16' && m.reason && m.reason.toLowerCase().includes('lavamax')) {
+              return { ...m, reason: 'Recebimento de lote de nutrição animal Mundo Pet', reference: 'Guia Remessa MP-5521' };
             }
             return m;
           });
@@ -495,7 +507,7 @@ export const StockProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const parsed: DefectiveRecord[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           return parsed.map((d) => {
-            if (d.id === 'def-1' && d.notes && d.notes.includes('Garrafas')) {
+            if (d.id === 'def-1' && d.notes && (d.notes.toLowerCase().includes('garrafa') || d.notes.toLowerCase().includes('vazamento') || d.notes.toLowerCase().includes('rompida'))) {
               return {
                 ...d,
                 notes: 'Fritadeiras com carcaça amassada e resistências danificadas por queda de palete. Termo de descarte lavrado.',

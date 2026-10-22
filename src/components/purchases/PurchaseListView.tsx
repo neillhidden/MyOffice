@@ -191,7 +191,11 @@ const StatusBadgeDropdown: React.FC<StatusBadgeDropdownProps> = ({
   );
 };
 
-export const PurchaseListView: React.FC = () => {
+interface PurchaseListViewProps {
+  externalSearchQuery?: string;
+}
+
+export const PurchaseListView: React.FC<PurchaseListViewProps> = ({ externalSearchQuery }) => {
   const {
     purchaseGroups,
     purchaseLists,
@@ -617,10 +621,44 @@ export const PurchaseListView: React.FC = () => {
     }));
   };
 
+  const query = externalSearchQuery?.trim().toLowerCase() || '';
+
   // Selected Group and List objects
   const currentGroup = purchaseGroups.find((g) => g.id === selectedGroupId);
   const currentList = purchaseLists.find((l) => l.id === selectedListId);
-  const currentListSources = purchaseSources.filter((s) => s.listId === selectedListId);
+
+  const displayedGroups = useMemo(() => {
+    if (!query) return purchaseGroups;
+    return purchaseGroups.filter(
+      (g) => g.name.toLowerCase().includes(query) || (g.description && g.description.toLowerCase().includes(query))
+    );
+  }, [purchaseGroups, query]);
+
+  const displayedMainLists = useMemo(() => {
+    if (!query) return purchaseLists;
+    return purchaseLists.filter(
+      (l) => l.name.toLowerCase().includes(query) || l.category.toLowerCase().includes(query)
+    );
+  }, [purchaseLists, query]);
+
+  const displayedGroupLists = useMemo(() => {
+    const base = purchaseLists.filter((l) => l.groupId === currentGroup?.id);
+    if (!query) return base;
+    return base.filter(
+      (l) => l.name.toLowerCase().includes(query) || l.category.toLowerCase().includes(query)
+    );
+  }, [purchaseLists, currentGroup?.id, query]);
+
+  const currentListSources = useMemo(() => {
+    const base = purchaseSources.filter((s) => s.listId === selectedListId);
+    if (!query) return base;
+    return base.filter(
+      (s) =>
+        s.storeName.toLowerCase().includes(query) ||
+        (s.supplierName && s.supplierName.toLowerCase().includes(query)) ||
+        (s.notes && s.notes.toLowerCase().includes(query))
+    );
+  }, [purchaseSources, selectedListId, query]);
 
   return (
     <div className="space-y-6">
@@ -684,7 +722,7 @@ export const PurchaseListView: React.FC = () => {
           {/* VISTA 1: GRUPOS (Cards em Grid) */}
           {mainViewMode === 'grupos' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {purchaseGroups.map((group) => {
+              {displayedGroups.map((group) => {
                 const totals = getGroupTotals(group.id);
 
                 return (
@@ -773,7 +811,7 @@ export const PurchaseListView: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                    {purchaseLists.map((list) => {
+                    {displayedMainLists.map((list) => {
                       const group = purchaseGroups.find((g) => g.id === list.groupId);
                       const totals = getListTotals(list.id);
 
@@ -968,10 +1006,8 @@ export const PurchaseListView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                  {purchaseLists
-                    .filter((l) => l.groupId === currentGroup.id)
-                    .map((list) => {
-                      const totals = getListTotals(list.id);
+                  {displayedGroupLists.map((list) => {
+                    const totals = getListTotals(list.id);
 
                       return (
                         <tr
@@ -1128,25 +1164,33 @@ export const PurchaseListView: React.FC = () => {
                 </div>
               </div>
 
-              {/* List Totals */}
-              <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
-                    Total Selecionado (Kz)
-                  </span>
-                  <span className="text-base font-bold font-mono text-emerald-700 dark:text-emerald-400">
-                    {formatKwanza(getListTotals(currentList.id).totalAccountedKz)}
-                  </span>
+              {/* List Totals & 7.1 Explicação da Regra */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                  <div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
+                      Total Selecionado (Kz)
+                    </span>
+                    <span className="text-base font-bold font-mono text-emerald-700 dark:text-emerald-400">
+                      {formatKwanza(getListTotals(currentList.id).totalAccountedKz)}
+                    </span>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+                  <div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
+                      Total Pesquisado
+                    </span>
+                    <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
+                      {formatKwanza(getListTotals(currentList.id).totalResearchedKz)}
+                    </span>
+                  </div>
                 </div>
-                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
-                    Total Pesquisado
-                  </span>
-                  <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                    {formatKwanza(getListTotals(currentList.id).totalResearchedKz)}
-                  </span>
-                </div>
+                {/* 7.1 Explicação curta da regra atual junto aos totais */}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 px-1 leading-tight">
+                  {normalizePurchaseListStatus(currentList.status) === 'concluido'
+                    ? 'Lista Concluída: O Total Selecionado inclui as fontes com "Contabilizar" ativo.'
+                    : 'Lista Em Pesquisa: Todas as cotações compõem o Total Pesquisado. O Total Selecionado ativa ao mudar o estado para "Concluído".'}
+                </p>
               </div>
             </div>
           </div>
@@ -1154,7 +1198,7 @@ export const PurchaseListView: React.FC = () => {
           {/* Rule Notice */}
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700 rounded-xl text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
             <span>
-              <strong>Regra de Cálculo:</strong> Apenas as Fontes marcadas com <strong>"Contabilizar"</strong> somam ao valor final da Lista e do Grupo. O total atualiza imediatamente.
+              <strong>Regra de Cálculo Atual:</strong> Enquanto a lista estiver <em>Em pesquisa</em>, o valor das fontes compõe o Total Pesquisado. O <strong>Total Selecionado</strong> considera as fontes com "Contabilizar" assim que o estado da lista passa a <strong>Concluído</strong>.
             </span>
           </div>
 

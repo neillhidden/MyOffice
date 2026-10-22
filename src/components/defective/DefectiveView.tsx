@@ -21,7 +21,11 @@ import { formatKwanza, formatDateTime } from '../../utils/formatters';
 import { PositiveBadge } from '../common/PositiveBadge';
 import { ProductThumbnail } from '../common/ProductThumbnail';
 
-export const DefectiveView: React.FC = () => {
+interface DefectiveViewProps {
+  externalSearchQuery?: string;
+}
+
+export const DefectiveView: React.FC<DefectiveViewProps> = ({ externalSearchQuery }) => {
   const {
     defectiveRecords,
     products,
@@ -108,9 +112,23 @@ export const DefectiveView: React.FC = () => {
 
       if (filterDecision !== 'all' && item.decision !== filterDecision) return false;
       if (filterReason !== 'all' && item.reason !== filterReason) return false;
+
+      if (externalSearchQuery && externalSearchQuery.trim()) {
+        const q = externalSearchQuery.toLowerCase();
+        const prod = products.find((p) => p.id === item.productId);
+        const matchProdName = prod?.name.toLowerCase().includes(q) || false;
+        const matchSku = prod?.sku.toLowerCase().includes(q) || false;
+        const matchReason = item.reason.toLowerCase().includes(q);
+        const matchResp = item.responsible.toLowerCase().includes(q);
+        const matchNotes = item.notes?.toLowerCase().includes(q) || false;
+        if (!matchProdName && !matchSku && !matchReason && !matchResp && !matchNotes) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [defectiveRecords, warehouses, companies, filterDecision, filterReason]);
+  }, [defectiveRecords, warehouses, companies, filterDecision, filterReason, externalSearchQuery, products]);
 
   // High-level metrics (excludes desativada companies)
   const metrics = useMemo(() => {

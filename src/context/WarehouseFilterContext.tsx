@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useStock } from './StockContext';
 import { Warehouse } from '../types/stock';
+import {
+  isCompanyActive as isCompanyActiveUtil,
+  isCompanyDeactivated as isCompanyDeactivatedUtil,
+} from '../utils/companyState';
 
 export interface WarehouseFilterContextType {
   selectedCompanyIds: string[];
@@ -34,12 +38,12 @@ export const WarehouseFilterProvider: React.FC<{ children: ReactNode }> = ({ chi
 
   // Empresas visíveis nos filtros: ativas e paradas (desativadas são totalmente excluídas)
   const nonDisabledCompanyIds = useMemo(() => {
-    return companies.filter((c) => c.status !== 'desativada').map((c) => c.id);
+    return companies.filter((c) => !isCompanyDeactivatedUtil(c)).map((c) => c.id);
   }, [companies]);
 
   // Empresas desativadas (completamente fora de serviço)
   const disabledCompanyIdsSet = useMemo(() => {
-    return new Set(companies.filter((c) => c.status === 'desativada').map((c) => c.id));
+    return new Set(companies.filter((c) => isCompanyDeactivatedUtil(c)).map((c) => c.id));
   }, [companies]);
 
   // Armazéns visíveis nos filtros (exclui armazéns de empresas desativadas)
@@ -50,13 +54,13 @@ export const WarehouseFilterProvider: React.FC<{ children: ReactNode }> = ({ chi
   }, [warehouses, disabledCompanyIdsSet]);
 
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(() => {
-    const active = companies.filter((c) => c.status === 'ativa').map((c) => c.id);
-    return active.length > 0 ? active : companies.filter((c) => c.status !== 'desativada').map((c) => c.id);
+    const active = companies.filter((c) => isCompanyActiveUtil(c)).map((c) => c.id);
+    return active.length > 0 ? active : companies.filter((c) => !isCompanyDeactivatedUtil(c)).map((c) => c.id);
   });
 
   const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<string[]>(() => {
     const activeComps = new Set(
-      companies.filter((c) => c.status === 'ativa').map((c) => c.id)
+      companies.filter((c) => isCompanyActiveUtil(c)).map((c) => c.id)
     );
     return warehouses
       .filter((w) => activeComps.has(w.companyId))

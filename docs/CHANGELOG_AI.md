@@ -21,6 +21,30 @@ Sempre que um agente concluir uma tarefa relevante, deve adicionar uma entrada n
 
 ## Histórico de Intervenções
 
+### [2026-10-22] — Google AI Studio Build (Gemini) — Auditoria Funcional: Pontos 5, 6, 7 e 8 Concluídos
+- **Objetivo**: Implementar e validar os Pontos 5, 6, 7 e 8 da Auditoria Funcional:
+  - **Ponto 5 — Estado da empresa centralizado e texto auxiliar nos Fornecedores**:
+    - 5.1 Centralização da regra de determinação e normalização de estado de empresa (`ativa`, `parada`, `desativada`) em `src/utils/companyState.ts` (`getCompanyStatus`, `isCompanyActive`, `isCompanyStopped`, `isCompanyDeactivated`, `getCompanyStatusLabel`, `getCompanyStatusTooltip`). Utilizado de forma transversal em `StockContext`, `WarehouseFilterContext` e `FornecedoresView`.
+    - 5.2 Correção do texto auxiliar e etiquetas dos três estados em Contactos → Fornecedores: mostra todas as empresas vinculadas aos artigos, com indicação clara individual ("Empresa ativa: Nome", "Empresa parada (operações em pausa): Nome", "Empresa desativada (fora de serviço): Nome") e badges correspondentes.
+  - **Ponto 6 — Pesquisa do cabeçalho contextual e esconder em secções sem lista**:
+    - 6.1 A pesquisa do cabeçalho filtra a secção ativa (Armazém, Movimentação, Lista de compras, Defeituoso, Vendas, Transporte, Contas, Lançamentos, Dívidas, Documentos, Funcionários, Clientes, Fornecedores).
+    - 6.2 O campo de pesquisa e o respetivo ícone são totalmente escondidos em secções sem lista (Dashboard, Definições, Agentes, Afiliados, Simulador de Importação). Suporte a placeholders contextuais e submissão com Enter.
+  - **Ponto 7 — Lista de compras: explicação da regra de cálculo**:
+    - 7.1 Exibição de explicação curta da regra atual junto aos totais do item e no banner de regras: em "Em pesquisa", todas as cotações compõem o Total Pesquisado; o Total Selecionado considera as fontes com "Contabilizar" ativo quando a lista é marcada como "Concluído".
+    - 7.2 Regra confirmada ao utilizador antes de qualquer alteração de cálculo.
+  - **Ponto 8 — Dados de exemplo coerentes com os produtos**:
+    - 8.1 Correção dos dados de exemplo em `INITIAL_MOVEMENTS` e `INITIAL_DEFECTIVE_RECORDS` (`seedData.ts` e migração segura em `StockContext.tsx` sem tocar em registos criados pelo utilizador): Fritadeira Air Fryer com avaria e movimento de transporte correspondentes a danos estruturais/carcaça, PlayStation 5 sem referências a restaurantes, Comandos DualSense sem referências a cimento/fábricas de cimento, e Ração de cães sem referências a fábricas de detergente.
+- **Ficheiros Modificados / Criados**:
+  - `src/utils/companyState.ts`: Módulo utilitário centralizado para estado da empresa.
+  - `src/components/contacts/FornecedoresView.tsx`: Apresentação correta de empresas ativas, paradas e desativadas vinculadas com tooltips contextuais.
+  - `src/components/layout/Header.tsx`: Ocultação de pesquisa em secções sem lista, placeholder contextual e Enter.
+  - `src/components/contacts/ClientesView.tsx`, `src/components/caixa/VendaView.tsx`, `src/components/defective/DefectiveView.tsx`, `src/components/purchases/PurchaseListView.tsx`: Suporte a filtro de pesquisa externo.
+  - `src/components/purchases/PurchaseListView.tsx`: Explicação curta da regra de cálculo nos totais e no banner de regras.
+  - `src/data/seedData.ts`: Coerência entre motivos de avaria, movimentos e produtos.
+  - `src/context/StockContext.tsx` & `src/context/WarehouseFilterContext.tsx`: Cura seletiva de registos legados de exemplo e centralização de estados de empresa.
+  - `tests/integrity.test.ts`: Testes unitários para regras de companyState e integridade de seedData.
+- **Verificação**: `npm test` (79/79 testes aprovados), `npm run lint` (`tsc --noEmit`) 0 erros, `npm run build` compilado com 100% de sucesso.
+
 ### [2026-10-21] — Google AI Studio Build (Gemini) — Auditoria Funcional: Pontos 3 (Telefone em Contactos) e 4 (Botão Voltar & Rotas Hash) Concluídos
 - **Objetivo**: Concluir os Pontos 3 e 4 da Auditoria Funcional e restabelecer o servidor de desenvolvimento:
   - **3. Normalização e Validação de Telefone em Contactos**:

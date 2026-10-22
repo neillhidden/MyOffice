@@ -34,6 +34,8 @@ interface VendaViewProps {
   onGoToStockMovement?: (saleId: string) => void;
   onGoToFinancialEntry?: (saleId: string) => void;
   onGoToDebt?: (debtIdOrSaleId: string) => void;
+  externalSearchQuery?: string;
+  onExternalSearchChange?: (q: string) => void;
 }
 
 export const VendaView: React.FC<VendaViewProps> = ({
@@ -41,6 +43,8 @@ export const VendaView: React.FC<VendaViewProps> = ({
   onGoToStockMovement,
   onGoToFinancialEntry,
   onGoToDebt,
+  externalSearchQuery,
+  onExternalSearchChange,
 }) => {
   const {
     sales,
@@ -57,6 +61,8 @@ export const VendaView: React.FC<VendaViewProps> = ({
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('todas');
   const [paymentFilter, setPaymentFilter] = useState<string>('todos');
+
+  const effectiveSearch = externalSearchQuery !== undefined ? externalSearchQuery : search;
 
   // Modals state
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
@@ -193,8 +199,8 @@ export const VendaView: React.FC<VendaViewProps> = ({
             return false;
           }
         }
-        if (search.trim()) {
-          const q = search.toLowerCase();
+        if (effectiveSearch.trim()) {
+          const q = effectiveSearch.toLowerCase();
           const matchId = matchRefOrFull(sale.id, q, 'VND');
           const matchSeller = sale.seller.toLowerCase().includes(q);
           const matchClient = sale.clientName?.toLowerCase().includes(q) || false;
@@ -204,7 +210,7 @@ export const VendaView: React.FC<VendaViewProps> = ({
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sales, warehouses, companies, statusFilter, paymentFilter, search, debts, bankMovements, getDebtCalculations]);
+  }, [sales, warehouses, companies, statusFilter, paymentFilter, effectiveSearch, debts, bankMovements, getDebtCalculations]);
 
   const handleOpenReceipt = (sale: Sale) => {
     const tr = transports.find((t) => t.saleId === sale.id) || null;

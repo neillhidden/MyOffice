@@ -366,6 +366,8 @@ function AppContent() {
                       navigateTo({ mode: 'business', module: 'Financeiro', financeiroSub: 'Dívidas' });
                       setSearchQuery(debtIdOrSaleId);
                     }}
+                    externalSearchQuery={searchQuery}
+                    onExternalSearchChange={setSearchQuery}
                   />
                 ) : (
                   <TransporteView
@@ -375,11 +377,20 @@ function AppContent() {
                 )
               ) : activeModule === 'Contactos' ? (
                 activeContactosSubmodule === 'Funcionários' ? (
-                  <FuncionariosView />
+                  <FuncionariosView
+                    externalSearchQuery={searchQuery}
+                    onExternalSearchChange={setSearchQuery}
+                  />
                 ) : activeContactosSubmodule === 'Clientes' ? (
-                  <ClientesView />
+                  <ClientesView
+                    externalSearchQuery={searchQuery}
+                    onExternalSearchChange={setSearchQuery}
+                  />
                 ) : activeContactosSubmodule === 'Fornecedores' ? (
-                  <FornecedoresView />
+                  <FornecedoresView
+                    externalSearchQuery={searchQuery}
+                    onExternalSearchChange={setSearchQuery}
+                  />
                 ) : (
                   <AfiliadosView
                     onBack={() => {
@@ -446,9 +457,13 @@ function AppContent() {
                 {(activeSubmodule === 'Simulador de Importação e Rentabilidade' ||
                   activeSubmodule === 'Análise de produtos') && <ImportSimulatorView />}
 
-                {activeSubmodule === 'Lista de compras' && <PurchaseListView />}
+                {activeSubmodule === 'Lista de compras' && (
+                  <PurchaseListView externalSearchQuery={searchQuery} />
+                )}
 
-                {activeSubmodule === 'Defeituoso' && <DefectiveView />}
+                {activeSubmodule === 'Defeituoso' && (
+                  <DefectiveView externalSearchQuery={searchQuery} />
+                )}
               </>
             )}
           </div>

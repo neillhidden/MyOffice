@@ -9,8 +9,8 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
 > **INSTRUÇÃO PARA O PRÓXIMO AGENTE (Claude Code / Gemini / Codex)**:
 > Sempre que iniciares uma sessão neste repositório, lê este bloco primeiro e verifica `git status` e `git diff`. Se o agente anterior tiver sido interrompido a meio de uma tarefa (por limite de quota ou contexto), retoma a partir do ponto indicado abaixo. Ao trabalhares numa tarefa, mantém este bloco atualizado.
 
-- **Último Agente Ativo**: Google AI Studio Build (Gemini) — `2026-10-21`
-- **Estado de Validação**: 77 testes automatizados aprovados (`npm test`), Lint/TypeScript (`tsc --noEmit`) limpo e build Vite (`npm run build`) concluídos com 100% de sucesso.
+- **Último Agente Ativo**: Google AI Studio Build (Gemini) — `2026-10-22`
+- **Estado de Validação**: 79 testes automatizados aprovados (`npm test`), Lint/TypeScript (`tsc --noEmit`) limpo e build Vite (`npm run build`) concluídos com 100% de sucesso.
 - **Auditoria Funcional Concluída**:
   - **Ponto 1 — Venda a prazo (gravidade alta)**:
     - 1.1 Exige cliente identificado. "Consumidor final" bloqueia com mensagem dedicada junto ao campo Cliente (`#sale-client-error-msg`). Data de vencimento opcional (`#sale-due-date-input`).
@@ -33,9 +33,20 @@ Este documento reflete o **estado real e auditado** do repositório **MyOffice**
   - **Ponto 4 — Botão Voltar do navegador e Rotas Hash (gravidade média)**:
     - 4.1 Cada secção e alternância Home/Business cria uma entrada no histórico do navegador (`window.history.pushState`). Botão "Voltar" do navegador regressa à secção anterior; "Avançar" vai à seguinte.
     - 4.2 Atualizar a página (`F5`) mantém a secção. URL direto (ex.: `#/armazem`, `#/venda`, `#/home/orcamento`) abre a secção correta.
-    - 4.3 Rotas com hash implementadas em `src/utils/navigationRouter.ts` (`#/armazem`, `#/movimentacao`, `#/simulador`, `#/lista-compras`, `#/defeituoso`, `#/venda`, `#/transporte`, `#/contas`, `#/lancamentos`, `#/dividas`, `#/funcionarios`, `#/clientes`, `#/fornecedores`, `#/afiliados`, `#/dashboard`, `#/calendario`, `#/definicoes`, `#/home/...`) prevenindo erros 404 em hospedagens estáticas (como GitHub Pages).
+    - 4.3 Rotas com hash implementadas em `src/utils/navigationRouter.ts` prevenindo erros 404 em hospedagens estáticas (como GitHub Pages).
     - 4.4 Mantém todos os filtros que persistem em memória e `localStorage` (ex.: seleção multi-empresa e armazém no Armazém via `WarehouseFilterContext`).
-- **Próximos Passos**: Servidor de desenvolvimento operacional e sincronizado. Aguardar novas instruções do utilizador.
+  - **Ponto 5 — Estado da empresa centralizado e texto auxiliar nos Fornecedores (gravidade baixa)**:
+    - 5.1 Centralização da regra de estado da empresa (`ativa`, `parada`, `desativada`) em `src/utils/companyState.ts` (`getCompanyStatus`, `isCompanyActive`, `isCompanyStopped`, `isCompanyDeactivated`, `getCompanyStatusLabel`, `getCompanyStatusTooltip`), utilizada em `StockContext`, `WarehouseFilterContext` e `FornecedoresView`.
+    - 5.2 Correção do texto auxiliar e etiquetas dos três estados em Fornecedores: mostra todas as empresas vinculadas aos artigos, com indicação clara individual ("Empresa ativa: Nome", "Empresa parada (operações em pausa): Nome", "Empresa desativada (fora de serviço): Nome") e badges correspondentes.
+  - **Ponto 6 — Pesquisa do cabeçalho contextual e esconder em secções sem lista (gravidade baixa)**:
+    - 6.1 O campo de pesquisa do cabeçalho filtra a secção onde o utilizador se encontra (Armazém, Movimentação, Lista de compras, Defeituoso, Vendas, Transporte, Contas, Lançamentos, Dívidas, Documentos, Funcionários, Clientes, Fornecedores).
+    - 6.2 Nas secções sem lista (Dashboard, Definições, Agentes, Afiliados, Simulador), o campo e o botão de pesquisa são completamente ocultados. Placeholder contextual por módulo e submissão com Enter.
+  - **Ponto 7 — Lista de compras: explicação da regra de cálculo (gravidade baixa)**:
+    - 7.1 Exibição de explicação curta da regra atual junto aos totais do item e no banner de regras: em "Em pesquisa", todas as cotações compõem o Total Pesquisado; o Total Selecionado considera as fontes com "Contabilizar" ativo quando a lista é marcada como "Concluído".
+    - 7.2 Regra confirmada ao utilizador antes de qualquer alteração de cálculo.
+  - **Ponto 8 — Dados de exemplo coerentes com os produtos (gravidade baixa)**:
+    - 8.1 Correção dos dados de exemplo em `INITIAL_MOVEMENTS` e `INITIAL_DEFECTIVE_RECORDS` (`seedData.ts` e migração segura em `StockContext.tsx` sem tocar em registos criados pelo utilizador): Fritadeira Air Fryer com avaria e movimento de transporte correspondentes a danos estruturais/carcaça, PlayStation 5 sem referências a restaurantes, Comandos DualSense sem referências a cimento/fábricas de cimento, e Ração de cães sem referências a fábricas de detergente.
+- **Próximos Passos**: Base de código estável, testada e pronta. Aguardar feedback do utilizador.
 
 
 ---

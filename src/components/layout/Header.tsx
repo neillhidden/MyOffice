@@ -118,6 +118,47 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 6.1 Nas secções sem lista (Dashboard, Definições, Agentes, etc.), esconde o campo
+  const isSearchHidden =
+    currentModule === 'Dashboard' ||
+    currentModule === 'Definições' ||
+    currentModule === 'Agentes' ||
+    (currentModule === 'Contactos' && currentSubmodule === 'Afiliados') ||
+    (currentModule === 'Estoque' &&
+      (currentSubmodule === 'Simulador de Importação e Rentabilidade' ||
+        currentSubmodule === 'Análise de produtos'));
+
+  const getSearchPlaceholder = () => {
+    if (currentModule === 'Estoque') {
+      if (currentSubmodule === 'Armazém') return 'Pesquisar produto, SKU, marca...';
+      if (currentSubmodule === 'Movimentação') return 'Pesquisar movimento, produto, responsável...';
+      if (currentSubmodule === 'Lista de compras') return 'Pesquisar listas, grupos e artigos...';
+      if (currentSubmodule === 'Defeituoso') return 'Pesquisar avarias, produtos, motivos...';
+      return 'Pesquisar em Estoque...';
+    }
+    if (currentModule === 'Caixa') {
+      if (currentSubmodule === 'Transporte') return 'Pesquisar entregas, clientes, moradas...';
+      return 'Pesquisar vendas, clientes, referências...';
+    }
+    if (currentModule === 'Financeiro' || currentModule === 'Banco') {
+      return 'Pesquisar lançamentos, contas, dívidas...';
+    }
+    if (currentModule === 'Contactos') {
+      if (currentSubmodule === 'Funcionários') return 'Pesquisar funcionários, cargos, contactos...';
+      if (currentSubmodule === 'Clientes') return 'Pesquisar clientes, contactos, NIF...';
+      if (currentSubmodule === 'Fornecedores') return 'Pesquisar fornecedores, plataformas, contactos...';
+      return 'Pesquisar em Contactos...';
+    }
+    return 'Pesquisar nesta secção...';
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      // Confirma e foca a lista correspondente
+      searchInputRef.current?.blur();
+    }
+  };
+
   return (
     <header className="h-14 shrink-0 bg-white dark:bg-dm-surface border-b border-slate-200/80 dark:border-dm-border px-4 sm:px-6 lg:px-8 flex items-center z-30 transition-colors duration-200">
       <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -160,44 +201,47 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-slate-400 dark:text-dm-muted">USD ref: 925 Kz</span>
           </div>
 
-          {/* Expandable Search Input */}
-          <div className="relative flex items-center h-8">
-            {isSearchExpanded ? (
-              <div className="h-8 flex items-center bg-slate-50 dark:bg-dm-elevated border border-slate-300 dark:border-dm-border rounded-lg px-2.5 transition-all w-64 md:w-80 shadow-xs">
-                <Search className="w-4 h-4 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  id="header-search-input"
-                  value={searchQuery}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  placeholder="Pesquisar produto, SKU, código..."
-                  className="w-full bg-transparent text-xs text-slate-800 dark:text-dm-text focus:outline-none placeholder:text-slate-400 dark:placeholder:text-dm-muted"
-                />
+          {/* Expandable Search Input (escondido em Dashboard e Definições conforme Item 6.1) */}
+          {!isSearchHidden && (
+            <div className="relative flex items-center h-8">
+              {isSearchExpanded ? (
+                <div className="h-8 flex items-center bg-slate-50 dark:bg-dm-elevated border border-slate-300 dark:border-dm-border rounded-lg px-2.5 transition-all w-64 md:w-80 shadow-xs">
+                  <Search className="w-4 h-4 text-slate-400 dark:text-dm-muted mr-2 shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    id="header-search-input"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder={getSearchPlaceholder()}
+                    className="w-full bg-transparent text-xs text-slate-800 dark:text-dm-text focus:outline-none placeholder:text-slate-400 dark:placeholder:text-dm-muted"
+                  />
+                  <button
+                    type="button"
+                    id="btn-close-search"
+                    onClick={() => {
+                      setIsSearchExpanded(false);
+                      onSearchChange('');
+                    }}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-dm-text p-0.5 ml-1 inline-flex items-center justify-center cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  id="btn-close-search"
-                  onClick={() => {
-                    setIsSearchExpanded(false);
-                    onSearchChange('');
-                  }}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-dm-text p-0.5 ml-1 inline-flex items-center justify-center cursor-pointer"
+                  id="btn-open-search"
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="w-8 h-8 inline-flex items-center justify-center text-slate-500 dark:text-dm-muted hover:text-slate-800 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
+                  title="Pesquisar (Ctrl+K)"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <Search className="w-4 h-4" />
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                id="btn-open-search"
-                onClick={() => setIsSearchExpanded(true)}
-                className="w-8 h-8 inline-flex items-center justify-center text-slate-500 dark:text-dm-muted hover:text-slate-800 dark:hover:text-dm-text hover:bg-slate-100 dark:hover:bg-dm-elevated rounded-lg transition-colors cursor-pointer"
-                title="Pesquisar (Ctrl+K)"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Theme Toggle Button (Light / Dark) */}
           <button
